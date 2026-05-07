@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三国狼人杀</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1a2e;--bg2:#16213e;--card:#0f3460;--gold:#e2b714;--red:#c0392b;--blue:#2980b9;--green:#27ae60;--purple:#8e44ad;--white:#ecf0f1;--gray:#7f8c8d;--dark:#2c3e50;--wolf:#c0392b;--seer:#3498db;--witch:#9b59b6;--hunter:#e67e22;--guard:#2ecc71;--villager:#95a5a6}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--white);min-height:100vh;overflow-x:hidden}
+.header{text-align:center;padding:20px;background:linear-gradient(135deg,var(--bg2),var(--card));border-bottom:2px solid var(--gold)}
+.header h1{font-size:28px;color:var(--gold);text-shadow:0 0 10px rgba(226,183,20,0.3)}
+.header p{color:var(--gray);font-size:14px;margin-top:4px}
+.phase-bar{display:flex;justify-content:center;gap:4px;padding:12px;background:var(--bg2)}
+.phase-dot{width:12px;height:12px;border-radius:50%;background:var(--gray);opacity:0.3;transition:all 0.3s}
+.phase-dot.active{opacity:1;box-shadow:0 0 8px currentColor}
+.game-area{max-width:900px;margin:0 auto;padding:20px;display:flex;gap:20px}
+.players-panel{flex:0 0 280px}
+.game-main{flex:1;min-width:0}
+.card{background:var(--bg2);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:12px}
+.card h3{color:var(--gold);font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.player-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.p-card{background:var(--card);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all 0.3s;border:2px solid transparent;position:relative}
+.p-card:hover{transform:translateY(-2px);border-color:var(--gold)}
+.p-card.dead{opacity:0.4;pointer-events:none;filter:grayscale(1)}
+.p-card.selected{border-color:var(--gold);box-shadow:0 0 12px rgba(226,183,20,0.4)}
+.p-card.wolf-glow{border-color:var(--wolf);box-shadow:0 0 12px rgba(192,57,43,0.4)}
+.p-card .avatar{width:40px;height:40px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;overflow:hidden;background:var(--card)}
+.p-card .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.p-card .name{font-size:12px;font-weight:700}
+.p-card .faction{font-size:10px;color:var(--gray)}
+.p-card .role-badge{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.p-card .status-icon{position:absolute;top:4px;left:4px;font-size:10px}
+.faction-wei .avatar{background:linear-gradient(135deg,#1a5276,#2980b9)}
+.faction-shu .avatar{background:linear-gradient(135deg,#145a32,#27ae60)}
+.faction-wu .avatar{background:linear-gradient(135deg,#7d3c98,#a569bd)}
+.faction-qun .avatar{background:linear-gradient(135deg,#935116,#d4ac0d)}
+.log-area{max-height:400px;overflow-y:auto;padding:8px}
+.log-entry{padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;line-height:1.6;animation:fadeIn 0.3s}
+.log-entry .speaker{color:var(--gold);font-weight:700;margin-right:4px}
+.log-entry .night-text{color:var(--gray);font-style:italic}
+.log-entry .death-text{color:var(--red)}
+.log-entry .vote-text{color:var(--blue)}
+.log-entry .system-text{color:var(--purple);font-weight:700}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.action-bar{padding:12px;text-align:center}
+.action-bar button{padding:10px 24px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;margin:0 4px}
+.action-bar button:hover{transform:scale(1.05)}
+.action-bar button:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--gold);color:var(--bg)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-pause{position:fixed;top:12px;right:12px;z-index:300;padding:8px 18px;border:2px solid var(--gold);border-radius:20px;background:rgba(15,52,96,0.95);color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px)}
+.btn-pause:hover{background:var(--gold);color:var(--bg);transform:scale(1.05)}
+.btn-pause.paused{border-color:var(--red);color:var(--red)}
+.btn-pause.paused:hover{background:var(--red);color:#fff}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:24px;max-width:500px;width:90%;text-align:center}
+.modal h2{color:var(--gold);font-size:22px;margin-bottom:12px}
+.modal p{color:var(--white);font-size:14px;line-height:1.8;margin-bottom:16px}
+.modal .highlight{color:var(--gold);font-weight:700}
+.role-reveal{text-align:center;padding:20px}
+.role-reveal .role-icon{font-size:48px;margin-bottom:12px}
+.role-reveal .role-name{font-size:24px;font-weight:700;margin-bottom:8px}
+.role-reveal .role-desc{color:var(--gray);font-size:14px}
+.vote-result{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.vote-tag{background:rgba(255,255,255,0.1);border-radius:4px;padding:2px 8px;font-size:12px}
+.night-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;transition:background 1s}
+.night-overlay.is-night{background:rgba(0,0,10,0.5)}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--gold);border-radius:8px;padding:10px 20px;font-size:14px;z-index:200;animation:toastIn 0.3s}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.witch-panel{text-align:left}
+.witch-panel h4{margin:8px 0 4px;color:var(--gold);font-size:13px}
+.witch-options{display:flex;gap:8px;flex-wrap:wrap}
+.witch-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;font-size:13px}
+.witch-btn:hover{background:var(--gold);color:var(--bg)}
+.witch-btn.used{opacity:0.3;pointer-events:none}
+.info-bar{display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg2);border-radius:8px;font-size:13px;margin-bottom:12px}
+.info-bar span{color:var(--gray)}
+.info-bar .num{color:var(--gold);font-weight:700}
+.speaker{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;font-weight:700;margin-right:4px}
+.speaker img{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);object-fit:cover;flex-shrink:0;background:var(--card)}
+</style>
+</head>
+<body>
+<div class="night-overlay" id="nightOverlay"></div>
+<button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ 暂停</button>
+<div class="header">
+  <h1>三 国 狼 人 杀</h1>
+  <p>从219位三国豪杰中随机选拔15人进行智谋对决</p>
+</div>
+<div class="phase-bar" id="phaseBar"></div>
+<div class="game-area">
+  <div class="players-panel">
+    <div class="card">
+      <h3>Players</h3>
+      <div class="player-grid" id="playerGrid"></div>
+    </div>
+    <div class="info-bar" id="infoBar"></div>
+  </div>
+  <div class="game-main">
+    <div class="card">
+      <h3>Game Log</h3>
+      <div class="log-area" id="logArea"></div>
+    </div>
+    <div class="action-bar" id="actionBar"></div>
+  </div>
+</div>
+<div id="modalArea"></div>
+
+<script src="characters_data.js"></script>
+<script>
+const FACTION_DIR = {"魏":"avatars/wei","蜀":"avatars/shu","吴":"avatars/wu","群雄":"avatars/qun"};
+const ALL_CHARS = typeof ALL_CHARACTERS !== 'undefined' ? ALL_CHARACTERS : [];
+
+// 人设特有发言索引：按角色名，运行时动态生成
+const PERSONAL_SPEECHES={};
+
+const ROLE_CFG={wolf:{name:"狼人",color:"var(--wolf)",icon:"W",desc:"每晚与同伴商议杀害一人",count:4},seer:{name:"预言家",color:"var(--seer)",icon:"P",desc:"每晚可查验一人的身份",count:1},witch:{name:"女巫",color:"var(--witch)",icon:"N",desc:"拥有一瓶解药和一瓶毒药",count:1},hunter:{name:"猎人",color:"var(--hunter)",icon:"L",desc:"死亡时可带走一人",count:1},guard:{name:"守卫",color:"var(--guard)",icon:"S",desc:"每晚可保护一人免死",count:1},villager:{name:"平民",color:"var(--villager)",icon:"M",desc:"白天投票放逐嫌疑人",count:7}};
+
+// ===== 说话模板：生动、人设化、带吐槽和情绪 =====
+const SPEECH_TEMPLATES={
+wolf_accuse:[
+  "我操，{t}这货刚才一直不敢看人，心虚成这样还好意思坐在这？我怀疑就是他！",
+  "{t}你跟我搁这演呢？发言跟便秘似的半天憋不出一句有用的，不是狼人是什么？",
+  "各位别被{t}忽悠了，此人前天还信誓旦旦说某某是好人，结果人没了。这种人靠得住？",
+  "我的天，{t}这发言水平，跟曹爽有得一拼。你当大家都是傻子吗？我怀疑{t}就是狼！",
+  "{t}你别搁这装好人了，你那点小心思我一眼就看穿了。投{t}！",
+  "讲真，{t}说话支支吾吾的，要么是没脑子的蠢货，要么就是心虚的狼人，不管哪个都该投。",
+  "我真是服了，{t}你能不能说点有用的？空话套话一大堆，你搁这做演讲呢？",
+  "曹操说过，对酒当歌人生几何。但{t}你今天这表现，只让人觉得你该去地下对酒去了。",
+  "{t}这发言，我都替他尴尬。东拉西扯不知所云，不是狼是什么？",
+  "妈的，{t}你自己心里没点数吗？你那发言把你自己的底都露完了！"
+],
+wolf_defend:[
+  "我靠，你们投我？我真的冤得一批，我连狼人长啥样都不知道！",
+  "行吧，你们要冤枉好人我也没办法。但我要说，投错人的代价你们自己承担。",
+  "我真是日了狗了，被人当替罪羊的感觉真不爽。投我可以，但你们别后悔。",
+  "说我可疑？好，那我倒要问问，比我更可疑的那几个人你们怎么不投？双标啊！"
+],
+seer_reveal:[
+  "别吵了！我是预言家！昨晚我查验了{t}——这货就是狼人！不信拉倒，我的命你们看着办！",
+  "各位听我说一句！我昨晚偷偷查了{t}，结果让我毛骨悚然——他、就、是、狼！",
+  "重要情报！我预言家身份不保也要说——{t}是狼人！昨晚验的，千真万确！谁再帮他说话谁就有问题！"
+],
+seer_hint:[
+  "我手里有料，但暂时不方便全说。只能提示大家一句：盯紧{t}，这个人不对劲。",
+  "我有一种强烈的直觉——{t}有问题。具体证据我先不透露，但我建议大家先从{t}身上下手。",
+  "有些事点到为止，但我相信{t}的底细早晚会被揭穿。大家注意观察他接下来的反应。"
+],
+hunter_threat:[
+  "我就一句话：谁敢投我，我走的时候绝对拉一个垫背的。你自己掂量掂量。",
+  "别以为我没牌。真把我逼急了，我让你知道什么叫同归于尽。狼人你掂量着办。",
+  "我不是吓唬谁，我这人有能力让一个人跟我一起走。投我之前先想想值不值。",
+  "呵，想动我？好大的胆子。我倒要看看谁有这个勇气。"
+],
+guard_claim:[
+  "昨晚我守了一个人，所以大家看到了，没人出局。我的保护还在继续，狼人你别想得逞。",
+  "放心，有人在暗中守护着你们。但我的保护是有限的，大家自己也要动脑子。",
+  "我能做的都做了。但光靠我一个人守不住所有人，大家得自己判断。"
+],
+villager_analyze:[
+  "我仔细听了所有人的发言，{t}的逻辑问题最大——他自己说的前后矛盾，大家注意到了吗？",
+  "说实话，{t}今天这番话让我很不舒服。感觉像在带节奏，试图转移大家注意力。",
+  "我没啥特殊能力，就是个平民。但以我的直觉来看，{t}这人不可信。他说的每一句话都像精心准备的。",
+  "我感觉{t}一直在装傻。真正的好人不会故意含糊其辞，只有狼人才需要这样。",
+  "我跟你们说，{t}今天的发言完全是照着剧本念的。一个正常人说话不会这么刻意。",
+  "我真的想吐槽，{t}你能不能别搁这搅浑水了？越搅越乱对你有好处是吧？"
+],
+witch_save:[
+  "昨晚有人差点死了，我出手救了。别问我是谁，也别问救的是谁。总之人还在。",
+  "我犹豫了很久，但还是用了我的解药。希望这个人之后能证明自己值得我救。"
+],
+witch_poison:[
+  "我受够了{t}的表演了，今晚毒药伺候。你不是爱演吗？演到阴曹地府去吧。",
+  "经过仔细观察，我确信{t}就是狼人。毒药出手，绝不虚发。大家等着看好消息吧。",
+  "我不想再等了。{t}每多活一天好人就多危险一天。今晚我做了决定。"
+],
+vote_reason:[
+  "投{t}，没什么好犹豫的。",
+  "{t}最可疑，投了。",
+  "我跟大部队走，投{t}。",
+  "虽然不能百分百确定，但{t}让我最不放心。投。",
+  "别墨迹了，{t}的嫌疑最大，赶紧投了完事。",
+  "我选择{t}。如果投错了，那我认栽。"
+],
+dead_last:[
+  "呸！死就死，老子十八年后又是一条好汉！",
+  "可恨！壮志未酬身先死……你们一定要替我报仇！",
+  "我这一辈子什么大风大浪没见过，区区狼人算什么……可惜，可惜。",
+  "天亡我也，非战之罪。不过你们也别高兴太早……",
+  "操，不甘心啊。若有机会重来，我一定先宰了那帮畜生。",
+  "各位……记住我的话，那个……咳咳……小心……"
+],
+generic:[
+  "大家冷静，别被情绪带跑了。仔细想想谁说的话最有破绽。",
+  "我今天一直在观察，有些人的表情和发言真的不太对劲。",
+  "说实话，这局狼人藏得挺深的，大家得擦亮眼睛。",
+  "我的天，你们能不能好好分析一下，别瞎投？每错一次狼人就笑一次。",
+  "我越想越觉得不对劲。昨天那波投票的走向很诡异……",
+  "冷静想想，如果我是狼人，我会怎么选目标？反过来推理一下就知道了。"
+]
+};
+
+// 根据性格特征动态生成人设发言
+function generatePersonalSpeech(p, targetName) {
+  const traits = p.personality || [];
+  const t = targetName || '某人';
+  if (traits.length === 0) return null;
+  const trait = pick(traits);
+  const templates = [
+    `我${trait}，这一点在座各位有目共睹。{t}，你那种嘴脸骗不了我。`,
+    `${trait}！这就是我${p.name}的座右铭。{t}的所作所为，完全是在侮辱在座各位的智商。`,
+    `世人皆知我${trait}，今天我就用这个眼光来审视一下——{t}，你很可疑。`,
+    `我一生${trait}，岂能容忍{t}这种宵小之辈在眼前晃悠？各位投他！`,
+    `哼，以我${trait}的经验来看，{t}绝对有问题。信不信由你。`,
+  ];
+  return pick(templates).replace(/\{t\}/g, t);
+}
+
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[]};
+
+function togglePause(){
+  game.isPaused=!game.isPaused;
+  const btn=document.getElementById("pauseBtn");
+  if(game.isPaused){
+    btn.textContent="▶ 继续";
+    btn.classList.add("paused");
+  } else {
+    btn.textContent="⏸ 暂停";
+    btn.classList.remove("paused");
+    game.pauseResolvers.forEach(r=>r());
+    game.pauseResolvers=[];
+  }
+}
+
+function delay(ms){
+  return new Promise(resolve=>{
+    const check=()=>{
+      if(game.isPaused){
+        game.pauseResolvers.push(()=>setTimeout(check,50));
+      } else {
+        setTimeout(resolve,ms);
+      }
+    };
+    check();
+  });
+}
+
+function init(){
+  // 从 219 人的角色库中随机抽取 15 人
+  const pool = shuffle([...ALL_CHARS]);
+  const selected = pool.slice(0, 15);
+
+  let roles=[];
+  for(let r in ROLE_CFG) for(let i=0;i<ROLE_CFG[r].count;i++) roles.push(r);
+  shuffle(roles);
+  game.players = selected.map((c,i) => ({
+    ...c,
+    id: i,
+    role: roles[i],
+    alive: true,
+    votedFor: null
+  }));
+  renderPlayers();
+  showStartModal();
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function showStartModal(){
+  const wolves=game.players.filter(p=>p.role==="wolf");
+  const seer=game.players.find(p=>p.role==="seer");
+  const witch=game.players.find(p=>p.role==="witch");
+  const hunter=game.players.find(p=>p.role==="hunter");
+  const guard=game.players.find(p=>p.role==="guard");
+  const villagers=game.players.filter(p=>p.role==="villager");
+  document.getElementById("modalArea").innerHTML=`
+  <div class="modal-overlay"><div class="modal">
+    <h2>三国狼人杀</h2>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    好人阵营拥有：<span class="highlight" style="color:var(--seer)">预言家</span>、
+    <span class="highlight" style="color:var(--witch)">女巫</span>、
+    <span class="highlight" style="color:var(--hunter)">猎人</span>、
+    <span class="highlight" style="color:var(--guard)">守卫</span>。<br><br>
+    你作为<span class="highlight">上帝视角</span>，观看这场智谋对决。<br>
+    点击"开始游戏"，狼人先行……</p>
+    <div style="margin:16px 0;padding:12px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:left;font-size:12px;color:var(--gray);max-height:260px;overflow-y:auto">
+      <div style="margin-bottom:6px;font-weight:700;color:var(--gold)">身份已分配（仅你可见）：</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+        <div style="color:var(--wolf)">狼人：${wolves.map(p=>p.name).join("、")}</div>
+        <div style="color:var(--villager)">平民：${villagers.map(p=>p.name).join("、")}</div>
+        <div style="color:var(--seer)">预言家：${seer.name}</div>
+        <div style="color:var(--witch)">女巫：${witch.name}</div>
+        <div style="color:var(--hunter)">猎人：${hunter.name}</div>
+        <div style="color:var(--guard)">守卫：${guard.name}</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="closeModal();startGame()">开始游戏</button>
+  </div></div>`;
+}
+
+function closeModal(){document.getElementById("modalArea").innerHTML=""}
+
+function renderPlayers(){
+  const grid=document.getElementById("playerGrid");
+  grid.innerHTML=game.players.map(p=>{
+    const fc={"魏":"faction-wei","蜀":"faction-shu","吴":"faction-wu","群":"faction-qun"}[p.faction];
+    const rc=ROLE_CFG[p.role].color;
+    const imgSrc = (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
+    return `<div class="p-card ${fc} ${p.alive?"":"dead"}" id="pc${p.id}" onclick="onPlayerClick(${p.id})">
+      ${!p.alive?'<div class="status-icon" style="color:var(--red)">X</div>':''}
+      <div class="avatar"><img src="${imgSrc}" onerror="this.parentElement.innerHTML='${p.name[0]}'" alt="${p.name}"></div>
+      <div class="name">${p.name}</div>
+      <div class="faction">${p.faction}</div>
+      <div style="font-size:10px;color:${rc};font-weight:700">${ROLE_CFG[p.role].name}</div>
+    </div>`;
+  }).join("");
+  renderInfoBar();
+}
+
+function renderInfoBar(){
+  const alive=game.players.filter(p=>p.alive);
+  const wolvesAlive=alive.filter(p=>p.role==="wolf").length;
+  const goodAlive=alive.length-wolvesAlive;
+  document.getElementById("infoBar").innerHTML=`
+    <span>存活：<span class="num">${alive.length}</span>/15</span>
+    <span>好人：<span class="num" style="color:var(--green)">${goodAlive}</span></span>
+    <span>狼人：<span class="num" style="color:var(--red)">${wolvesAlive}</span>(隐藏)</span>
+    <span>第 <span class="num">${game.day}</span> 天</span>`;
+}
+
+function speakerHTML(player, label){
+  const name = label || player.name;
+  const faction = player.faction || "群雄";
+  const color = player.faction==="魏"?"var(--blue)":player.faction==="蜀"?"var(--green)":player.faction==="吴"?"var(--purple)":"var(--gold)";
+  const imgSrc = (FACTION_DIR[faction] || "avatars/qun") + '/' + player.name + '.png';
+  return `<span class="speaker" style="color:${color}"><img src="${imgSrc}" onerror="this.style.display='none'" alt="${name}">${name}：</span>`;
+}
+
+function addLog(html){
+  const area=document.getElementById("logArea");
+  const div=document.createElement("div");
+  div.className="log-entry";
+  div.innerHTML=html;
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+}
+
+function setPhase(text,color){
+  document.getElementById("phaseBar").innerHTML=`<div class="phase-dot active" style="color:${color};background:${color}"></div>
+  <span style="color:${color};font-size:13px;font-weight:700;margin-left:8px">${text}</span>`;
+}
+
+function setNight(b){document.getElementById("nightOverlay").className="night-overlay"+(b?" is-night":"")}
+
+function getAlive(){return game.players.filter(p=>p.alive)}
+function getAliveGood(){return getAlive().filter(p=>p.role!=="wolf")}
+function getAliveWolves(){return getAlive().filter(p=>p.role==="wolf")}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function pickExclude(arr,exclude){return pick(arr.filter(x=>!exclude.includes(x)))}
+
+function pickTemplate(group,vars){
+  let t=pick(SPEECH_TEMPLATES[group]||SPEECH_TEMPLATES.generic);
+  for(let k in vars) t=t.replaceAll(`{${k}}`,vars[k]);
+  return t;
+}
+
+async function startGame(){
+  game.day=0;
+  addLog('<span class="system-text">=== 游戏开始！15位三国豪杰入座 ===</span>');
+  await delay(800);
+  nightPhase();
+}
+
+async function nightPhase(){
+  game.day++;
+  game.isProcessing=true;
+  game.wolfTarget=null;game.seerTarget=null;game.witchSave=false;game.witchPoison=null;game.guardTarget=null;
+  game.speeches=[];
+  setNight(true);
+  setPhase(`第${game.day}夜`,"var(--purple)");
+  addLog(`<span class="system-text">--- 第${game.day}夜 · 天黑请闭眼 ---</span>`);
+  clearSelection();
+  await delay(1000);
+
+  // Guard
+  await guardAction();
+  await delay(600);
+
+  // Wolves
+  await wolfAction();
+  await delay(600);
+
+  // Seer
+  await seerAction();
+  await delay(600);
+
+  // Witch
+  await witchAction();
+  await delay(600);
+
+  // Resolve night
+  resolveNight();
+}
+
+async function guardAction(){
+  const guard=getAlive().find(p=>p.role==="guard"&&p.alive);
+  if(!guard)return;
+  const targets=getAlive().filter(p=>p.id!==game.lastGuardTarget);
+  if(targets.length===0)return;
+  game.guardTarget=pick(targets).id;
+  addLog(`${speakerHTML(guard,"<span style='color:var(--gray)'>守卫</span>"+guard.name)}<span class="night-text">在夜色中默默守护着一个人……</span>`);
+}
+
+async function wolfAction(){
+  const wolves=getAliveWolves();
+  if(wolves.length===0)return;
+  const targets=getAliveGood();
+  if(targets.length===0)return;
+  // Smart target: prefer seer/witch/hunter, or random
+  let target;
+  const specialTargets=targets.filter(p=>["seer","witch","hunter","guard"].includes(p.role));
+  if(specialTargets.length>0&&Math.random()<0.4) target=pick(specialTargets);
+  else target=pick(targets);
+  game.wolfTarget=target.id;
+  // Wolf discussion
+  const speaker=pick(wolves);
+  addLog(`${speakerHTML(speaker,"[狼人密谋]")}${speaker.name}低声对同伴说："今晚解决${target.name}……"`);
+}
+
+async function seerAction(){
+  const seer=getAlive().find(p=>p.role==="seer");
+  if(!seer)return;
+  const targets=getAlive().filter(p=>p.id!==seer.id&&p.role!=="seer");
+  if(targets.length===0)return;
+  // Smart: check suspicious people first
+  let target=pick(targets);
+  const unchecked=targets.filter(p=>!game.speeches.find(s=>s.speaker==="seer"&&s.about===p.id));
+  if(unchecked.length>0) target=pick(unchecked);
+  game.seerTarget=target.id;
+  const isWolf=target.role==="wolf";
+  addLog(`${speakerHTML(seer,"[预言家查验]")}${seer.name}翻开了天书……${target.name}的身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`);
+}
+
+async function witchAction(){
+  const witch=getAlive().find(p=>p.role==="witch");
+  if(!witch)return;
+  if(game.witchHasSave&&game.wolfTarget!==null){
+    const victim=game.players[game.wolfTarget];
+    if(victim.role==="witch"){} // can't self-save rule
+    else if(Math.random()<0.7){
+      game.witchSave=true;
+      game.witchHasSave=false;
+      addLog(`${speakerHTML(witch,"[女巫用药]")}${witch.name}决定使用解药……救下了${victim.name}！`);
+      return;
+    }
+  }
+  if(game.witchHasPoison&&game.day>=2&&Math.random()<0.4){
+    const wolves=getAliveWolves();
+    if(wolves.length>0){
+      const knownWolves=wolves.filter(w=>game.speeches.find(s=>s.speaker==="seer"&&s.about===w.id&&s.isWolf));
+      if(knownWolves.length>0){
+        game.witchPoison=pick(knownWolves).id;
+      } else {
+        const suspects=getAlive().filter(p=>p.role!=="witch"&&Math.random()<0.3);
+        if(suspects.length>0) game.witchPoison=pick(suspects).id;
+      }
+      if(game.witchPoison!==null){
+        game.witchHasPoison=false;
+        addLog(`${speakerHTML(witch,"[女巫毒药]")}${witch.name}悄悄使用了毒药……`);
+      }
+    }
+  }
+}
+
+function resolveNight(){
+  let deaths=[];
+  // Wolf kill
+  if(game.wolfTarget!==null){
+    let saved=false;
+    if(game.guardTarget===game.wolfTarget) saved=true;
+    if(game.witchSave) saved=true;
+    if(!saved) deaths.push({id:game.wolfTarget,cause:"wolf"});
+  }
+  // Witch poison
+  if(game.witchPoison!==null&&!deaths.find(d=>d.id===game.witchPoison)){
+    deaths.push({id:game.witchPoison,cause:"poison"});
+  }
+  game.lastGuardTarget=game.guardTarget;
+
+  game.isProcessing=false;
+  setTimeout(()=>dayPhase(deaths),1200);
+}
+
+async function dayPhase(deaths){
+  setNight(false);
+  setPhase(`第${game.day}天`,"var(--gold)");
+  addLog(`<span class="system-text">--- 第${game.day}天 · 天亮了 ---</span>`);
+  await delay(800);
+
+  // Announce deaths
+  if(deaths.length===0){
+    addLog('<span style="color:var(--green)">昨夜是平安夜，没有人死亡。</span>');
+  } else {
+    for(const d of deaths){
+      const p=game.players[d.id];
+      p.alive=false;
+      const causeText=d.cause==="wolf"?"被狼人杀害":d.cause==="poison"?"被女巫毒杀":"死亡";
+      addLog(`<span class="death-text">${p.name}（${p.faction}·${ROLE_CFG[p.role].name}）昨夜${causeText}了！</span>`);
+      if(p.personality.length>0) addLog(`<span class="death-text" style="color:var(--gray)">"${p.name}遗言：${pick(p.personality)}……"</span>`);
+      // Hunter shoot
+      if(p.role==="hunter"&&d.cause!=="poison"){
+        const target=pickExclude(getAlive(),[p.id]);
+        if(target){
+          target.alive=false;
+          addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}（${ROLE_CFG[target.role].name}）！</span>`);
+          if(target.role==="hunter"&&getAlive().find(pp=>pp.role==="hunter"&&pp.id!==p.id)){/* chain handled */}
+        }
+      }
+    }
+  }
+
+  renderPlayers();
+  await delay(300);
+
+  // Check win
+  if(checkWin())return;
+
+  // Discussion
+  addLog('<span class="system-text">=== 进入讨论环节 ===</span>');
+  await delay(600);
+  // Discussion
+  await generateSpeeches();
+  await delay(600);
+
+  // Vote
+  await votePhase();
+}
+
+async function generateSpeeches(){
+  const alive=getAlive();
+  const wolves=getAliveWolves();
+  const seer=getAlive().find(p=>p.role==="seer");
+  const wolfIds=wolves.map(w=>w.id);
+
+  for(const p of alive){
+    // 检查暂停
+    while(game.isPaused) await delay(100);
+
+    let speech="";
+    const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[p.id]);
+    const tName=suspect?suspect.name:"某人";
+    // 优先使用人设专属发言（60%概率）
+    const personalSpeech = generatePersonalSpeech(p, tName);
+    if(personalSpeech&&Math.random()<0.6){
+      speech=personalSpeech;
+    } else if(p.role==="wolf"){
+      const innocents=alive.filter(x=>x.role!=="wolf"&&x.id!==p.id);
+      const target=pick(innocents);
+      speech=pickTemplate("wolf_accuse",{t:target.name});
+    } else if(p.role==="seer"){
+      const knownWolves=wolves.filter(w=>w.id===game.seerTarget);
+      if(game.seerTarget!==null&&game.players[game.seerTarget].role==="wolf"&&Math.random()<0.8){
+        const wt=game.players[game.seerTarget];
+        speech=pickTemplate("seer_reveal",{t:wt.name,r:"狼人"});
+      } else {
+        const suspect=pickExclude(alive.filter(x=>x.id!==p.id),wolfIds);
+        speech=pickTemplate("seer_hint",{t:suspect?suspect.name:"某人"});
+      }
+    } else if(p.role==="hunter"){
+      const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[]);
+      speech=pickTemplate("hunter_threat",{t:suspect?suspect.name:"可疑之人"});
+    } else if(p.role==="witch"){
+      const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[]);
+      speech=pickTemplate("villager_analyze",{t:suspect?suspect.name:"某人"});
+    } else if(p.role==="guard"){
+      speech=pickTemplate("guard_claim",{});
+    } else {
+      const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[]);
+      speech=pickTemplate("villager_analyze",{t:suspect?suspect.name:"某人"});
+    }
+    // 额外人设风味（补充吐槽）
+    if(p.personality.length>0&&Math.random()<0.5){
+      const flavors=["——这就是我的风格。","你品，你细品。","不服来辩。","就这？","呵。","各位自己体会吧。","信不信由你。"];
+      speech+=" "+pick(flavors);
+    }
+    addLog(`${speakerHTML(p)}${speech}`);
+    game.speeches.push({speaker:p.role,about:null,text:speech});
+    // 说话间隔加长到 800-1500ms，让观感更自然
+    await delay(800+Math.random()*700);
+  }
+}
+
+async function votePhase(){
+  addLog('<span class="system-text">=== 投票环节 ===</span>');
+  await delay(600);
+
+  const alive=getAlive();
+  const wolves=getAliveWolves();
+  const votes={};
+
+  for(const p of alive){
+    let target;
+    if(p.role==="wolf"){
+      const goodTargets=alive.filter(x=>x.role!=="wolf");
+      const seer=goodTargets.find(x=>x.role==="seer");
+      // Wolves coordinate: vote for seer if revealed, otherwise random good
+      if(seer&&game.speeches.find(s=>s.speaker==="seer"&&s.text.includes("我是预言家"))){
+        target=seer;
+      } else {
+        target=pick(goodTargets);
+      }
+    } else {
+      // Good players: vote based on speeches
+      const suspectPool=alive.filter(x=>x.id!==p.id);
+      // Seer knows wolves
+      if(p.role==="seer"&&game.seerTarget!==null){
+        const known=game.players[game.seerTarget];
+        if(known.alive&&known.role==="wolf") target=known;
+        else target=pick(suspectPool);
+      } else {
+        target=pick(suspectPool);
+      }
+    }
+    if(target){
+      votes[target.id]=(votes[target.id]||0)+1;
+      addLog(`${speakerHTML(p)}<span class="vote-text">→ ${target.name}</span>`);
+    }
+    await delay(400);
+  }
+
+  await delay(600);
+  // Find max votes
+  let maxVotes=0,maxId=null;
+  for(let id in votes){if(votes[id]>maxVotes){maxVotes=votes[id];maxId=parseInt(id)}}
+
+  if(maxId!==null){
+    const exiled=game.players[maxId];
+    exiled.alive=false;
+    addLog(`<span class="death-text" style="font-size:15px">${exiled.name}（${ROLE_CFG[exiled.role].name}）以${maxVotes}票被放逐！</span>`);
+    if(exiled.personality.length>0) addLog(`<span class="death-text" style="color:var(--gray)">"${exiled.name}：${pick(exiled.personality)}……"</span>`);
+
+    // Hunter
+    if(exiled.role==="hunter"){
+      const ht=pickExclude(getAlive(),[exiled.id]);
+      if(ht){
+        ht.alive=false;
+        addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
+      }
+    }
+  }
+
+  renderPlayers();
+  await delay(500);
+
+  if(!checkWin()){
+    await delay(500);
+    nightPhase();
+  }
+}
+
+function checkWin(){
+  const wolves=getAliveWolves().length;
+  const good=getAliveGood().length;
+
+  if(wolves===0){
+    endGame("good");return true;
+  }
+  if(wolves>=good){
+    endGame("wolf");return true;
+  }
+  return false;
+}
+
+function endGame(winner){
+  const isGood=winner==="good";
+  const title=isGood?"好人阵营胜利！":"狼人阵营胜利！";
+  const color=isGood?"var(--green)":"var(--red)";
+  const wolves=game.players.filter(p=>p.role==="wolf");
+
+  setPhase("游戏结束",color);
+
+  let summary=`<h2 style="color:${color}">${title}</h2><p style="margin-bottom:16px">${isGood?"所有狼人已被铲除，三国重归太平！":"狼人控制了局势，黑暗笼罩大地！"}</p>`;
+  summary+=`<div style="text-align:left;padding:12px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:13px">`;
+  summary+=`<div style="margin-bottom:8px;color:var(--gold);font-weight:700">身份揭晓：</div>`;
+  for(const p of game.players){
+    const status=p.alive?"<span style='color:var(--green)'>存活</span>":"<span style='color:var(--red)'>阵亡</span>";
+    const imgSrc = (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
+    summary+=`<div style="padding:3px 0;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span style="display:flex;align-items:center;gap:6px"><img src="${imgSrc}" onerror="this.style.display='none'" style="width:22px;height:22px;border-radius:50%" alt="${p.name}">${p.name}（${p.faction}）</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="color:${ROLE_CFG[p.role].color}">${ROLE_CFG[p.role].name}</span>${status}</span>
+    </div>`;
+  }
+  summary+=`</div><br><button class="btn-primary" onclick="location.reload()">再来一局</button>`;
+
+  document.getElementById("modalArea").innerHTML=`<div class="modal-overlay"><div class="modal">${summary}</div></div>`;
+}
+
+function onPlayerClick(id){
+  if(game.isProcessing)return;
+  const p=game.players[id];
+  if(!p.alive)return;
+  document.querySelectorAll(".p-card").forEach(c=>c.classList.remove("selected"));
+  document.getElementById("pc"+id).classList.add("selected");
+  game.selectedPlayer=id;
+}
+
+function clearSelection(){
+  game.selectedPlayer=null;
+  document.querySelectorAll(".p-card").forEach(c=>{c.classList.remove("selected");c.classList.remove("wolf-glow")});
+}
+
+init();
+</script>
+</body>
+</html>
