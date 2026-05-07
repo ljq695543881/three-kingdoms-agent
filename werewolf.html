@@ -82,6 +82,36 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .info-bar .num{color:var(--gold);font-weight:700}
 .speaker{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;font-weight:700;margin-right:4px}
 .speaker img{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);object-fit:cover;flex-shrink:0;background:var(--card)}
+
+/* ===== 移动端适配 ===== */
+@media(max-width:768px){
+  .header{padding:14px}
+  .header h1{font-size:22px}
+  .header p{font-size:12px}
+  .phase-bar{padding:8px}
+  .game-area{flex-direction:column;padding:10px;gap:12px}
+  .players-panel{flex:none;width:100%}
+  .player-grid{grid-template-columns:repeat(5,1fr);gap:6px}
+  .p-card{padding:6px}
+  .p-card .avatar{width:32px;height:32px;font-size:14px}
+  .p-card .name{font-size:10px}
+  .p-card .faction{font-size:9px}
+  .p-card .role-badge{width:16px;height:16px;font-size:8px;top:-4px;right:-4px}
+  .p-card .status-icon{font-size:8px}
+  .log-area{max-height:45vh;font-size:12px}
+  .log-entry{font-size:12px;line-height:1.5}
+  .speaker img{width:22px;height:22px;border-width:1px}
+  .card{padding:10px;margin-bottom:8px}
+  .card h3{font-size:12px}
+  .action-bar button{padding:8px 16px;font-size:13px}
+  .info-bar{font-size:11px;padding:6px 8px}
+  .btn-pause{top:8px;right:8px;padding:6px 14px;font-size:12px}
+  .modal{padding:16px;width:92%}
+  .modal h2{font-size:18px}
+  .modal p{font-size:13px}
+  .role-reveal .role-icon{font-size:36px}
+  .role-reveal .role-name{font-size:20px}
+}
 </style>
 </head>
 <body>
@@ -204,6 +234,71 @@ generic:[
 ]
 };
 
+// ===== 属性辅助函数 =====
+function getAttr(p, name) {
+  return (p.attrs && p.attrs[name]) || 3;
+}
+function attrScore(p) {
+  let s = 0; for (let i = 1; i < arguments.length; i++) s += getAttr(p, arguments[i]); return s;
+}
+
+// ===== 狼人夜间讨论模板 =====
+const WOLF_DISCUSS = {
+  propose: [
+    "今晚干掉{t}吧，{faction}那帮人太碍眼了。",
+    "我觉得{t}必须死，留着是祸害。",
+    "{t}威胁太大，我建议今晚优先处理。",
+    "不如先解决{t}？此人活着对我们不利。",
+    "{t}这货不对劲，今晚先动他。",
+    "我盯{t}很久了，今晚就解决他。"
+  ],
+  agree: [
+    "说得有理，就{t}了。",
+    "我也是这么想的，{t}该死。",
+    "嗯，听你们的，{t}。",
+    "行，{t}就{t}吧。"
+  ],
+  disagree: [
+    "我不同意，我觉得{t}更该死。",
+    "不，{t}才是最大的威胁。",
+    "你们都错了，应该杀{t}！",
+    "等等，{t}比{t2}更危险，改目标吧。"
+  ],
+  script_propose: [
+    "明天我们这么办：{script}。都听清楚了？",
+    "我有个计划，明天{script}。按这个来胜算最大。",
+    "听我安排，明天{script}。谁不配合谁就是自寻死路。"
+  ],
+  script_accept: [
+    "行，就这么演。",
+    "明白，按计划来。",
+    "知道了，我配合。",
+    "没问题，听你的。"
+  ],
+  script_reject: [
+    "什么剧本？我信我自己，明天我按我的来。",
+    "我不管你们怎么想，我有我的办法。",
+    "别给我安排，我才不听呢。",
+    "呵，计划赶不上变化，我随机应变。"
+  ],
+  kill_decide: [
+    "行了，别吵了。今晚的目标是{t}，我说了算！",
+    "听我的，{t}今晚必须走。谁有意见？",
+    "最终决定——{t}。武力最强的说了算！",
+    "都别争了。{t}，今夜就是你的死期。"
+  ]
+};
+
+// ===== 剧本系统 =====
+const SCRIPT_TYPES = [
+  {id:"fake_seer", name:"悍跳预言家", desc:"一人悍跳预言家，混淆好人视听"},
+  {id:"wolf_fight", name:"双狼互踩", desc:"两狼互骂互投，制造距离感"},
+  {id:"wolf_sacrifice", name:"狼查杀狼", desc:"弃子战术，用同伴换信任"},
+  {id:"lay_low", name:"潜伏静默", desc:"全部潜水，不露锋芒"},
+  {id:"aggressive", name:"激进进攻", desc:"主动出击，带节奏投人"},
+  {id:"split_vote", name:"分散投票", desc:"分头投票，避免集中暴露"}
+];
+
 // 根据性格特征动态生成人设发言
 function generatePersonalSpeech(p, targetName) {
   const traits = p.personality || [];
@@ -220,7 +315,7 @@ function generatePersonalSpeech(p, targetName) {
   return pick(templates).replace(/\{t\}/g, t);
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[]};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{}};
 
 function togglePause(){
   game.isPaused=!game.isPaused;
@@ -332,12 +427,14 @@ function renderInfoBar(){
     <span>第 <span class="num">${game.day}</span> 天</span>`;
 }
 
+function plainText(html){ return html.replace(/<[^>]*>/g,''); }
+
 function speakerHTML(player, label){
   const name = label || player.name;
   const faction = player.faction || "群雄";
   const color = player.faction==="魏"?"var(--blue)":player.faction==="蜀"?"var(--green)":player.faction==="吴"?"var(--purple)":"var(--gold)";
   const imgSrc = (FACTION_DIR[faction] || "avatars/qun") + '/' + player.name + '.png';
-  return `<span class="speaker" style="color:${color}"><img src="${imgSrc}" onerror="this.style.display='none'" alt="${name}">${name}：</span>`;
+  return `<span class="speaker" style="color:${color}"><img src="${imgSrc}" onerror="this.style.display='none'" alt="${plainText(name)}">${name}：</span>`;
 }
 
 function addLog(html){
@@ -376,6 +473,7 @@ async function startGame(){
 }
 
 async function nightPhase(){
+  try{
   game.day++;
   game.isProcessing=true;
   game.wolfTarget=null;game.seerTarget=null;game.witchSave=false;game.witchPoison=null;game.guardTarget=null;
@@ -404,6 +502,12 @@ async function nightPhase(){
 
   // Resolve night
   resolveNight();
+  }catch(e){
+    addLog(`<span style="color:var(--red)">[系统错误] ${e.message}</span>`);
+    console.error('nightPhase error:',e);
+    await delay(1000);
+    resolveNight();
+  }
 }
 
 async function guardAction(){
@@ -411,8 +515,18 @@ async function guardAction(){
   if(!guard)return;
   const targets=getAlive().filter(p=>p.id!==game.lastGuardTarget);
   if(targets.length===0)return;
-  game.guardTarget=pick(targets).id;
-  addLog(`${speakerHTML(guard,"<span style='color:var(--gray)'>守卫</span>"+guard.name)}<span class="night-text">在夜色中默默守护着一个人……</span>`);
+  // 政治高的守卫更懂得保护关键人物
+  let target;
+  const politic=getAttr(guard,'政治');
+  if(politic>=4){
+    // 优先保护特殊角色
+    const specials=targets.filter(p=>["seer","witch"].includes(p.role));
+    if(specials.length>0 && Math.random()<0.6) target=pick(specials);
+  }
+  if(!target) target=pick(targets);
+  game.guardTarget=target.id;
+  const guardTarget=game.players[game.guardTarget];
+  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${guardTarget.name}……</span>`);
 }
 
 async function wolfAction(){
@@ -420,15 +534,172 @@ async function wolfAction(){
   if(wolves.length===0)return;
   const targets=getAliveGood();
   if(targets.length===0)return;
-  // Smart target: prefer seer/witch/hunter, or random
+
+  // ===== 识别关键角色 =====
+  // 武力最高 = 行动决策者
+  const killMaster=wolves.reduce((b,w)=>getAttr(w,'武力')>getAttr(b,'武力')?w:b);
+  // 政治+智谋最高 = 剧本策划者
+  const scriptMaster=wolves.reduce((b,w)=>attrScore(w,'政治','智谋')>attrScore(b,'政治','智谋')?w:b);
+
+  addLog('<span class="system-text">🐺 狼人密议开始……</span>');
+  await delay(800);
+
+  // ===== 每只狼提出目标（阵营偏好）=====
+  const proposals=[];
+  for(const wolf of wolves){
+    while(game.isPaused) await delay(100);
+    const proposal=wolfProposeTarget(wolf, targets);
+    proposals.push(proposal);
+    const t=proposal.target;
+    const tpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,t.name).replace(/{faction}/g,t.faction);
+    const personalFlavor=generatePersonalSpeech(wolf, t.name);
+    const speech=(personalFlavor&&Math.random()<0.4)?personalFlavor:tpl;
+    addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${speech}`);
+    await delay(800+Math.random()*500);
+  }
+
+  // ===== 狼人讨论辩论（统帅影响）=====
+  // 统帅越高，越能说服他人
+  for(const wolf of wolves){
+    while(game.isPaused) await delay(100);
+    if(wolf.id===killMaster.id) continue; // 行动决策者最后说话
+    const myProposal=proposals.find(p=>p.wolfId===wolf.id);
+    const others=proposals.filter(p=>p.wolfId!==wolf.id);
+    if(others.length===0) continue;
+    // 高统帅狼有概率尝试说服
+    if(Math.random()<getAttr(wolf,'统帅')/6){
+      const otherProposal=pick(others);
+      const agree=myProposal.target.id===otherProposal.target.id;
+      if(agree){
+        const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,myProposal.target.name);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+      } else {
+        // 意志越高越坚持己见
+        const insist=Math.random()<getAttr(wolf,'意志')/5;
+        if(insist){
+          const tpl=pick(WOLF_DISCUSS.disagree).replace(/{t}/g,myProposal.target.name).replace(/{t2}/g,otherProposal.target.name);
+          addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+        }
+      }
+      await delay(600+Math.random()*400);
+    }
+  }
+
+  // ===== 剧本策划者提出明日剧本 =====
+  while(game.isPaused) await delay(100);
+  const script=generateWolfScript(scriptMaster, wolves, targets);
+  game.wolfScript=script;
+  game.wolfScriptCompliance={};
+  // 军师建议今晚刀谁 + 明日剧本
+  const killSuggestTargets=targets.filter(t=>["seer","witch","hunter"].includes(t.role));
+  const killSuggest=killSuggestTargets.length>0 && Math.random()<0.6 ? pick(killSuggestTargets) : pick(targets);
+  const killSuggestLine=`我建议今晚先动${killSuggest.name}，此人若留到后期必成大患。`;
+  const scriptDesc=`【${script.name}】${script.desc}`;
+  const scriptTpl=pick(WOLF_DISCUSS.script_propose).replace(/{script}/g,scriptDesc);
+  addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【狼人密议】'+scriptMaster.name+'</span>')}${killSuggestLine}${scriptTpl}`);
+  await delay(800);
+
+  // ===== 每只狼决定是否服从剧本 =====
+  for(const wolf of wolves){
+    while(game.isPaused) await delay(100);
+    if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
+    // 政治越高越服从剧本
+    const compliance=getAttr(wolf,'政治')/5;
+    const follows=Math.random()<compliance;
+    game.wolfScriptCompliance[wolf.id]=follows;
+    const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
+    addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+    await delay(500);
+  }
+
+  // ===== 武力最高者决定最终行动 =====
+  while(game.isPaused) await delay(100);
+  const finalTarget=killMasterDecide(killMaster, proposals, targets);
+  game.wolfTarget=finalTarget.id;
+  const killTpl=pick(WOLF_DISCUSS.kill_decide).replace(/{t}/g,finalTarget.name);
+  addLog(`${speakerHTML(killMaster,'<span style="color:var(--red)">【武力裁决】'+killMaster.name+'</span>')}${killTpl}`);
+  await delay(600);
+
+  addLog('<span class="system-text">🐺 狼人密议结束，目标已锁定。</span>');
+}
+
+// 狼人提出目标（阵营偏好）
+function wolfProposeTarget(wolf, targets){
+  const diffFaction=targets.filter(t=>t.faction!==wolf.faction);
+  const sameFaction=targets.filter(t=>t.faction===wolf.faction);
+  // 规则1: 更愿意刀不同阵营的人，概率按属性加权
   let target;
-  const specialTargets=targets.filter(p=>["seer","witch","hunter","guard"].includes(p.role));
-  if(specialTargets.length>0&&Math.random()<0.4) target=pick(specialTargets);
-  else target=pick(targets);
-  game.wolfTarget=target.id;
-  // Wolf discussion
-  const speaker=pick(wolves);
-  addLog(`${speakerHTML(speaker,"[狼人密谋]")}${speaker.name}低声对同伴说："今晚解决${target.name}……"`);
+  if(diffFaction.length>0 && Math.random()<(0.5+getAttr(wolf,'意志')*0.1)){
+    target=pick(diffFaction);
+  } else {
+    target=pick(targets);
+  }
+  return {wolfId:wolf.id, target:target};
+}
+
+// 剧本策划者生成明日剧本
+function generateWolfScript(scriptMaster, wolves, targets){
+  // 根据局势选择剧本
+  const alive=getAlive();
+  const wolfCount=wolves.length;
+  const goodCount=alive.length-wolfCount;
+  const day=game.day;
+
+  // 可选剧本
+  let candidates=[...SCRIPT_TYPES];
+
+  // 第1夜：悍跳或潜伏
+  if(day===1){ candidates=candidates.filter(s=>['fake_seer','lay_low','aggressive'].includes(s.id)); }
+  // 狼少时：潜伏或牺牲
+  if(wolfCount<=2){ candidates=candidates.filter(s=>['lay_low','wolf_sacrifice','split_vote'].includes(s.id)); }
+  // 剧本策划者智力高时更倾向复杂剧本
+  if(getAttr(scriptMaster,'智谋')>=4){ candidates=candidates.filter(s=>!['lay_low'].includes(s.id)); if(candidates.length===0) candidates=[...SCRIPT_TYPES]; }
+
+  const script=pick(candidates);
+
+  // 指定角色分配
+  script.assignedWolves={};
+  const aliveWolves=[...wolves];
+  if(script.id==='fake_seer' && aliveWolves.length>=1){
+    script.assignedWolves.fakeSeer=aliveWolves.reduce((b,w)=>getAttr(w,'智谋')>getAttr(b,'智谋')?w:b);
+  } else if(script.id==='wolf_fight' && aliveWolves.length>=2){
+    shuffle(aliveWolves);
+    script.assignedWolves.fighter1=aliveWolves[0];
+    script.assignedWolves.fighter2=aliveWolves[1];
+  } else if(script.id==='wolf_sacrifice' && aliveWolves.length>=2){
+    script.assignedWolves.sacrifice=aliveWolves.reduce((b,w)=>getAttr(w,'魅力')<getAttr(b,'魅力')?w:b);
+    script.assignedWolves.accuser=aliveWolves.reduce((b,w)=>getAttr(w,'智谋')>getAttr(b,'智谋')?w:b);
+    if(script.assignedWolves.sacrifice.id===script.assignedWolves.accuser.id){
+      script.assignedWolves.accuser=aliveWolves.find(w=>w.id!==script.assignedWolves.sacrifice.id)||script.assignedWolves.sacrifice;
+    }
+  }
+
+  // 剧本中指定攻击目标
+  const goodTargets=targets.filter(t=>t.role!=='wolf');
+  script.target=goodTargets.length>0?pick(goodTargets):null;
+
+  return script;
+}
+
+// 武力最高者决定最终目标
+function killMasterDecide(killMaster, proposals, targets){
+  // 武力最高者先看多数意见
+  const voteCount={};
+  for(const p of proposals){
+    voteCount[p.target.id]=(voteCount[p.target.id]||0)+1;
+  }
+  // 找得票最多的目标
+  let maxVotes=0, topTargets=[];
+  for(let id in voteCount){
+    if(voteCount[id]>maxVotes){ maxVotes=voteCount[id]; topTargets=[game.players[parseInt(id)]]; }
+    else if(voteCount[id]===maxVotes){ topTargets.push(game.players[parseInt(id)]); }
+  }
+  // 武力最高者从高票目标中选（也可能坚持己见，意志越高越固执）
+  const myChoice=proposals.find(p=>p.wolfId===killMaster.id);
+  if(myChoice && Math.random()<getAttr(killMaster,'意志')/6){
+    return myChoice.target;
+  }
+  return pick(topTargets);
 }
 
 async function seerAction(){
@@ -442,35 +713,52 @@ async function seerAction(){
   if(unchecked.length>0) target=pick(unchecked);
   game.seerTarget=target.id;
   const isWolf=target.role==="wolf";
-  addLog(`${speakerHTML(seer,"[预言家查验]")}${seer.name}翻开了天书……${target.name}的身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`);
+  addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`);
 }
 
 async function witchAction(){
   const witch=getAlive().find(p=>p.role==="witch");
   if(!witch)return;
+  const intel=getAttr(witch,'智谋');
+  const politic=getAttr(witch,'政治');
   if(game.witchHasSave&&game.wolfTarget!==null){
     const victim=game.players[game.wolfTarget];
     if(victim.role==="witch"){} // can't self-save rule
-    else if(Math.random()<0.7){
-      game.witchSave=true;
-      game.witchHasSave=false;
-      addLog(`${speakerHTML(witch,"[女巫用药]")}${witch.name}决定使用解药……救下了${victim.name}！`);
-      return;
+    else {
+      // 政治高的女巫更懂得保全关键人物
+      let saveProb=0.5+politic*0.05;
+      // 智谋高的女巫能判断被刀者是否重要
+      if(intel>=4 && ["seer","hunter"].includes(victim.role)) saveProb+=0.2;
+      if(Math.random()<saveProb){
+        game.witchSave=true;
+        game.witchHasSave=false;
+        addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用解药救下了${victim.name}！`);
+        return;
+      }
     }
   }
-  if(game.witchHasPoison&&game.day>=2&&Math.random()<0.4){
-    const wolves=getAliveWolves();
-    if(wolves.length>0){
-      const knownWolves=wolves.filter(w=>game.speeches.find(s=>s.speaker==="seer"&&s.about===w.id&&s.isWolf));
-      if(knownWolves.length>0){
-        game.witchPoison=pick(knownWolves).id;
-      } else {
-        const suspects=getAlive().filter(p=>p.role!=="witch"&&Math.random()<0.3);
-        if(suspects.length>0) game.witchPoison=pick(suspects).id;
-      }
-      if(game.witchPoison!==null){
-        game.witchHasPoison=false;
-        addLog(`${speakerHTML(witch,"[女巫毒药]")}${witch.name}悄悄使用了毒药……`);
+  if(game.witchHasPoison&&game.day>=2){
+    // 智谋影响毒药精准度
+    let poisonProb=0.2+intel*0.05;
+    if(game.day>=3) poisonProb+=0.1;
+    if(Math.random()<poisonProb){
+      const wolves=getAliveWolves();
+      if(wolves.length>0){
+        const knownWolves=wolves.filter(w=>game.speeches.find(s=>s.speaker==="seer"&&s.about===w.id&&s.isWolf));
+        if(knownWolves.length>0){
+          game.witchPoison=pick(knownWolves).id;
+        } else if(intel>=4){
+          // 高智谋女巫能从发言中推断狼人
+          const wolfSpeakers=wolves.filter(w=>game.speeches.some(s=>s.speakerId===w.id));
+          if(wolfSpeakers.length>0) game.witchPoison=pick(wolfSpeakers).id;
+        } else {
+          const suspects=getAlive().filter(p=>p.role!=="witch"&&p.id!==witch.id);
+          if(suspects.length>0) game.witchPoison=pick(suspects).id;
+        }
+        if(game.witchPoison!==null){
+          game.witchHasPoison=false;
+          addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`);
+        }
       }
     }
   }
@@ -496,6 +784,7 @@ function resolveNight(){
 }
 
 async function dayPhase(deaths){
+  try{
   setNight(false);
   setPhase(`第${game.day}天`,"var(--gold)");
   addLog(`<span class="system-text">--- 第${game.day}天 · 天亮了 ---</span>`);
@@ -538,59 +827,244 @@ async function dayPhase(deaths){
 
   // Vote
   await votePhase();
+  }catch(e){
+    addLog(`<span style="color:var(--red)">[系统错误] ${e.message}</span>`);
+    console.error('dayPhase error:',e);
+  }
 }
 
 async function generateSpeeches(){
   const alive=getAlive();
   const wolves=getAliveWolves();
-  const seer=getAlive().find(p=>p.role==="seer");
-  const wolfIds=wolves.map(w=>w.id);
+  const script=game.wolfScript;
+
+  // ===== 收集本轮发言上下文（用于后面的角色引用前人发言）=====
+  const speechContext=[]; // {speakerId, speakerName, targetName, text}
 
   for(const p of alive){
-    // 检查暂停
     while(game.isPaused) await delay(100);
 
     let speech="";
-    const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[p.id]);
-    const tName=suspect?suspect.name:"某人";
-    // 优先使用人设专属发言（60%概率）
-    const personalSpeech = generatePersonalSpeech(p, tName);
-    if(personalSpeech&&Math.random()<0.6){
-      speech=personalSpeech;
-    } else if(p.role==="wolf"){
-      const innocents=alive.filter(x=>x.role!=="wolf"&&x.id!==p.id);
-      const target=pick(innocents);
-      speech=pickTemplate("wolf_accuse",{t:target.name});
-    } else if(p.role==="seer"){
-      const knownWolves=wolves.filter(w=>w.id===game.seerTarget);
-      if(game.seerTarget!==null&&game.players[game.seerTarget].role==="wolf"&&Math.random()<0.8){
-        const wt=game.players[game.seerTarget];
-        speech=pickTemplate("seer_reveal",{t:wt.name,r:"狼人"});
-      } else {
-        const suspect=pickExclude(alive.filter(x=>x.id!==p.id),wolfIds);
-        speech=pickTemplate("seer_hint",{t:suspect?suspect.name:"某人"});
-      }
-    } else if(p.role==="hunter"){
-      const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[]);
-      speech=pickTemplate("hunter_threat",{t:suspect?suspect.name:"可疑之人"});
-    } else if(p.role==="witch"){
-      const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[]);
-      speech=pickTemplate("villager_analyze",{t:suspect?suspect.name:"某人"});
-    } else if(p.role==="guard"){
-      speech=pickTemplate("guard_claim",{});
-    } else {
-      const suspect=pickExclude(alive.filter(x=>x.id!==p.id),[]);
-      speech=pickTemplate("villager_analyze",{t:suspect?suspect.name:"某人"});
+    // 选一个怀疑对象（排除自己）
+    const suspectPool=alive.filter(x=>x.id!==p.id);
+
+    if(p.role==="wolf"){
+      // ===== 狼人发言：规则⑤剧本服从 + 规则①阵营偏好 =====
+      const followsScript=game.wolfScriptCompliance[p.id]!==false;
+      speech=generateWolfDaySpeech(p, alive, wolves, script, followsScript, speechContext);
     }
-    // 额外人设风味（补充吐槽）
-    if(p.personality.length>0&&Math.random()<0.5){
-      const flavors=["——这就是我的风格。","你品，你细品。","不服来辩。","就这？","呵。","各位自己体会吧。","信不信由你。"];
-      speech+=" "+pick(flavors);
+    else if(p.role==="seer"){
+      // ===== 预言家发言：规则③智谋影响 =====
+      speech=generateSeerSpeech(p, suspectPool, speechContext);
     }
+    else {
+      // ===== 好人发言：规则③④⑥⑦全部体现在发言内容 =====
+      speech=generateGoodSpeech(p, suspectPool, speechContext);
+    }
+
+    // 人设风味（50%概率追加一句）
+    const personalSpeech=generatePersonalSpeech(p, null);
+    if(personalSpeech && Math.random()<0.5){
+      speech+=" "+personalSpeech;
+    }
+
     addLog(`${speakerHTML(p)}${speech}`);
-    game.speeches.push({speaker:p.role,about:null,text:speech});
-    // 说话间隔加长到 800-1500ms，让观感更自然
+    // 记录发言上下文
+    const mentionedTarget=suspectPool.find(x=>speech.includes(x.name));
+    speechContext.push({
+      speakerId:p.id, speakerName:p.name,
+      targetName:mentionedTarget?mentionedTarget.name:null,
+      text:speech, role:p.role
+    });
+    game.speeches.push({speaker:p.role,about:null,text:speech,speakerId:p.id});
     await delay(800+Math.random()*700);
+  }
+}
+
+// ===== 预言家发言：规则③智谋 =====
+function generateSeerSpeech(seer, suspectPool, ctx){
+  const intel=getAttr(seer,'智谋');
+
+  // 已查验到狼人
+  if(game.seerTarget!==null && game.players[game.seerTarget].role==="wolf"){
+    const wt=game.players[game.seerTarget];
+    // 智谋越高越果断亮身份
+    if(intel>=4 || Math.random()<0.5){
+      return pickTemplate("seer_reveal",{t:wt.name,r:"狼人"});
+    }
+    // 智谋低的不敢直接跳，先暗示
+    return pickTemplate("seer_hint",{t:wt.name});
+  }
+
+  // 还没查到狼
+  const t=pick(suspectPool);
+  // 智谋高的会分析别人的发言
+  if(intel>=4 && ctx.length>0){
+    const recentCtx=ctx.slice(-3);
+    const suspiciousSpeeches = recentCtx.filter(s => s.role === "wolf" || (s.text && s.text.includes("我觉得")));
+    if (suspiciousSpeeches.length > 0) {
+      const s = pick(suspiciousSpeeches);
+      return pickTemplate("seer_hint", { t: s.speakerName });
+    }
+  }
+  return pickTemplate("seer_hint",{t:t.name});
+}
+
+// ===== 好人发言：规则③④⑥⑦通过发言内容体现 =====
+function generateGoodSpeech(player, suspectPool, ctx){
+  const intel=getAttr(player,'智谋');
+  const leadership=getAttr(player,'统帅');
+  const charm=getAttr(player,'魅力');
+  const will=getAttr(player,'意志');
+
+  // ===== 规则③ 智谋：分析别人发言的真伪 =====
+  if(intel>=4 && ctx.length>0){
+    // 高智谋：从前人发言中找破绽，点名质疑
+    const analyzed=ctx.slice(-5);
+    for(const s of analyzed){
+      const speaker=game.players[s.speakerId];
+      if(!speaker || !speaker.alive || speaker.id===player.id) continue;
+      // 发现前后矛盾或可疑发言
+      if(s.text && (s.text.includes("不知道") || s.text.includes("不确定")) && s.text.includes("我觉得")){
+        return `${speaker.name}，你刚才说不知道谁是狼，现在又觉得某人可疑？这话前后矛盾，你自己解释解释。`;
+      }
+    }
+    // 没找到明显破绽，但能分析出重点怀疑对象
+    const wolfSpeeches=ctx.filter(s=>s.role==="wolf");
+    if(wolfSpeeches.length>0 && Math.random()<intel/5){
+      const s=pick(wolfSpeeches);
+      return `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。他说的每一句话都像精心准备过的，太完美了反而可疑。各位注意${s.speakerName}。`;
+    }
+  }
+
+  // ===== 规则④ 统帅：引领讨论方向 =====
+  if(leadership>=4){
+    const target=pick(suspectPool);
+    const templates=[
+      `大家听我说，冷静分析一下局势。我认为现在最可疑的是${target.name}，理由如下——他的发言缺乏实质性内容，一直在搅浑水。我们应该集中火力先排查${target.name}。`,
+      `各位别吵，听我分析。目前局势很清楚，${target.name}的表现最反常。我建议今天就投${target.name}，其他事后议。`,
+      `我来说句公道话。${target.name}今天的发言你们仔细品品，是不是处处在带节奏？这种人在暗处最危险。`
+    ];
+    return pick(templates);
+  }
+
+  // ===== 规则⑦ 意志：被质疑时是否改口 =====
+  // 检查有没有人质疑过自己
+  const questioned=ctx.filter(s=>s.text && s.text.includes(player.name) && (s.text.includes("可疑") || s.text.includes("怀疑") || s.text.includes("投")));
+  if(questioned.length>0 && Math.random()<0.5){
+    const q=pick(questioned);
+    if(will>=4){
+      // 高意志：不退缩
+      const target=pick(suspectPool);
+      return `${q.speakerName}质疑我？随便。我坚持我的判断，${target.name}才是最可疑的那个。你们爱信不信。`;
+    } else {
+      // 低意志：改口
+      const filtered=suspectPool.filter(x=>x.name!==q.speakerName);
+      const target=filtered.length>0?pick(filtered):pick(suspectPool);
+      return target?`也许${q.speakerName}说得有道理……我之前可能判断有误。我现在觉得${target.name}更可疑一些。`:`也许${q.speakerName}说得有道理……我再想想。`;
+    }
+  }
+
+  // ===== 规则⑥ 魅力：高魅力不容易被人点名怀疑 =====
+  // （这个规则体现在别人怀疑谁时回避高魅力者，这里不直接影响自己发言）
+  // 但魅力低的发言更容易引起怀疑
+  if(charm<=2){
+    const target=pick(suspectPool);
+    const templates=[
+      `我……我觉得${target.name}有点问题吧？不太确定……`,
+      `嗯……${target.name}看起来可疑？可能是我多心了……`,
+      `那个，${target.name}是不是在说谎啊？我直觉告诉我的……`
+    ];
+    return pick(templates);
+  }
+
+  // ===== 普通发言 =====
+  // 低智谋：感性发言
+  if(intel<=2){
+    const target=pick(suspectPool);
+    const templates=[
+      `我就是觉得${target.name}有问题，别问我为什么，直觉！`,
+      `不知道为啥，看${target.name}就不顺眼。投他！`,
+      `我啥也不懂，但${target.name}说话让人不舒服，就投他吧。`
+    ];
+    return pick(templates);
+  }
+
+  // 中等属性：标准分析
+  const target=pick(suspectPool);
+
+  // 规则④中等统帅：可能引用前人的话
+  if(leadership>=3 && ctx.length>0){
+    const recentCtx=ctx.filter(s=>s.speakerId!==player.id);
+    if(recentCtx.length>0){
+      const ref=pick(recentCtx);
+      return pickTemplate("villager_analyze",{t:target.name})+` 不过就像${ref.speakerName}说的，我们得冷静分析。`;
+    }
+  }
+
+  return pickTemplate("villager_analyze",{t:target.name});
+}
+
+// 狼人白天发言：规则⑤剧本服从 + 规则①阵营偏好
+function generateWolfDaySpeech(wolf, alive, wolves, script, followsScript, ctx){
+  const innocents=alive.filter(x=>x.role!=="wolf"&&x.id!==wolf.id);
+
+  // 规则①阵营偏好：更愿意指控不同阵营的人
+  const diffFaction=innocents.filter(t=>t.faction!==wolf.faction);
+  const target=diffFaction.length>0 && Math.random()<0.6 ? pick(diffFaction) : pick(innocents);
+
+  // ===== 不服从剧本：按自己想法来 =====
+  if(!script || !followsScript){
+    // 魅力低的狼发言更冲，容易暴露
+    if(getAttr(wolf,'魅力')<=2){
+      return pickTemplate("wolf_accuse",{t:target.name})+" 你们谁不服？";
+    }
+    // 智谋高的抗命狼可能自己搞一套
+    if(getAttr(wolf,'智谋')>=4){
+      return pickTemplate("villager_analyze",{t:target.name});
+    }
+    return pickTemplate("wolf_accuse",{t:target.name});
+  }
+
+  // ===== 服从剧本 =====
+  const assigned=script.assignedWolves||{};
+  switch(script.id){
+    case 'fake_seer':
+      if(assigned.fakeSeer && wolf.id===assigned.fakeSeer.id){
+        return pickTemplate("seer_reveal",{t:(script.target||target).name,r:"狼人"});
+      }
+      return `我觉得${script.target?script.target.name:target.name}确实很可疑，刚才的发言漏洞百出。`;
+
+    case 'wolf_fight':
+      if(assigned.fighter1 && wolf.id===assigned.fighter1.id){
+        return pickTemplate("wolf_accuse",{t:assigned.fighter2.name});
+      }
+      if(assigned.fighter2 && wolf.id===assigned.fighter2.id){
+        return pickTemplate("wolf_accuse",{t:assigned.fighter1.name});
+      }
+      return pickTemplate("villager_analyze",{t:target.name});
+
+    case 'wolf_sacrifice':
+      if(assigned.accuser && wolf.id===assigned.accuser.id){
+        return pickTemplate("seer_reveal",{t:assigned.sacrifice.name,r:"狼人"});
+      }
+      if(assigned.sacrifice && wolf.id===assigned.sacrifice.id){
+        return pickTemplate("wolf_defend",{t:assigned.accuser.name});
+      }
+      // 其他狼配合投票
+      return `我同意，${assigned.sacrifice?assigned.sacrifice.name:target.name}确实有问题。投他。`;
+
+    case 'lay_low':
+      return pickTemplate("generic",{});
+
+    case 'aggressive':
+      return pickTemplate("wolf_accuse",{t:(script.target||target).name});
+
+    case 'split_vote':
+      return pickTemplate("villager_analyze",{t:target.name});
+
+    default:
+      return pickTemplate("wolf_accuse",{t:target.name});
   }
 }
 
@@ -599,32 +1073,47 @@ async function votePhase(){
   await delay(600);
 
   const alive=getAlive();
-  const wolves=getAliveWolves();
   const votes={};
 
   for(const p of alive){
+    while(game.isPaused) await delay(100);
+
+    // ===== 一人一票：根据发言内容决定投谁 =====
+    // 预言家查到狼就投狼
     let target;
-    if(p.role==="wolf"){
-      const goodTargets=alive.filter(x=>x.role!=="wolf");
-      const seer=goodTargets.find(x=>x.role==="seer");
-      // Wolves coordinate: vote for seer if revealed, otherwise random good
-      if(seer&&game.speeches.find(s=>s.speaker==="seer"&&s.text.includes("我是预言家"))){
-        target=seer;
-      } else {
-        target=pick(goodTargets);
-      }
-    } else {
-      // Good players: vote based on speeches
-      const suspectPool=alive.filter(x=>x.id!==p.id);
-      // Seer knows wolves
-      if(p.role==="seer"&&game.seerTarget!==null){
-        const known=game.players[game.seerTarget];
-        if(known.alive&&known.role==="wolf") target=known;
-        else target=pick(suspectPool);
-      } else {
-        target=pick(suspectPool);
-      }
+    if(p.role==="seer" && game.seerTarget!==null){
+      const known=game.players[game.seerTarget];
+      if(known.alive && known.role==="wolf") target=known;
     }
+    // 否则根据本轮发言中谁被怀疑最多来投
+    if(!target){
+      const suspectPool=alive.filter(x=>x.id!==p.id);
+      // 统计发言中被点名怀疑的人
+      const accuseCount={};
+      for(const s of game.speeches){
+        for(const x of suspectPool){
+          if(s.text && s.text.includes(x.name) && (s.text.includes("可疑")||s.text.includes("投")||s.text.includes("狼")||s.text.includes("质疑")||s.text.includes("矛盾")||s.text.includes("有问题"))){
+            accuseCount[x.id]=(accuseCount[x.id]||0)+1;
+          }
+        }
+      }
+      // 智谋越高，越能根据发言投对人
+      const intel=getAttr(p,'智谋');
+      if(intel>=4 && Object.keys(accuseCount).length>0){
+        // 高智谋：投被最多人怀疑的
+        let maxAcc=0, bestId=null;
+        for(let id in accuseCount){ if(accuseCount[id]>maxAcc){maxAcc=accuseCount[id];bestId=parseInt(id)} }
+        if(bestId!==null) target=game.players[bestId];
+      }
+      // 狼人投好人
+      if(!target && p.role==="wolf"){
+        const goodTargets=suspectPool.filter(x=>x.role!=="wolf");
+        if(goodTargets.length>0) target=pick(goodTargets);
+      }
+      // 兜底
+      if(!target) target=pick(suspectPool);
+    }
+
     if(target){
       votes[target.id]=(votes[target.id]||0)+1;
       addLog(`${speakerHTML(p)}<span class="vote-text">→ ${target.name}</span>`);
@@ -645,10 +1134,14 @@ async function votePhase(){
 
     // Hunter
     if(exiled.role==="hunter"){
-      const ht=pickExclude(getAlive(),[exiled.id]);
-      if(ht){
-        ht.alive=false;
-        addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
+      const targets=getAlive().filter(p=>p.id!==exiled.id);
+      if(targets.length>0){
+        // 智谋高的猎人更精准
+        const ht=getAttr(exiled,'智谋')>=4 ? (targets.filter(t=>t.role==="wolf").length>0 ? pick(targets.filter(t=>t.role==="wolf")) : pick(targets)) : pick(targets);
+        if(ht){
+          ht.alive=false;
+          addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
+        }
       }
     }
   }
