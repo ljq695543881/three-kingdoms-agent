@@ -112,6 +112,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   .role-reveal .role-icon{font-size:36px}
   .role-reveal .role-name{font-size:20px}
 }
+.tag-conservative{color:var(--gray);font-size:11px;font-style:italic}
+.tag-attack{color:#e67e22;font-size:11px;font-weight:700}
+.tag-shield{color:var(--green);font-size:11px;font-weight:700}
+.tag-break{color:var(--red);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(192,57,43,0.4)}
 </style>
 </head>
 <body>
@@ -315,6 +319,280 @@ function generatePersonalSpeech(p, targetName) {
   return pick(templates).replace(/\{t\}/g, t);
 }
 
+// ===== 好感度系统 =====
+
+// 初始化好感度
+function initFavor() {
+  for (const p of game.players) {
+    p.favor = {};
+    for (const other of game.players) {
+      if (other.id === p.id) continue;
+      if (p.faction === other.faction) {
+        p.favor[other.id] = 55; // 同阵营55
+      } else {
+        p.favor[other.id] = 50; // 不同阵营50
+      }
+    }
+  }
+  // 特殊关系：同阵营中随机配对给予60~65
+  const factions = {};
+  for (const p of game.players) {
+    if (!factions[p.faction]) factions[p.faction] = [];
+    factions[p.faction].push(p);
+  }
+  for (const f in factions) {
+    const members = factions[f];
+    // 每对同阵营的人有 30% 概率建立特殊关系
+    for (let i = 0; i < members.length; i++) {
+      for (let j = i + 1; j < members.length; j++) {
+        if (Math.random() < 0.3) {
+          const bonus = 60 + Math.floor(Math.random() * 6); // 60~65
+          members[i].favor[members[j].id] = bonus;
+          members[j].favor[members[i].id] = bonus;
+        }
+      }
+    }
+  }
+}
+
+// 获取好感度（安全访问）
+function getFavor(from, toId) {
+  return (from.favor && from.favor[toId]) || 50;
+}
+
+// 设置好感度（clamp 0~100）
+function setFavor(from, toId, value) {
+  if (!from.favor) from.favor = {};
+  from.favor[toId] = Math.max(0, Math.min(100, value));
+}
+
+// 分类发言类型
+function classifySpeech(speech, speaker, alive) {
+  if (!speech || speech.length === 0) return { type: 'conservative', subtype: null, targets: [] };
+
+  const others = alive.filter(x => x.id !== speaker.id);
+
+  // 决裂式关键词
+  const breakBadKeywords = ['确信.*是狼', '就是狼人', '绝对是狼', '百分之百是狼', '千真万确.*狼'];
+  const breakGoodKeywords = ['确信.*是好人', '就是好人', '绝对是好人', '百分之百是好人', '千真万确.*好人'];
+  const breakIdentityKeywords = ['我是预言家', '预言家身份', '我预言家'];
+
+  // 检查决裂式
+  for (const kw of breakBadKeywords) {
+    if (new RegExp(kw).test(speech)) {
+      const target = others.find(x => speech.includes(x.name) && new RegExp(kw).test(speech));
+      return { type: 'break', subtype: 'accuse', targets: target ? [target] : [] };
+    }
+  }
+  for (const kw of breakGoodKeywords) {
+    if (new RegExp(kw).test(speech)) {
+      const target = others.find(x => speech.includes(x.name) && new RegExp(kw).test(speech));
+      return { type: 'break', subtype: 'defend', targets: target ? [target] : [] };
+    }
+  }
+  for (const kw of breakIdentityKeywords) {
+    if (new RegExp(kw).test(speech)) {
+      const target = others.find(x => speech.includes(x.name));
+      return { type: 'break', subtype: 'accuse', targets: target ? [target] : [] };
+    }
+  }
+
+  // 检查主动进攻：怀疑
+  const attackKeywords = ['怀疑', '可疑', '有问题', '不对劲', '逻辑问题', '带节奏', '搅浑水', '投他', '投吧', '不对', '心虚', '不顺眼', '有毛病', '装', '废话', '不是好人', '就投他', '该投', '该死'];
+  let attackedTargets = [];
+  for (const x of others) {
+    if (speech.includes(x.name)) {
+      const afterName = speech.split(x.name);
+      for (const seg of afterName) {
+        if (attackKeywords.some(kw => seg.includes(kw))) {
+          attackedTargets.push(x);
+          break;
+        }
+      }
+    }
+  }
+
+  // 检查主动进攻：袒护
+  const defendKeywords = ['没问题', '是好人', '不是狼', '信任', '没问题', '不要投'];
+  let defendedTargets = [];
+  for (const x of others) {
+    if (speech.includes(x.name) && !attackedTargets.includes(x)) {
+      const afterName = speech.split(x.name);
+      for (const seg of afterName) {
+        if (defendKeywords.some(kw => seg.includes(kw))) {
+          defendedTargets.push(x);
+          break;
+        }
+      }
+    }
+  }
+
+  if (attackedTargets.length > 0) {
+    return { type: 'attack', subtype: 'suspect', targets: attackedTargets };
+  }
+  if (defendedTargets.length > 0) {
+    return { type: 'attack', subtype: 'shield', targets: defendedTargets };
+  }
+
+  return { type: 'conservative', subtype: null, targets: [] };
+}
+
+// 发言类型标签（用于日志显示）
+function speechTypeLabel(classified) {
+  switch (classified.type) {
+    case 'conservative': return '<span class="tag-conservative">（划水）</span>';
+    case 'attack':
+      if (classified.subtype === 'suspect') {
+        const names = classified.targets.map(t => t.name).join('、');
+        return `<span class="tag-attack">（怀疑${names}）</span>`;
+      } else {
+        const names = classified.targets.map(t => t.name).join('、');
+        return `<span class="tag-shield">（袒护${names}）</span>`;
+      }
+    case 'break':
+      if (classified.subtype === 'accuse') {
+        const names = classified.targets.map(t => t.name).join('、');
+        return `<span class="tag-break">（确信${names}是狼）</span>`;
+      } else {
+        const names = classified.targets.map(t => t.name).join('、');
+        return `<span class="tag-break">（确信${names}是好人）</span>`;
+      }
+    default: return '';
+  }
+}
+
+// 计算好感度变化幅度（规则③④⑦）
+function calcFavorChange(baseChange, speaker, listener) {
+  let multiplier = 1 + (getAttr(speaker, '智谋') - 3) * 0.15;
+  if (getAttr(speaker, '统帅') >= 4) multiplier *= 1.3;
+  let resistMultiplier = 1 - (getAttr(listener, '意志') - 3) * 0.1;
+  resistMultiplier = Math.max(0.5, resistMultiplier);
+  return Math.round(baseChange * multiplier * resistMultiplier);
+}
+
+// 计算 miss 概率
+function calcMissChance(listenerFavor, speaker, listener, speechType) {
+  let missChance = 0.5 * Math.exp(-(listenerFavor * listenerFavor) / 2500);
+  missChance -= (getAttr(listener, '智谋') - 3) * 0.04;
+  missChance -= (getAttr(listener, '魅力') - 3) * 0.03;
+  missChance -= (getAttr(speaker, '智谋') - 3) * 0.03;
+  missChance -= (getAttr(speaker, '魅力') - 3) * 0.02;
+  if (speechType === 'attack') missChance += (getAttr(listener, '意志') - 3) * 0.03;
+  if (speechType === 'break') missChance += (getAttr(listener, '武力') - 3) * 0.02;
+  return Math.max(0, Math.min(0.6, missChance));
+}
+
+// 规则⑥ 魅力修正反效果阈值
+function getAntiEffectThresholds(speaker) {
+  const charm = getAttr(speaker, '魅力');
+  // 魅力越高，反效果触发越难（阈值偏移）
+  const charmBonus = (charm - 3) * 2.5;
+  return {
+    highThreshold: 70 + charmBonus,   // 默认70，魅力5时=77.5
+    lowThreshold: 30 - charmBonus      // 默认30，魅力5时=22.5
+  };
+}
+
+// 应用发言对好感度的影响
+function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight) {
+  const changes = []; // 记录好感度变化，用于日志
+
+  for (const listener of listeners) {
+    if (listener.id === speaker.id) continue;
+
+    const favor = getFavor(listener, speaker.id);
+    const missChance = calcMissChance(favor, speaker, listener, classified.type);
+
+    // miss 判定
+    if (Math.random() < missChance) continue;
+
+    const thresholds = getAntiEffectThresholds(speaker);
+    let change = 0;
+
+    switch (classified.type) {
+      case 'conservative':
+        if (favor < 30) {
+          change = -1; // 觉得在躲
+        } else {
+          change = 1;
+        }
+        break;
+
+      case 'attack': {
+        if (classified.subtype === 'suspect') {
+          // 对被怀疑者
+          if (classified.targets.some(t => t.id === listener.id)) {
+            change = calcFavorChange(-(3 + Math.floor(Math.random() * 3)), speaker, listener);
+          }
+          // 对发言者（反效果检查：听者对被怀疑者好感度≥阈值）
+          else {
+            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
+            if (targetFavor >= thresholds.highThreshold) {
+              change = calcFavorChange(-(2 + Math.floor(Math.random() * 3)), speaker, listener);
+            } else {
+              change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+            }
+          }
+        } else if (classified.subtype === 'shield') {
+          if (classified.targets.some(t => t.id === listener.id)) {
+            change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+          } else {
+            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
+            if (targetFavor < thresholds.lowThreshold) {
+              change = calcFavorChange(-(2 + Math.floor(Math.random() * 2)), speaker, listener);
+            } else {
+              change = calcFavorChange(1 + Math.floor(Math.random() * 3), speaker, listener);
+            }
+          }
+        }
+        break;
+      }
+
+      case 'break': {
+        if (classified.subtype === 'accuse') {
+          if (classified.targets.some(t => t.id === listener.id)) {
+            change = calcFavorChange(-(5 + Math.floor(Math.random() * 4)), speaker, listener);
+          } else {
+            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
+            if (targetFavor >= thresholds.highThreshold) {
+              change = calcFavorChange(-(5 + Math.floor(Math.random() * 4)), speaker, listener);
+            } else if (favor < 25) {
+              // 反效果：被指控者好感度提升
+              for (const t of classified.targets) {
+                const oldF = getFavor(listener, t.id);
+                setFavor(listener, t.id, oldF + calcFavorChange(5 + Math.floor(Math.random() * 4), speaker, listener));
+              }
+              change = 0;
+            } else {
+              change = calcFavorChange(3 + Math.floor(Math.random() * 3), speaker, listener);
+            }
+          }
+        } else if (classified.subtype === 'defend') {
+          if (classified.targets.some(t => t.id === listener.id)) {
+            change = calcFavorChange(5 + Math.floor(Math.random() * 4), speaker, listener);
+          } else {
+            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
+            if (targetFavor < 25) {
+              change = calcFavorChange(-(3 + Math.floor(Math.random() * 3)), speaker, listener);
+            } else {
+              change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+            }
+          }
+        }
+        break;
+      }
+    }
+
+    if (change !== 0) {
+      const oldFavor = getFavor(listener, speaker.id);
+      setFavor(listener, speaker.id, oldFavor + change);
+      changes.push({ listener, change, newFavor: getFavor(listener, speaker.id) });
+    }
+  }
+
+  return changes;
+}
+
 let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{}};
 
 function togglePause(){
@@ -360,6 +638,7 @@ function init(){
     votedFor: null
   }));
   renderPlayers();
+  initFavor();
   showStartModal();
 }
 
@@ -558,23 +837,28 @@ async function wolfAction(){
     await delay(800+Math.random()*500);
   }
 
-  // ===== 狼人讨论辩论（统帅影响）=====
-  // 统帅越高，越能说服他人
+  // ===== 狼人讨论辩论（规则④统帅影响 + 好感度修正）=====
   for(const wolf of wolves){
     while(game.isPaused) await delay(100);
     if(wolf.id===killMaster.id) continue; // 行动决策者最后说话
     const myProposal=proposals.find(p=>p.wolfId===wolf.id);
     const others=proposals.filter(p=>p.wolfId!==wolf.id);
     if(others.length===0) continue;
-    // 高统帅狼有概率尝试说服
-    if(Math.random()<getAttr(wolf,'统帅')/6){
+    // 规则④：统帅越高，越能说服他人
+    // 规则⑥：对发言者好感度越高，越容易被说服
+    const leadership = getAttr(wolf, '统帅') / 6;
+    // 用其他狼对当前狼的平均好感度修正说服概率
+    const avgFavor = wolves.filter(w => w.id !== wolf.id)
+      .reduce((s, w) => s + getFavor(w, wolf.id), 0) / (wolves.length - 1);
+    const favorBonus = Math.max(0, (avgFavor - 50) * 0.008); // 好感度60 → +0.08
+    if(Math.random() < leadership + favorBonus){
       const otherProposal=pick(others);
       const agree=myProposal.target.id===otherProposal.target.id;
       if(agree){
         const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,myProposal.target.name);
         addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
       } else {
-        // 意志越高越坚持己见
+        // 规则⑦：意志越高越坚持己见
         const insist=Math.random()<getAttr(wolf,'意志')/5;
         if(insist){
           const tpl=pick(WOLF_DISCUSS.disagree).replace(/{t}/g,myProposal.target.name).replace(/{t2}/g,otherProposal.target.name);
@@ -599,12 +883,18 @@ async function wolfAction(){
   addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【狼人密议】'+scriptMaster.name+'</span>')}${killSuggestLine}${scriptTpl}`);
   await delay(800);
 
-  // ===== 每只狼决定是否服从剧本 =====
+  // ===== 每只狼决定是否服从剧本（规则⑤政治 + 好感度 + 规则⑦意志）=====
   for(const wolf of wolves){
     while(game.isPaused) await delay(100);
     if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
-    // 政治越高越服从剧本
-    const compliance=getAttr(wolf,'政治')/5;
+    // 规则⑤：政治越高越服从剧本
+    let compliance=getAttr(wolf,'政治')/5;
+    // 对策划者好感度修正：好感度越高越服从
+    const masterFavor = getFavor(wolf, scriptMaster.id);
+    compliance += (masterFavor - 50) * 0.006; // 好感度60 → +0.06
+    // 规则⑦：意志越高越不服从
+    compliance -= (getAttr(wolf, '意志') - 3) * 0.08;
+    compliance = Math.max(0.05, Math.min(0.95, compliance));
     const follows=Math.random()<compliance;
     game.wolfScriptCompliance[wolf.id]=follows;
     const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
@@ -623,18 +913,29 @@ async function wolfAction(){
   addLog('<span class="system-text">🐺 狼人密议结束，目标已锁定。</span>');
 }
 
-// 狼人提出目标（阵营偏好）
-function wolfProposeTarget(wolf, targets){
-  const diffFaction=targets.filter(t=>t.faction!==wolf.faction);
-  const sameFaction=targets.filter(t=>t.faction===wolf.faction);
-  // 规则1: 更愿意刀不同阵营的人，概率按属性加权
-  let target;
-  if(diffFaction.length>0 && Math.random()<(0.5+getAttr(wolf,'意志')*0.1)){
-    target=pick(diffFaction);
-  } else {
-    target=pick(targets);
+// 狼人提出目标（规则①：好感度驱动，更愿意刀好感度低的人）
+function wolfProposeTarget(wolf, targets) {
+  // 按好感度加权：好感度越低，权重越高
+  const weights = targets.map(t => {
+    const f = getFavor(wolf, t.id);
+    // 反转权重：好感度10 → 权重90，好感度90 → 权重10
+    let w = Math.max(1, 100 - f);
+    // 武力高的人更有主见，权重差距更大
+    const martial = getAttr(wolf, '武力');
+    if (martial >= 4) w = Math.pow(w, 1.3);
+    return w;
+  });
+
+  // 加权随机选择
+  const totalWeight = weights.reduce((s, w) => s + w, 0);
+  let r = Math.random() * totalWeight;
+  let target = targets[0];
+  for (let i = 0; i < targets.length; i++) {
+    r -= weights[i];
+    if (r <= 0) { target = targets[i]; break; }
   }
-  return {wolfId:wolf.id, target:target};
+
+  return { wolfId: wolf.id, target };
 }
 
 // 剧本策划者生成明日剧本
@@ -868,15 +1169,23 @@ async function generateSpeeches(){
       speech+=" "+personalSpeech;
     }
 
-    addLog(`${speakerHTML(p)}${speech}`);
+    // 分类发言类型
+    const classified = classifySpeech(speech, p, alive);
+    const typeLabel = speechTypeLabel(classified);
+
+    addLog(`${speakerHTML(p)}${speech}${typeLabel}`);
+
+    // ===== 好感度影响 =====
+    const favorChanges = applySpeechFavorEffect(p, speech, classified, alive, false);
+
     // 记录发言上下文
     const mentionedTarget=suspectPool.find(x=>speech.includes(x.name));
     speechContext.push({
       speakerId:p.id, speakerName:p.name,
       targetName:mentionedTarget?mentionedTarget.name:null,
-      text:speech, role:p.role
+      text:speech, role:p.role, speechType: classified.type
     });
-    game.speeches.push({speaker:p.role,about:null,text:speech,speakerId:p.id});
+    game.speeches.push({speaker:p.role,about:null,text:speech,speakerId:p.id,speechType:classified.type});
     await delay(800+Math.random()*700);
   }
 }
@@ -979,15 +1288,28 @@ function generateGoodSpeech(player, suspectPool, ctx){
   }
 
   // ===== 普通发言 =====
-  // 低智谋：感性发言
+  // 低智谋：划水为主，偶尔带情绪
   if(intel<=2){
     const target=pick(suspectPool);
-    const templates=[
-      `我就是觉得${target.name}有问题，别问我为什么，直觉！`,
-      `不知道为啥，看${target.name}就不顺眼。投他！`,
-      `我啥也不懂，但${target.name}说话让人不舒服，就投他吧。`
+    // 划水：不表态、不点名、观望态度
+    const idleTemplates=[
+      `唔……我也不太确定，先听听大家怎么说吧。`,
+      `我没什么特别想说的，等我再观察观察。`,
+      `嗯……大家都说得有道理，我暂时没什么判断。`,
+      `说实话我脑子有点乱，这局太复杂了，我再想想。`,
+      `我先不发表意见了，看看后面的人怎么说。`,
+      `我啥也不懂，先苟着吧，谁可疑我跟着投就行。`
     ];
-    return pick(templates);
+    // 偶尔（30%）会说带情绪的攻击性发言
+    if(Math.random()<0.3){
+      const emotionalTemplates=[
+        `我就是觉得${target.name}有问题，别问我为什么，直觉！`,
+        `不知道为啥，看${target.name}就不顺眼。投他！`,
+        `我啥也不懂，但${target.name}说话让人不舒服，就投他吧。`
+      ];
+      return pick(emotionalTemplates);
+    }
+    return pick(idleTemplates);
   }
 
   // 中等属性：标准分析
@@ -1078,40 +1400,73 @@ async function votePhase(){
   for(const p of alive){
     while(game.isPaused) await delay(100);
 
-    // ===== 一人一票：根据发言内容决定投谁 =====
-    // 预言家查到狼就投狼
-    let target;
-    if(p.role==="seer" && game.seerTarget!==null){
-      const known=game.players[game.seerTarget];
-      if(known.alive && known.role==="wolf") target=known;
-    }
-    // 否则根据本轮发言中谁被怀疑最多来投
-    if(!target){
-      const suspectPool=alive.filter(x=>x.id!==p.id);
-      // 统计发言中被点名怀疑的人
-      const accuseCount={};
+    // ===== 一人一票：好感度 + 发言综合决策 =====
+    const suspectPool=alive.filter(x=>x.id!==p.id);
+    const suspectScores={};
+
+    for(const x of suspectPool){
+      let score = 0;
+
+      // 1) 好感度基础分：好感度越低越想投（规则①）
+      const f = getFavor(p, x.id);
+      score += Math.max(0, (50 - f) * 0.5); // 好感度30 → +10分，好感度70 → -10分
+
+      // 2) 发言中被怀疑的次数
       for(const s of game.speeches){
-        for(const x of suspectPool){
-          if(s.text && s.text.includes(x.name) && (s.text.includes("可疑")||s.text.includes("投")||s.text.includes("狼")||s.text.includes("质疑")||s.text.includes("矛盾")||s.text.includes("有问题"))){
-            accuseCount[x.id]=(accuseCount[x.id]||0)+1;
-          }
+        if(s.text && s.text.includes(x.name) && (s.text.includes("可疑")||s.text.includes("投")||s.text.includes("狼")||s.text.includes("质疑")||s.text.includes("矛盾")||s.text.includes("有问题"))){
+          score += 3;
         }
       }
-      // 智谋越高，越能根据发言投对人
+
+      // 3) 预言家查到的狼加大量分（规则③：智谋高的更相信预言家）
+      if(p.role==="seer" && game.seerTarget!==null){
+        const known=game.players[game.seerTarget];
+        if(x.id===known.id && known.role==="wolf" && known.alive){
+          score += 50; // 预言家铁定投查到的狼
+        }
+      }
+
+      // 4) 狼人倾向投好人（规则① + 剧本）
+      if(p.role==="wolf" && x.role!=="wolf"){
+        score += 8;
+        // 如果服从剧本且剧本指定了集火目标
+        if(game.wolfScriptCompliance[p.id] && game.wolfScript && game.wolfScript.target){
+          if(x.id===game.wolfScript.target) score += 15;
+        }
+      }
+
+      // 5) 智谋修正：智谋高的玩家更能判断（规则③）
       const intel=getAttr(p,'智谋');
-      if(intel>=4 && Object.keys(accuseCount).length>0){
-        // 高智谋：投被最多人怀疑的
-        let maxAcc=0, bestId=null;
-        for(let id in accuseCount){ if(accuseCount[id]>maxAcc){maxAcc=accuseCount[id];bestId=parseInt(id)} }
-        if(bestId!==null) target=game.players[bestId];
+      if(intel>=4){
+        // 高智谋更依赖发言线索，降低好感度权重的影响
+        score *= 1.2;
       }
-      // 狼人投好人
-      if(!target && p.role==="wolf"){
-        const goodTargets=suspectPool.filter(x=>x.role!=="wolf");
-        if(goodTargets.length>0) target=pick(goodTargets);
+
+      // 6) 政治修正：政治高的更倾向跟随主流（规则⑤）
+      const politic=getAttr(p,'政治');
+      if(politic>=4){
+        // 政治高：如果此人是多人怀疑的目标，额外加分
+        const accuseCount=game.speeches.filter(s=>s.text&&s.text.includes(x.name)&&(s.text.includes("可疑")||s.text.includes("狼")||s.text.includes("有问题"))).length;
+        if(accuseCount>=2) score += accuseCount*3;
       }
-      // 兜底
-      if(!target) target=pick(suspectPool);
+
+      suspectScores[x.id] = score;
+    }
+
+    // 加权随机选择投票目标（分高概率大）
+    let target;
+    const validTargets=suspectPool.filter(x=>suspectScores[x.id]>0);
+    if(validTargets.length>0){
+      const weights=validTargets.map(x=>Math.max(1, suspectScores[x.id]));
+      const totalW=weights.reduce((s,w)=>s+w,0);
+      let r=Math.random()*totalW;
+      for(let i=0;i<validTargets.length;i++){
+        r-=weights[i];
+        if(r<=0){target=validTargets[i];break;}
+      }
+      if(!target)target=validTargets[validTargets.length-1];
+    }else{
+      target=pick(suspectPool);
     }
 
     if(target){
