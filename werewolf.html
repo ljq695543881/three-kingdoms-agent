@@ -113,6 +113,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   .role-reveal .role-name{font-size:20px}
 }
 .tag-conservative{color:var(--gray);font-size:11px;font-style:italic}
+.tag-neutral{color:#5d6d7e;font-size:11px;font-weight:600}
 .tag-attack{color:#e67e22;font-size:11px;font-weight:700}
 .tag-shield{color:var(--green);font-size:11px;font-weight:700}
 .tag-break{color:var(--red);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(192,57,43,0.4)}
@@ -398,13 +399,18 @@ function classifySpeech(speech, speaker, alive) {
   }
 
   // 检查主动进攻：怀疑/指控
-  const attackKeywords = ['怀疑', '可疑', '有问题', '不对劲', '逻辑问题', '带节奏', '搅浑水', '投他', '投吧', '不对', '心虚', '不顺眼', '有毛病', '装', '废话', '不是好人', '就投他', '该投', '该死', '不可信', '不靠谱', '不正常', '演戏', '精心准备', '不可靠', '有问题', '装傻', '装好人', '胡说', '瞎说', '忽悠', '别装了', '侮辱'];
+  const attackKeywords = ['怀疑', '可疑', '有问题', '不对劲', '逻辑问题', '带节奏', '搅浑水', '投他', '投吧', '不对', '心虚', '不顺眼', '有毛病', '装', '废话', '不是好人', '就投他', '该投', '该死', '不可信', '不靠谱', '不正常', '演戏', '精心准备', '不可靠', '有问题', '装傻', '装好人', '胡说', '瞎说', '忽悠', '别装了', '侮辱', '反常', '表现最', '最反常', '有问题'];
   let attackedTargets = [];
   for (const x of others) {
     if (speech.includes(x.name)) {
       const afterName = speech.split(x.name);
       for (const seg of afterName) {
         if (attackKeywords.some(kw => seg.includes(kw))) {
+          attackedTargets.push(x);
+          break;
+        }
+        // 检测"投+人名"模式：片段以"投"字结尾，说明原文是"投XX"
+        if (/(?:投|票|出局|查)[\s，。！？]*$/.test(seg)) {
           attackedTargets.push(x);
           break;
         }
@@ -435,18 +441,36 @@ function classifySpeech(speech, speaker, alive) {
   }
 
   // Fallback：未点名具体玩家，但发言含强攻击性词汇 → 也算主动进攻（无特定目标）
-  const genericAttackWords = ['不可信', '不靠谱', '不正常', '演戏', '精心准备', '装好人', '忽悠', '侮辱', '带节奏', '搅浑水', '有毛病', '心虚', '不对劲'];
+  const genericAttackWords = ['不可信', '不靠谱', '不正常', '演戏', '精心准备', '装好人', '忽悠', '侮辱', '带节奏', '搅浑水', '有毛病', '心虚', '不对劲', '反常', '有问题'];
   if (genericAttackWords.some(kw => speech.includes(kw))) {
     return { type: 'attack', subtype: 'suspect', targets: [] };
   }
 
+  // 未命中任何攻击/袒护词：区分"划水"和"表态"
+  // 划水 = 完全不提活人名字；表态 = 提了活人但没有明确立场
+  if (speechMentionsAlive(speech, alive)) {
+    return { type: 'neutral', subtype: null, targets: [] };
+  }
   return { type: 'conservative', subtype: null, targets: [] };
 }
 
+// 发言是否提及任何活人（用于区分划水 vs 表态）
+function speechMentionsAlive(speech, alive) {
+  return alive.some(p => speech.includes(p.name));
+}
+
 // 发言类型标签（用于日志显示）
-function speechTypeLabel(classified) {
+function speechTypeLabel(classified, speech, alive) {
   switch (classified.type) {
-    case 'conservative': return '<span class="tag-conservative">（划水）</span>';
+    case 'conservative':
+      // 划水：真正的水话，不提任何活人名字
+      if (!speechMentionsAlive(speech, alive)) {
+        return '<span class="tag-conservative">（划水）</span>';
+      }
+      // 提了活人名字但没有明确立场 → 表态
+      return '<span class="tag-neutral">（表态）</span>';
+    case 'neutral':
+      return '<span class="tag-neutral">（表态）</span>';
     case 'attack':
       if (classified.subtype === 'suspect') {
         const names = classified.targets.map(t => t.name).join('、');
@@ -1177,7 +1201,7 @@ async function generateSpeeches(){
 
     // 分类发言类型
     const classified = classifySpeech(speech, p, alive);
-    const typeLabel = speechTypeLabel(classified);
+    const typeLabel = speechTypeLabel(classified, speech, alive);
 
     addLog(`${speakerHTML(p)}${speech}${typeLabel}`);
 
