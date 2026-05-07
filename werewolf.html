@@ -397,8 +397,8 @@ function classifySpeech(speech, speaker, alive) {
     }
   }
 
-  // 检查主动进攻：怀疑
-  const attackKeywords = ['怀疑', '可疑', '有问题', '不对劲', '逻辑问题', '带节奏', '搅浑水', '投他', '投吧', '不对', '心虚', '不顺眼', '有毛病', '装', '废话', '不是好人', '就投他', '该投', '该死'];
+  // 检查主动进攻：怀疑/指控
+  const attackKeywords = ['怀疑', '可疑', '有问题', '不对劲', '逻辑问题', '带节奏', '搅浑水', '投他', '投吧', '不对', '心虚', '不顺眼', '有毛病', '装', '废话', '不是好人', '就投他', '该投', '该死', '不可信', '不靠谱', '不正常', '演戏', '精心准备', '不可靠', '有问题', '装傻', '装好人', '胡说', '瞎说', '忽悠', '别装了', '侮辱'];
   let attackedTargets = [];
   for (const x of others) {
     if (speech.includes(x.name)) {
@@ -434,6 +434,12 @@ function classifySpeech(speech, speaker, alive) {
     return { type: 'attack', subtype: 'shield', targets: defendedTargets };
   }
 
+  // Fallback：未点名具体玩家，但发言含强攻击性词汇 → 也算主动进攻（无特定目标）
+  const genericAttackWords = ['不可信', '不靠谱', '不正常', '演戏', '精心准备', '装好人', '忽悠', '侮辱', '带节奏', '搅浑水', '有毛病', '心虚', '不对劲'];
+  if (genericAttackWords.some(kw => speech.includes(kw))) {
+    return { type: 'attack', subtype: 'suspect', targets: [] };
+  }
+
   return { type: 'conservative', subtype: null, targets: [] };
 }
 
@@ -444,10 +450,10 @@ function speechTypeLabel(classified) {
     case 'attack':
       if (classified.subtype === 'suspect') {
         const names = classified.targets.map(t => t.name).join('、');
-        return `<span class="tag-attack">（怀疑${names}）</span>`;
+        return names ? `<span class="tag-attack">（怀疑${names}）</span>` : '<span class="tag-attack">（表态）</span>';
       } else {
         const names = classified.targets.map(t => t.name).join('、');
-        return `<span class="tag-shield">（袒护${names}）</span>`;
+        return names ? `<span class="tag-shield">（袒护${names}）</span>` : '<span class="tag-shield">（表态）</span>';
       }
     case 'break':
       if (classified.subtype === 'accuse') {
