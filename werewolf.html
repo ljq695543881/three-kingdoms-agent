@@ -56,6 +56,15 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .btn-pause:hover{background:var(--gold);color:var(--bg);transform:scale(1.05)}
 .btn-pause.paused{border-color:var(--red);color:var(--red)}
 .btn-pause.paused:hover{background:var(--red);color:#fff}
+.btn-settings{position:fixed;top:12px;right:120px;z-index:300;padding:8px 18px;border:2px solid var(--gold);border-radius:20px;background:rgba(15,52,96,0.95);color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px)}
+.btn-settings:hover{background:var(--gold);color:var(--bg);transform:scale(1.05)}
+.speed-panel{position:fixed;top:56px;right:80px;z-index:400;background:rgba(22,33,62,0.98);border:2px solid var(--gold);border-radius:12px;padding:16px;backdrop-filter:blur(8px);display:none;flex-direction:column;gap:8px;min-width:160px}
+.speed-panel.show{display:flex}
+.speed-panel h4{color:var(--gold);font-size:13px;margin-bottom:4px;text-align:center}
+.speed-btns{display:flex;gap:6px;justify-content:center}
+.speed-btn{padding:6px 14px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:transparent;color:var(--gray);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.speed-btn:hover{border-color:var(--gold);color:var(--white)}
+.speed-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
 .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100}
 .modal{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:24px;max-width:500px;width:90%;text-align:center}
 .modal h2{color:var(--gold);font-size:22px;margin-bottom:12px}
@@ -106,6 +115,8 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   .action-bar button{padding:8px 16px;font-size:13px}
   .info-bar{font-size:11px;padding:6px 8px}
   .btn-pause{top:8px;right:8px;padding:6px 14px;font-size:12px}
+  .btn-settings{top:8px;right:100px;padding:6px 14px;font-size:12px}
+  .speed-panel{top:48px;right:60px;padding:12px;min-width:140px}
   .modal{padding:16px;width:92%}
   .modal h2{font-size:18px}
   .modal p{font-size:13px}
@@ -121,7 +132,17 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 </head>
 <body>
 <div class="night-overlay" id="nightOverlay"></div>
+<button class="btn-settings" id="settingsBtn" onclick="openSettings()">⚙ 设置</button>
 <button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ 暂停</button>
+<div class="speed-panel" id="speedPanel">
+  <h4>游戏速度</h4>
+  <div class="speed-btns">
+    <button class="speed-btn" onclick="setSpeed(0.5)">0.5x</button>
+    <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
+    <button class="speed-btn" onclick="setSpeed(2)">2x</button>
+    <button class="speed-btn" onclick="setSpeed(3)">3x</button>
+  </div>
+</div>
 <div class="header">
   <h1>三 国 狼 人 杀</h1>
   <p>从219位三国豪杰中随机选拔15人进行智谋对决</p>
@@ -623,7 +644,49 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
   return changes;
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{}};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1};
+
+function openSettings(){
+  document.getElementById('speedPanel').classList.add('show');
+  // 打开设置时自动暂停游戏
+  if(!game.isPaused){
+    game.isPaused=true;
+    const btn=document.getElementById("pauseBtn");
+    btn.textContent="▶ 继续";
+    btn.classList.add("paused");
+    game._pausedBySettings=true;
+  }
+}
+
+function closeSettings(){
+  document.getElementById('speedPanel').classList.remove('show');
+  // 退出设置时如果之前是设置面板导致的暂停，则自动恢复
+  if(game._pausedBySettings){
+    game.isPaused=false;
+    const btn=document.getElementById("pauseBtn");
+    btn.textContent="⏸ 暂停";
+    btn.classList.remove("paused");
+    game.pauseResolvers.forEach(r=>r());
+    game.pauseResolvers=[];
+    game._pausedBySettings=false;
+  }
+}
+
+function setSpeed(s){
+  game.speed=s;
+  document.querySelectorAll('.speed-btn').forEach(b=>{
+    b.classList.toggle('active', parseFloat(b.textContent)===s);
+  });
+}
+
+// 点击面板外部关闭
+document.addEventListener('click',function(e){
+  const panel=document.getElementById('speedPanel');
+  const btn=document.getElementById('settingsBtn');
+  if(panel.classList.contains('show') && !panel.contains(e.target) && !btn.contains(e.target)){
+    closeSettings();
+  }
+});
 
 function togglePause(){
   game.isPaused=!game.isPaused;
@@ -641,11 +704,12 @@ function togglePause(){
 
 function delay(ms){
   return new Promise(resolve=>{
+    const actual=Math.round(ms/game.speed);
     const check=()=>{
       if(game.isPaused){
         game.pauseResolvers.push(()=>setTimeout(check,50));
       } else {
-        setTimeout(resolve,ms);
+        setTimeout(resolve,actual);
       }
     };
     check();
