@@ -898,21 +898,55 @@ async function wolfAction(){
   addLog('<span class="system-text">🐺 狼人密议开始……</span>');
   await delay(800);
 
-  // ===== 每只狼提出目标（阵营偏好）=====
+  // ===== 第一步：军师开场定调（提目标 + 建议刀谁 + 抛出剧本）=====
+  while(game.isPaused) await delay(100);
   const proposals=[];
-  for(const wolf of wolves){
+  // 军师先提目标
+  const masterProposal=wolfProposeTarget(scriptMaster, targets);
+  proposals.push(masterProposal);
+  // 生成剧本（提前到这里）
+  const script=generateWolfScript(scriptMaster, wolves, targets);
+  game.wolfScript=script;
+  game.wolfScriptCompliance={};
+  // 军师发言：提目标 + 建议刀谁 + 剧本
+  const masterTarget=masterProposal.target;
+  const masterTpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,masterTarget.name).replace(/{faction}/g,masterTarget.faction);
+  const killSuggestTargets=targets.filter(t=>["seer","witch","hunter"].includes(t.role));
+  const killSuggest=killSuggestTargets.length>0 && Math.random()<0.6 ? pick(killSuggestTargets) : pick(targets);
+  const killSuggestLine=`我建议今晚先动${killSuggest.name}，此人若留到后期必成大患。`;
+  const scriptDesc=`【${script.name}】${script.desc}`;
+  const scriptTpl=pick(WOLF_DISCUSS.script_propose).replace(/{script}/g,scriptDesc);
+  addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl} ${killSuggestLine}${scriptTpl}`);
+  await delay(1000);
+
+  // ===== 第二步：其他狼依次提出目标并附和/反对军师 =====
+  const otherWolves=wolves.filter(w=>w.id!==scriptMaster.id);
+  for(const wolf of otherWolves){
     while(game.isPaused) await delay(100);
     const proposal=wolfProposeTarget(wolf, targets);
     proposals.push(proposal);
     const t=proposal.target;
-    const tpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,t.name).replace(/{faction}/g,t.faction);
-    const personalFlavor=generatePersonalSpeech(wolf, t.name);
-    const speech=(personalFlavor&&Math.random()<0.4)?personalFlavor:tpl;
-    addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${speech}`);
+    // 与军师目标一致 → 附和；不一致 → 可能提出异议
+    if(t.id===masterTarget.id){
+      const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,t.name);
+      const personalFlavor=generatePersonalSpeech(wolf, t.name);
+      const speech=(personalFlavor&&Math.random()<0.3)?personalFlavor:tpl;
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${speech}`);
+    } else {
+      // 意志高才敢公开反对军师
+      if(Math.random()<getAttr(wolf,'意志')/5){
+        const tpl=pick(WOLF_DISCUSS.disagree).replace(/{t}/g,t.name).replace(/{t2}/g,masterTarget.name);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+      } else {
+        // 表面附和但心里选了别人
+        const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,masterTarget.name);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+      }
+    }
     await delay(800+Math.random()*500);
   }
 
-  // ===== 狼人讨论辩论（规则④统帅影响 + 好感度修正）=====
+  // ===== 第三步：狼人辩论（规则④统帅影响 + 好感度修正）=====
   for(const wolf of wolves){
     while(game.isPaused) await delay(100);
     if(wolf.id===killMaster.id) continue; // 行动决策者最后说话
@@ -944,21 +978,7 @@ async function wolfAction(){
     }
   }
 
-  // ===== 剧本策划者提出明日剧本 =====
-  while(game.isPaused) await delay(100);
-  const script=generateWolfScript(scriptMaster, wolves, targets);
-  game.wolfScript=script;
-  game.wolfScriptCompliance={};
-  // 军师建议今晚刀谁 + 明日剧本
-  const killSuggestTargets=targets.filter(t=>["seer","witch","hunter"].includes(t.role));
-  const killSuggest=killSuggestTargets.length>0 && Math.random()<0.6 ? pick(killSuggestTargets) : pick(targets);
-  const killSuggestLine=`我建议今晚先动${killSuggest.name}，此人若留到后期必成大患。`;
-  const scriptDesc=`【${script.name}】${script.desc}`;
-  const scriptTpl=pick(WOLF_DISCUSS.script_propose).replace(/{script}/g,scriptDesc);
-  addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【狼人密议】'+scriptMaster.name+'</span>')}${killSuggestLine}${scriptTpl}`);
-  await delay(800);
-
-  // ===== 每只狼决定是否服从剧本（规则⑤政治 + 好感度 + 规则⑦意志）=====
+  // ===== 第四步：其他狼表态服从/抗命剧本（规则⑤政治 + 好感度 + 规则⑦意志）=====
   for(const wolf of wolves){
     while(game.isPaused) await delay(100);
     if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
