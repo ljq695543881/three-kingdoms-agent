@@ -60,11 +60,27 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .btn-settings:hover{background:var(--gold);color:var(--bg);transform:scale(1.05)}
 .speed-panel{position:fixed;top:56px;right:80px;z-index:400;background:rgba(22,33,62,0.98);border:2px solid var(--gold);border-radius:12px;padding:16px;backdrop-filter:blur(8px);display:none;flex-direction:column;gap:8px;min-width:160px}
 .speed-panel.show{display:flex}
+.btn-favor{position:fixed;top:12px;left:12px;z-index:300;padding:8px 18px;border:2px solid var(--purple);border-radius:20px;background:rgba(15,52,96,0.95);color:var(--purple);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px)}
+.btn-favor:hover{background:var(--purple);color:#fff;transform:scale(1.05)}
 .speed-panel h4{color:var(--gold);font-size:13px;margin-bottom:4px;text-align:center}
 .speed-btns{display:flex;gap:6px;justify-content:center}
 .speed-btn{padding:6px 14px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:transparent;color:var(--gray);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
 .speed-btn:hover{border-color:var(--gold);color:var(--white)}
 .speed-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.favor-panel{position:fixed;top:56px;left:12px;z-index:400;background:rgba(22,33,62,0.98);border:2px solid var(--purple);border-radius:12px;padding:14px;backdrop-filter:blur(8px);display:none;flex-direction:column;gap:6px;max-width:calc(100vw - 24px);width:max-content;max-height:75vh;overflow-y:auto;overflow-x:auto;color:var(--white);font-size:13px}
+.favor-panel.show{display:flex}
+.favor-panel h4{color:var(--purple);font-size:13px;margin-bottom:4px;text-align:center}
+.favor-panel .fp-hint{color:var(--gray);font-size:11px;text-align:center;margin-bottom:4px}
+.favor-grid{display:grid;gap:2px;font-size:11px;width:max-content}
+.favor-grid-hdr{display:grid;grid-template-columns:64px repeat(15,28px);gap:2px;margin-bottom:2px}
+.favor-grid-hdr span{color:var(--gray);text-align:center;font-weight:700;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:28px}
+.favor-grid-hdr span:first-child{text-align:right;padding-right:4px;width:64px}
+.favor-row{display:grid;grid-template-columns:64px repeat(15,28px);gap:2px;align-items:center}
+.favor-row .fp-name{text-align:right;padding-right:4px;font-weight:700;font-size:10px;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:64px}
+.favor-cell{text-align:center;border-radius:3px;padding:1px 0;font-size:9px;font-weight:600;cursor:pointer;transition:all 0.15s;width:28px;height:20px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.favor-cell:hover{transform:scale(1.2);z-index:1;box-shadow:0 0 6px rgba(255,255,255,0.3)}
+.favor-cell.dead{opacity:0.25;cursor:default}
+.favor-cell.dead:hover{transform:none;box-shadow:none}
 .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100}
 .modal{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:24px;max-width:500px;width:90%;text-align:center}
 .modal h2{color:var(--gold);font-size:22px;margin-bottom:12px}
@@ -116,7 +132,9 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   .info-bar{font-size:11px;padding:6px 8px}
   .btn-pause{top:8px;right:8px;padding:6px 14px;font-size:12px}
   .btn-settings{top:8px;right:100px;padding:6px 14px;font-size:12px}
+  .btn-favor{top:8px;left:8px;padding:6px 14px;font-size:12px}
   .speed-panel{top:48px;right:60px;padding:12px;min-width:140px}
+  .favor-panel{top:48px;left:8px;max-height:60vh;padding:10px}
   .modal{padding:16px;width:92%}
   .modal h2{font-size:18px}
   .modal p{font-size:13px}
@@ -131,6 +149,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 </head>
 <body>
 <div class="night-overlay" id="nightOverlay"></div>
+<button class="btn-favor" id="favorBtn" onclick="openFavorPanel()">♡ 好感度</button>
 <button class="btn-settings" id="settingsBtn" onclick="openSettings()">⚙ 设置</button>
 <button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ 暂停</button>
 <div class="speed-panel" id="speedPanel">
@@ -141,6 +160,11 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
     <button class="speed-btn" onclick="setSpeed(2)">2x</button>
     <button class="speed-btn" onclick="setSpeed(3)">3x</button>
   </div>
+</div>
+<div class="favor-panel" id="favorPanel">
+  <h4>好感度面板（上帝视角）</h4>
+  <div class="fp-hint">点击数值可手动修改 · 滚轮调整</div>
+  <div id="favorGrid" class="favor-grid"></div>
 </div>
 <div class="header">
   <h1>三 国 狼 人 杀</h1>
@@ -219,7 +243,7 @@ guard_claim:[
 villager_analyze:[
   "我仔细听了所有人的发言，{t}的逻辑问题最大——他自己说的前后矛盾，大家注意到了吗？",
   "说实话，{t}今天这番话让我很不舒服。感觉像在带节奏，试图转移大家注意力。",
-  "我没啥特殊能力，就是个平民。但以我的直觉来看，{t}这人不可信。他说的每一句话都像精心准备的。",
+  "我没啥特殊能力，就是个平民。但以我的直觉来看，{t}这人不可信。感觉他一直在刻意隐藏什么。",
   "我感觉{t}一直在装傻。真正的好人不会故意含糊其辞，只有狼人才需要这样。",
   "我跟你们说，{t}今天的发言完全是照着剧本念的。一个正常人说话不会这么刻意。",
   "我真的想吐槽，{t}你能不能别搁这搅浑水了？越搅越乱对你有好处是吧？"
@@ -653,6 +677,92 @@ function closeSettings(){
   }
 }
 
+// ===== 好感度面板 =====
+function openFavorPanel(){
+  document.getElementById('favorPanel').classList.add('show');
+  renderFavorGrid();
+  if(!game.isPaused){
+    game.isPaused=true;
+    const btn=document.getElementById("pauseBtn");
+    btn.textContent="▶ 继续";
+    btn.classList.add("paused");
+    game._pausedByFavor=true;
+  }
+}
+function closeFavorPanel(){
+  document.getElementById('favorPanel').classList.remove('show');
+  if(game._pausedByFavor){
+    game.isPaused=false;
+    const btn=document.getElementById("pauseBtn");
+    btn.textContent="⏸ 暂停";
+    btn.classList.remove("paused");
+    game.pauseResolvers.forEach(r=>r());
+    game.pauseResolvers=[];
+    game._pausedByFavor=false;
+  }
+}
+function favorColor(v){
+  if(v>=70) return '#27ae60';
+  if(v>=55) return '#2ecc71';
+  if(v>=45) return '#e2b714';
+  if(v>=30) return '#e67e22';
+  return '#c0392b';
+}
+function favorBg(v){
+  const c=favorColor(v);
+  return c+'22';
+}
+function renderFavorGrid(){
+  if(!game.players||!game.players.length)return;
+  const container=document.getElementById('favorGrid');
+  const ps=game.players;
+  const n=ps.length;
+  const colTemplate=`64px repeat(${n},28px)`;
+  let html=`<div class="favor-grid-hdr" style="grid-template-columns:${colTemplate}"><span></span>`;
+  for(const p of ps) html+=`<span title="${p.name}">${p.name.slice(0,2)}</span>`;
+  html+='</div>';
+  for(const row of ps){
+    html+=`<div class="favor-row" style="grid-template-columns:${colTemplate}"><span class="fp-name" title="${row.name}">${row.name.slice(0,2)}</span>`;
+    for(const col of ps){
+      if(col.id===row.id){
+        html+='<div class="favor-cell dead">-</div>';
+      } else {
+        const v=getFavor(row,col.id);
+        const dead=!row.alive||!col.alive;
+        const cls=dead?'favor-cell dead':'favor-cell';
+        html+=`<div class="${cls}" style="color:${favorColor(v)};background:${favorBg(v)}" data-from="${row.id}" data-to="${col.id}" title="${row.name}→${col.name}: ${v}">${v}</div>`;
+      }
+    }
+    html+='</div>';
+  }
+  container.innerHTML=html;
+  container.querySelectorAll('.favor-cell:not(.dead)').forEach(cell=>{
+    cell.addEventListener('wheel',function(e){
+      e.preventDefault();
+      const fid=parseInt(this.dataset.from);
+      const tid=parseInt(this.dataset.to);
+      const old=getFavor(game.players[fid],tid);
+      const nv=Math.max(0,Math.min(100,old+(e.deltaY>0?-1:1)));
+      setFavor(game.players[fid],tid,nv);
+      this.textContent=nv;
+      this.style.color=favorColor(nv);
+      this.style.background=favorBg(nv);
+      this.title=`${game.players[fid].name}→${game.players[tid].name}: ${nv}`;
+    });
+    cell.addEventListener('click',function(){
+      const fid=parseInt(this.dataset.from);
+      const tid=parseInt(this.dataset.to);
+      const old=getFavor(game.players[fid],tid);
+      const nv=prompt(`修改好感度\n${game.players[fid].name} → ${game.players[tid].name}`,old);
+      if(nv!==null){
+        const val=Math.max(0,Math.min(100,parseInt(nv)||0));
+        setFavor(game.players[fid],tid,val);
+        renderFavorGrid();
+      }
+    });
+  });
+}
+
 function setSpeed(s){
   game.speed=s;
   document.querySelectorAll('.speed-btn').forEach(b=>{
@@ -667,6 +777,11 @@ document.addEventListener('click',function(e){
   if(panel.classList.contains('show') && !panel.contains(e.target) && !btn.contains(e.target)){
     closeSettings();
   }
+  const fp=document.getElementById('favorPanel');
+  const fb=document.getElementById('favorBtn');
+  if(fp.classList.contains('show') && !fp.contains(e.target) && !fb.contains(e.target)){
+    closeFavorPanel();
+  }
 });
 
 function togglePause(){
@@ -678,6 +793,7 @@ function togglePause(){
   } else {
     btn.textContent="⏸ 暂停";
     btn.classList.remove("paused");
+    game._pausedByFavor=false;
     game.pauseResolvers.forEach(r=>r());
     game.pauseResolvers=[];
   }
@@ -1234,6 +1350,9 @@ async function generateSpeeches(){
   const wolves=getAliveWolves();
   const script=game.wolfScript;
 
+  // ===== 每天重置已发言集合 =====
+  game.spokenToday=new Set();
+
   // ===== 收集本轮发言上下文（用于后面的角色引用前人发言）=====
   const speechContext=[]; // {speakerId, speakerName, targetName, text}
 
@@ -1247,15 +1366,15 @@ async function generateSpeeches(){
     if(p.role==="wolf"){
       // ===== 狼人发言：规则⑤剧本服从 + 规则①阵营偏好 =====
       const followsScript=game.wolfScriptCompliance[p.id]!==false;
-      speech=generateWolfDaySpeech(p, alive, wolves, script, followsScript, speechContext);
+      speech=generateWolfDaySpeech(p, alive, wolves, script, followsScript, speechContext, game.spokenToday);
     }
     else if(p.role==="seer"){
       // ===== 预言家发言：规则③智谋影响 =====
-      speech=generateSeerSpeech(p, suspectPool, speechContext);
+      speech=generateSeerSpeech(p, suspectPool, speechContext, game.spokenToday);
     }
     else {
       // ===== 好人发言：规则③④⑥⑦全部体现在发言内容 =====
-      speech=generateGoodSpeech(p, suspectPool, speechContext);
+      speech=generateGoodSpeech(p, suspectPool, speechContext, game.spokenToday);
     }
 
     // 人设风味（50%概率追加一句）
@@ -1280,13 +1399,14 @@ async function generateSpeeches(){
       targetName:mentionedTarget?mentionedTarget.name:null,
       text:speech, role:p.role, speechType: classified.type
     });
+    game.spokenToday.add(p.id);
     game.speeches.push({speaker:p.role,about:null,text:speech,speakerId:p.id,speechType:classified.type});
     await delay(800+Math.random()*700);
   }
 }
 
 // ===== 预言家发言：规则③智谋 =====
-function generateSeerSpeech(seer, suspectPool, ctx){
+function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
   const intel=getAttr(seer,'智谋');
 
   // 已查验到狼人
@@ -1302,10 +1422,11 @@ function generateSeerSpeech(seer, suspectPool, ctx){
 
   // 还没查到狼
   const t=pick(suspectPool);
-  // 智谋高的会分析别人的发言
+  // 智谋高的会分析别人的发言（仅引用今天已发言的人）
   if(intel>=4 && ctx.length>0){
     const recentCtx=ctx.slice(-3);
-    const suspiciousSpeeches = recentCtx.filter(s => s.role === "wolf" || (s.text && s.text.includes("我觉得")));
+    const spokeToday=recentCtx.filter(s=>spokenSet.has(s.speakerId));
+    const suspiciousSpeeches = spokeToday.filter(s => s.role === "wolf" || (s.text && s.text.includes("我觉得")));
     if (suspiciousSpeeches.length > 0) {
       const s = pick(suspiciousSpeeches);
       return pickTemplate("seer_hint", { t: s.speakerName });
@@ -1315,7 +1436,7 @@ function generateSeerSpeech(seer, suspectPool, ctx){
 }
 
 // ===== 好人发言：规则③④⑥⑦通过发言内容体现 =====
-function generateGoodSpeech(player, suspectPool, ctx){
+function generateGoodSpeech(player, suspectPool, ctx, spokenSet){
   const intel=getAttr(player,'智谋');
   const leadership=getAttr(player,'统帅');
   const charm=getAttr(player,'魅力');
@@ -1328,16 +1449,17 @@ function generateGoodSpeech(player, suspectPool, ctx){
     for(const s of analyzed){
       const speaker=game.players[s.speakerId];
       if(!speaker || !speaker.alive || speaker.id===player.id) continue;
+      if(!spokenSet.has(speaker.id)) continue;
       // 发现前后矛盾或可疑发言
       if(s.text && (s.text.includes("不知道") || s.text.includes("不确定")) && s.text.includes("我觉得")){
         return `${speaker.name}，你刚才说不知道谁是狼，现在又觉得某人可疑？这话前后矛盾，你自己解释解释。`;
       }
     }
     // 没找到明显破绽，但能分析出重点怀疑对象
-    const wolfSpeeches=ctx.filter(s=>s.role==="wolf");
+    const wolfSpeeches=ctx.filter(s=>s.role==="wolf" && spokenSet.has(s.speakerId));
     if(wolfSpeeches.length>0 && Math.random()<intel/5){
       const s=pick(wolfSpeeches);
-      return `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。他说的每一句话都像精心准备过的，太完美了反而可疑。各位注意${s.speakerName}。`;
+      return `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。感觉太完美了反而可疑。各位注意${s.speakerName}。`;
     }
   }
 
@@ -1353,8 +1475,8 @@ function generateGoodSpeech(player, suspectPool, ctx){
   }
 
   // ===== 规则⑦ 意志：被质疑时是否改口 =====
-  // 检查有没有人质疑过自己
-  const questioned=ctx.filter(s=>s.text && s.text.includes(player.name) && (s.text.includes("可疑") || s.text.includes("怀疑") || s.text.includes("投")));
+  // 检查有没有今天已发言的人质疑过自己
+  const questioned=ctx.filter(s=>spokenSet.has(s.speakerId) && s.text && s.text.includes(player.name) && (s.text.includes("可疑") || s.text.includes("怀疑") || s.text.includes("投")));
   if(questioned.length>0 && Math.random()<0.5){
     const q=pick(questioned);
     if(will>=4){
@@ -1410,9 +1532,9 @@ function generateGoodSpeech(player, suspectPool, ctx){
   // 中等属性：标准分析
   const target=pick(suspectPool);
 
-  // 规则④中等统帅：可能引用前人的话
+  // 规则④中等统帅：可能引用前人的话（仅引用今天已发言的人）
   if(leadership>=3 && ctx.length>0){
-    const recentCtx=ctx.filter(s=>s.speakerId!==player.id);
+    const recentCtx=ctx.filter(s=>s.speakerId!==player.id && spokenSet.has(s.speakerId));
     if(recentCtx.length>0){
       const ref=pick(recentCtx);
       return pickTemplate("villager_analyze",{t:target.name})+` 不过就像${ref.speakerName}说的，我们得冷静分析。`;
@@ -1423,7 +1545,7 @@ function generateGoodSpeech(player, suspectPool, ctx){
 }
 
 // 狼人白天发言：规则⑤剧本服从 + 规则①阵营偏好
-function generateWolfDaySpeech(wolf, alive, wolves, script, followsScript, ctx){
+function generateWolfDaySpeech(wolf, alive, wolves, script, followsScript, ctx, spokenSet){
   const innocents=alive.filter(x=>x.role!=="wolf"&&x.id!==wolf.id);
 
   // 规则①阵营偏好：更愿意指控不同阵营的人
@@ -1450,7 +1572,8 @@ function generateWolfDaySpeech(wolf, alive, wolves, script, followsScript, ctx){
       if(assigned.fakeSeer && wolf.id===assigned.fakeSeer.id){
         return pickTemplate("seer_reveal",{t:(script.target||target).name,r:"狼人"});
       }
-      return `我觉得${script.target?script.target.name:target.name}确实很可疑，刚才的发言漏洞百出。`;
+      const tName = (script.target && spokenSet.has(script.target.id)) ? script.target.name : target.name;
+      return `我觉得${tName}确实很可疑，发言有漏洞。`;
 
     case 'wolf_fight':
       if(assigned.fighter1 && wolf.id===assigned.fighter1.id){
