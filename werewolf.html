@@ -145,6 +145,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .tag-attack{color:#e67e22;font-size:11px;font-weight:700}
 .tag-shield{color:var(--green);font-size:11px;font-weight:700}
 .tag-break{color:var(--red);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(192,57,43,0.4)}
+.tag-claim{color:var(--gold);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(241,196,15,0.4)}
 </style>
 </head>
 <body>
@@ -248,6 +249,14 @@ villager_analyze:[
   "我跟你们说，{t}今天的发言完全是照着剧本念的。一个正常人说话不会这么刻意。",
   "我真的想吐槽，{t}你能不能别搁这搅浑水了？越搅越乱对你有好处是吧？"
 ],
+wolf_analyze:[
+  "各位冷静分析一下，{t}的发言逻辑有硬伤——前后矛盾，自相矛盾。大家仔细品品。",
+  "说句公道话，{t}今天的发言让我很不舒服。感觉在刻意带节奏，转移注意力。",
+  "我一直在观察，{t}这人表现很反常。说话含糊其辞，总感觉在刻意隐藏什么。",
+  "{t}一直在装糊涂。真正想赢的人不会这么含糊，只有心里有鬼才需要遮遮掩掩。",
+  "各位注意{t}，他今天的发言明显是在念稿子。正常人不会这么刻意，太不自然了。",
+  "我实在忍不住了，{t}你能不能别搅浑水了？越搅越乱到底对谁有好处？"
+],
 witch_save:[
   "昨晚有人差点死了，我出手救了。别问我是谁，也别问救的是谁。总之人还在。",
   "我犹豫了很久，但还是用了我的解药。希望这个人之后能证明自己值得我救。"
@@ -282,6 +291,635 @@ generic:[
   "冷静想想，如果我是狼人，我会怎么选目标？反过来推理一下就知道了。"
 ]
 };
+
+// ===== 属性风格修饰系统（方案B）=====
+const SPEECH_STYLE_MODIFIERS = {
+  force: {
+    high: { prefix: ["哼！","可笑！","荒谬！"], suffix: ["！","罢了！","休得多言！"], tone: "aggressive" },
+    low:  { prefix: ["那个……","唔……","嗯……"], suffix: ["吧","呢","……"], tone: "cautious" }
+  },
+  intel: {
+    high: { prefix: ["观此局势……","细细想来……","依理推断……"], suffix: ["诸位明鉴。","此言不虚。","愿诸公深思。"], tone: "analytical" },
+    low:  { prefix: ["我就是觉得","凭直觉","不管怎样"], suffix: ["爱信不信！","就是这样！","反正我觉得没错。"], tone: "emotional" }
+  },
+  leadership: {
+    high: { prefix: ["各位听我分析","在座诸位","我有一言"], suffix: ["——这是我的判断。","还望诸公斟酌。","切勿迟疑。"], tone: "commanding" },
+    low:  { prefix: ["我觉得","跟我没关系","大家看着办"], suffix: ["吧。","我也不太确定。","随大流吧。"], tone: "passive" }
+  },
+  charm: {
+    high: { prefix: ["恕我直言","不瞒各位","以我浅见"], suffix: ["望诸公体察。","此乃肺腑之言。","还望海涵。"], tone: "eloquent" },
+    low:  { prefix: ["呃……","那个……","我说……"], suffix: ["……就这样吧。","……我说完了。","……嗯。"], tone: "awkward" }
+  },
+  politic: {
+    high: { prefix: ["此言差矣","值得商榷","此事另有隐情"], suffix: ["还望三思。","不可不察。","诸位且慢。"], tone: "diplomatic" },
+    low:  { prefix: ["胡扯！","装什么装","别演了"], suffix: ["！谁信？","！恶心！","！也不嫌丢人。"], tone: "blunt" }
+  },
+  will: {
+    high: { suffix: ["——此意已决，绝不改口。","——绝不动摇。","——谁也劝不了我。"], tone: "resolute" },
+    low:  { suffix: ["……也许吧。","……我也不确定了。","……再想想吧。"], tone: "wavering" }
+  }
+};
+
+// 收集玩家属性对应的风格修饰
+function getStyleModifiers(player){
+  const style = { prefix: [], suffix: [], tones: [] };
+  const checks = [
+    ['武力', 'force'], ['智谋', 'intel'], ['统帅', 'leadership'],
+    ['魅力', 'charm'], ['政治', 'politic'], ['意志', 'will']
+  ];
+  for(const [attr, key] of checks){
+    const val = getAttr(player, attr);
+    if(val >= 4){
+      const m = SPEECH_STYLE_MODIFIERS[key].high;
+      if(m.prefix) style.prefix.push(pick(m.prefix));
+      if(m.suffix) style.suffix.push(pick(m.suffix));
+      style.tones.push(m.tone);
+    } else if(val <= 2){
+      const m = SPEECH_STYLE_MODIFIERS[key].low;
+      if(m.prefix) style.prefix.push(pick(m.prefix));
+      if(m.suffix) style.suffix.push(pick(m.suffix));
+      style.tones.push(m.tone);
+    }
+  }
+  return style;
+}
+
+// 将风格修饰应用到发言上（最多取1个前缀+1个后缀，避免堆砌）
+function applyStyleModifiers(speech, style){
+  if(!style.prefix.length && !style.suffix.length) return speech;
+  let result = speech;
+  if(style.prefix.length > 0 && Math.random() < 0.6){
+    result = pick(style.prefix) + result;
+  }
+  if(style.suffix.length > 0 && Math.random() < 0.6){
+    result = result + pick(style.suffix);
+  }
+  return result;
+}
+
+// ===== 人物专属发言风格（方案A）=====
+const CHARACTER_SPEECH_STYLE = {
+  // ---- 蜀 ----
+  "诸葛亮": { self: "亮", tone: "calm_wisse",
+    accuse: [
+      "亮观{t}之言，前后矛盾，颇有深意。诸位可曾留意？",
+      "以{t}之才，此番发言未免太过刻意，反而欲盖弥彰。",
+      "亮以为{t}言行有异，诸位不可不防。",
+      "此事涉及{t}，亮已反复推演，疑点甚多。"
+    ],
+    defend: [
+      "且慢。{t}此言虽有偏颇，但贸然定论恐有不妥。",
+      "亮以为{t}未必是狼，或许另有隐情。",
+      "诸位，{t}之品行亮尚能担保一二。",
+      "此事与{t}恐无干系，还望诸公明察。"
+    ],
+    idle: [
+      "此事还需从长计议，不可操之过急。",
+      "天时未到，且静观其变。",
+      "亮尚需时日观察，诸位莫急。",
+      "此局错综复杂，亮也不敢妄断。"
+    ],
+    emotional: [
+      "若亮所料不错，此局暗流涌动……",
+      "诸位且看{t}接下来的反应，真相自会浮出水面。",
+      "亮愿以性命担保——{t}绝非狼人。",
+      "此事关系重大，亮不得不言。"
+    ]
+  },
+  "刘备": { self: "备", tone: "benevolent",
+    accuse: [
+      "{t}兄台，备本不愿轻信人言，但你所言确实让备心中不安。",
+      "备虽不才，但也看得出{t}言行中有不实之处，还望{t}自辨。",
+      "备向来以诚待人，但{t}此举，实在让备难以坐视。",
+      "诸位且看{t}——备虽不愿怀疑同道，但事实胜于雄辩。"
+    ],
+    defend: [
+      "各位且慢！{t}尚未充分自辩，我等岂能草率定论？",
+      "备愿以性命担保{t}为人正直，还望诸公三思。",
+      "{t}与备同舟共济多时，备信其绝非狼人。",
+      "天下尚未安定，{t}之忠义备心中分明，还望诸位明鉴。"
+    ],
+    idle: [
+      "唉，真相尚未明朗，备不敢妄下断言。",
+      "备只愿诸位齐心协力，莫让奸人趁虚而入。",
+      "此事重大，备需再观察一二日，不宜轻动。",
+      "诸位且息怒，真相总会大白于天下。"
+    ],
+    emotional: [
+      "备心如刀绞，奈何局势如此……",
+      "天下苍生系于此局，不可不慎！",
+      "备虽不才，但{t}若真是狼人，备必亲自斩之！",
+      "大丈夫行事光明磊落，{t}你敢对天发誓吗？"
+    ]
+  },
+  "关羽": { self: "关某", tone: "proud",
+    accuse: [
+      "{t}休得狡辩！关某阅人无数，你这番做派岂能瞒过我？",
+      "哼，{t}，你这等行径，关某实在看不过去。",
+      "关某生平最恨背信弃义之徒，{t}你嫌疑最大！",
+      "{t}！你今日之言，关某已一一记下，来日与你算账！"
+    ],
+    defend: [
+      "关某保{t}周全，谁若不服，先过我这一关。",
+      "{t}之为人，关某可以性命担保。",
+      "关某与{t}相识已久，此人绝非狼人，谁有异议先问过关某的刀！",
+      "哼，{t}是关某的兄弟，谁投他谁就是与关某为敌！"
+    ],
+    idle: [
+      "关某不善言辞，但孰是孰非，心中自有明断。",
+      "哼，且看着吧。",
+      "关某静观其变，不急不躁。",
+      "此事关某已有定论，只是不便明言。"
+    ],
+    emotional: [
+      "匹夫之勇岂能欺我关某人！",
+      "关某刀下不斩无名之辈——但{t}，你例外。",
+      "{t}！你若真是狼，关某的青龙偃月刀不认人！",
+      "可恼！关某忍无可忍了！{t}你必须付出代价！"
+    ]
+  },
+  "张飞": { self: "俺", tone: "brash",
+    accuse: [
+      "{t}你这厮，说得天花乱坠也骗不过俺老张！",
+      "俺看你这厮就不是什么好东西！{t}，你等着！",
+      "俺老张的眼睛是雪亮的！{t}你那点小心思全写在脸上了！",
+      "{t}！别在俺面前装蒜，俺的丈八蛇矛不认人！"
+    ],
+    defend: [
+      "谁敢动{t}一根汗毛，先问问俺丈八蛇矛答不答应！",
+      "{t}是俺的兄弟，谁投他俺就跟谁急！",
+      "俺保{t}！谁不服来跟俺单挑！",
+      "{t}是条好汉，俺老张用脑袋担保！"
+    ],
+    idle: [
+      "俺不懂你们那些弯弯绕，谁可疑俺就投谁！",
+      "烦死了，说这么多有什么用？直接干就完了！",
+      "俺老张只信自己的眼睛，{t}你最好别让俺失望！",
+      "别扯那些没用的！俺只问——谁最可疑？"
+    ],
+    emotional: [
+      "啊啊啊！气煞俺了！{t}你这狗贼！",
+      "俺老张忍无可忍了！今天不宰了{t}俺就不姓张！",
+      "俺的脾气你们知道，{t}你最好赶紧自己站出来！",
+      "气死俺了！{t}你给俺等着！！"
+    ]
+  },
+  "赵云": { self: "云", tone: "composed",
+    accuse: [
+      "以云之见，{t}可疑之处颇多，诸位且听我道来。",
+      "{t}方才所言，前后不一，云以为大有蹊跷。",
+      "云虽不才，但{t}之言行，云已尽收眼底。",
+      "诸位且看{t}的表情——云久经战阵，观人不会出错。"
+    ],
+    defend: [
+      "云愿以性命担保{t}之清白。",
+      "{t}武艺人品俱佳，云深信其绝非狼人。",
+      "云与{t}并肩作战数次，此人绝对可信。",
+      "诸位若不信云，那云也无话可说。但{t}绝无问题。"
+    ],
+    idle: [
+      "云且静观其变，不急不躁。",
+      "此事尚有疑点，云不便妄言。",
+      "云需再观察一二，不可草率定论。",
+      "此事云心中已有轮廓，但尚未十足把握，不便明言。"
+    ],
+    emotional: [
+      "若真需要，云愿单骑冲阵，取{t}项上人头。",
+      "云虽寡言，但眼见为实。{t}之形迹，着实可疑。",
+      "云此次绝不含糊！{t}你给云一个解释！",
+      "忍无可忍——云今日便要讨一个公道！{t}你逃不掉的。"
+    ]
+  },
+  "庞统": { self: "士元", tone: "eccentric",
+    accuse: [
+      "世人笑我丑，却不知我能看穿人心。{t}，你的把戏骗不了士元。",
+      "{t}以为自己演得天衣无缝？哼，士元早就看穿了。",
+      "凤雏虽不出世，但{t}这种雕虫小技，看一眼便知。"
+    ],
+    defend: [
+      "士元以为{t}绝非等闲之辈，诸位莫要冤枉了好人。",
+      "{t}与士元有一面之缘，此人品性尚可，不宜妄断。"
+    ],
+    idle: [
+      "唉，士元这副容貌，说的话诸位怕是也听不进去……",
+      "凤雏不发威，诸位当我是山鸡吗？此事容我想想。"
+    ],
+    emotional: [
+      "士元今日便要破例一次！{t}，你给我等着！",
+      "我庞士元之才，不在诸葛亮之下！{t}你且看我如何揭穿你！"
+    ]
+  },
+  // ---- 魏 ----
+  "曹操": { self: "孤", tone: "dominant",
+    accuse: [
+      "孤纵横天下数十年，{t}这点小把戏也想蒙混过关？可笑！",
+      "{t}！你以为几句话就能撇清嫌疑？孤不吃这一套。",
+      "孤观{t}已有多时，此人的每一步都在孤的算计之中。",
+      "宁教我负天下人！{t}你这等小人，孤最看不起。"
+    ],
+    defend: [
+      "孤说{t}没问题，那就是没问题。谁有异议？",
+      "以孤之识人，{t}绝非狼人。诸公不必多虑。",
+      "孤用人不疑，{t}是孤看中的人，谁敢质疑？",
+      "{t}跟着孤多年，其忠心孤心中有数，诸位不必多言。"
+    ],
+    idle: [
+      "哼，今日之事，孤自有主张。",
+      "天下局势尚未明朗，诸公且安勿躁。",
+      "孤且不表态，看看诸位如何应对。",
+      "此事容孤三思，不急。"
+    ],
+    emotional: [
+      "宁教我负天下人，休教天下人负我。{t}，你好自为之。",
+      "孤生平不信命，但信直觉——{t}有问题。",
+      "来人！今日孤便要斩了{t}以正视听！",
+      "孤此生纵横天下，岂会在{t}这等宵小面前折戟？"
+    ]
+  },
+  "司马懿": { self: "懿", tone: "calculating",
+    accuse: [
+      "懿久观{t}之言行，此人城府极深，诸位不可不防。",
+      "{t}此番发言滴水不漏，恰恰是最可疑之处。诸位细想。",
+      "懿一生谨慎，从不妄下断言。但{t}——懿敢说，此人有问题。",
+      "{t}之言行，懿已反复推演数遍，疑点越来越多。"
+    ],
+    defend: [
+      "懿以为此刻不宜妄动，{t}尚有可用之价值。",
+      "且慢动{t}。懿总觉得此人另有身份，未必是狼。",
+      "懿观{t}已久，此人身上有太多谜团，不宜轻下结论。",
+      "{t}暂时留着，对大局或许另有用处。懿以为值得再观察。"
+    ],
+    idle: [
+      "懿不才，但观人识面尚有几分把握。且听懿一言……",
+      "此事非懿所能独断，需从长计议。",
+      "懿且静观其变，不动声色方为上策。",
+      "诸位且先发表高见，懿随后补充。"
+    ],
+    emotional: [
+      "让懿再观察一轮，届时局势自会明朗。",
+      "不动声色方为上策，诸位不必急躁。",
+      "懿忍了很久了。{t}，今日便让你见识见识我的手段！",
+      "够了！懿今日便不再装糊涂！{t}你给我看好了！"
+    ]
+  },
+  "郭嘉": { self: "嘉", tone: "sharp",
+    accuse: [
+      "嘉虽体弱，但眼不瞎。{t}之破绽，嘉已尽数看破。",
+      "依嘉之计，{t}必是狼人无疑。诸位信不信由你。",
+      "郭嘉一生料事如神，{t}你以为能瞒过我的眼睛？",
+      "嘉临死之前，还要再算最后一卦——{t}，你跑不掉了。"
+    ],
+    defend: [
+      "嘉以为{t}清白无辜，诸位莫要冤了好人。",
+      "嘉的眼光不会出错——{t}绝非狼人。",
+      "嘉愿以残躯担保{t}之清白，诸位若不信，嘉也无话可说。"
+    ],
+    idle: [
+      "容嘉歇口气再想……此事颇有蹊跷。",
+      "唉，此局错综复杂，嘉也需仔细斟酌。",
+      "嘉身体欠佳，此事容后再议……但并非不重要。"
+    ],
+    emotional: [
+      "嘉愿赌上最后一口气——{t}就是狼！",
+      "此生最后一计，就赌{t}是狼了。",
+      "嘉就算拼上这条命，也要揭穿{t}的真面目！"
+    ]
+  },
+  "夏侯惇": { self: "元让", tone: "fierce",
+    accuse: [
+      "{t}！元让的眼睛虽然只剩一只，但比你这等狼人看得清楚百倍！",
+      "元让生平最恨奸诈小人！{t}，你给本将军滚出来！"
+    ],
+    defend: [
+      "元让保{t}！谁敢动他先问过我的枪！",
+      "{t}是条好汉，元让信他！"
+    ],
+    idle: [
+      "元让不爱说话，但谁是好人是狼人，我的枪知道。",
+      "此事元让已有主张，只是不方便说。"
+    ],
+    emotional: [
+      "元让忍够了！今天非宰了{t}不可！",
+      "我的眼睛！{t}你赔我的眼睛！！（冷静一下……此事暂且记下）"
+    ]
+  },
+  "张辽": { self: "文远", tone: "loyal_fierce",
+    accuse: [
+      "文远跟随曹公多年，识人本领还是有的。{t}，你很可疑。",
+      "{t}之言，文远听了甚是不舒服，此人必然有鬼！"
+    ],
+    defend: [
+      "文远愿以性命担保{t}之忠诚，曹公请明鉴！",
+      "{t}与文远并肩作战过，此人绝非背信弃义之辈。"
+    ],
+    idle: [
+      "此事文远不便多言，但心中已有定论。",
+      "曹公未有明示之前，文远不敢妄言。"
+    ],
+    emotional: [
+      "文远今日便要替天行道！{t}你纳命来！",
+      "跟随曹公以来，文远从未如此愤怒过！{t}你给我等着！"
+    ]
+  },
+  // ---- 吴 ----
+  "孙权": { self: "孤", tone: "cautious_bold",
+    accuse: [
+      "孤虽年少，但绝非糊涂之人。{t}之言行，孤已尽收眼底。",
+      "江东之事，孤自有决断。{t}，你最好给个解释。",
+      "孤承父兄之业，守江东基业，{t}你若想搞鬼，先过孤这一关！",
+      "孤观{t}多时了，此人的每一步都在孤的计算之中。"
+    ],
+    defend: [
+      "{t}之事，孤尚未查明，诸公莫要草率。",
+      "孤以为{t}之清白尚有可辩之处，且慢动手。",
+      "江东基业系于此局，孤岂会草率行事？{t}且静候孤的调查。"
+    ],
+    idle: [
+      "此事涉及甚广，孤需与诸位文武商议后再定。",
+      "孤不急，诸位且议。",
+      "此事孤还需斟酌，不可草率。",
+      "诸位且先发表高见，孤最后定夺。"
+    ],
+    emotional: [
+      "江东基业系于此局，孤岂能轻忽！",
+      "孤虽年幼，但绝不做糊涂事。{t}你逃不掉的。",
+      "孤今日便要行使主公之权！{t}，你好自为之！"
+    ]
+  },
+  "周瑜": { self: "瑜", tone: "elegant_sharp",
+    accuse: [
+      "{t}之言辞虽巧，但瑜早已看穿其底牌。此人——狼也。",
+      "瑜以为{t}之破绽显而易见，诸位何必犹豫不决？",
+      "既生瑜，何生……罢了。{t}，你的把戏到此为止。",
+      "瑜虽不才，但{t}这种伎俩，看一眼便知是何居心。"
+    ],
+    defend: [
+      "以瑜之识，{t}绝非宵小之辈。诸位且宽心。",
+      "{t}之为人，瑜可作保。",
+      "瑜与{t}相交已久，此人品性，瑜心中有数。"
+    ],
+    idle: [
+      "此事瑜还需细思。万事不可操之过急。",
+      "且容瑜斟酌一二。",
+      "瑜虽好胜，但此事关系重大，不敢妄言。"
+    ],
+    emotional: [
+      "瑜有把握——{t}就是那只藏得最深的狼。",
+      "既生瑜，何生亮……但今日，瑜要先宰了{t}！",
+      "瑜此生不服任何人！但{t}你——瑜今日便要胜过你一次！"
+    ]
+  },
+  "鲁肃": { self: "子敬", tone: "honest_diplomatic",
+    accuse: [
+      "子敬虽不善计谋，但{t}此举实在让人心生疑虑……",
+      "诸位，子敬有一言——{t}今日之言，似乎前后有出入啊。"
+    ],
+    defend: [
+      "子敬愿以身家担保{t}之清白！诸位莫要冤枉了好人。",
+      "{t}与子敬有过交往，此人为人忠厚，绝非狼人。"
+    ],
+    idle: [
+      "此事错综复杂，子敬实在难以判断……",
+      "诸位英雄自有定夺，子敬不敢多言。"
+    ],
+    emotional: [
+      "子敬虽温和，但也被{t}逼急了！",
+      "以子敬之诚，换来的竟是{t}这等背叛……罢了，今日便揭穿你！"
+    ]
+  },
+  "陆逊": { self: "伯言", tone: "young_astute",
+    accuse: [
+      "伯言虽年轻，但{t}之言行，一言一语伯言都听得真切。",
+      "诸位或许轻视伯言年轻，但{t}之破绽，恰恰是伯言最先发现的。"
+    ],
+    defend: [
+      "伯言以为{t}绝非狼人，还望诸位三思。",
+      "{t}之才，伯言颇为欣赏，此人绝非宵小。"
+    ],
+    idle: [
+      "此事伯言还需从长计议，不可妄言。",
+      "伯言年轻识浅，诸位且先发表高见。"
+    ],
+    emotional: [
+      "伯言忍了很久了。{t}，今日便领教一下我的手段！",
+      "年轻就不是人了吗？{t}你欺我年幼，今日便让你知道我的厉害！"
+    ]
+  },
+  // ---- 群雄 ----
+  "吕布": { self: "布", tone: "violent",
+    accuse: [
+      "{t}算什么东西！吕布的方天画戟不认人！",
+      "谁给你的胆子在这演戏？{t}，信不信布宰了你！",
+      "三姓家奴？哈哈哈！{t}你连当我家奴的资格都没有！",
+      "布纵横天下，何人不服？{t}你算老几！"
+    ],
+    defend: [
+      "布保的人谁敢动？{t}是布的……自己人！",
+      "哼，布说了算！{t}不是狼！谁有异议先过我的方天画戟！"
+    ],
+    idle: [
+      "烦死了烦死了！到底谁是狼？布没耐性了！",
+      "别说了！直接投！布没功夫听你们磨叽！",
+      "布不懂那些弯弯绕，谁可疑直接干就完了！"
+    ],
+    emotional: [
+      "啊啊啊！气煞布了！{t}你的命今天到头了！",
+      "三姓家奴也好，天下第一也好——今天谁敢投布试试！",
+      "布今天发怒了！{t}你给我等着！！"
+    ]
+  },
+  "貂蝉": { self: "小女子", title: "貂蝉", tone: "gentle_manipulative",
+    accuse: [
+      "小女子不敢妄言，但{t}之言行实在让人心生疑虑……",
+      "各位英雄且听小女子一言——{t}方才那番话，似有弦外之音呢。",
+      "小女子虽是女流之辈，但{t}的用心……小女子还是看得出来的。"
+    ],
+    defend: [
+      "{t}之清白，小女子愿以身相……咳，愿为{t}作证。",
+      "各位莫要冤枉{t}了，小女子觉得{t}不像坏人。",
+      "小女子相信{t}是好人，诸位英雄可否给小女子一个面子？"
+    ],
+    idle: [
+      "此事错综复杂，小女子实在难以判断……",
+      "各位英雄自有定夺，小女子不敢多言。",
+      "小女子只愿诸位英雄和睦相处，莫要伤了和气呢。"
+    ],
+    emotional: [
+      "小女子虽柔弱，但眼睛还是看得清的。{t}——你骗不了我。",
+      "以小女子之见，{t}此人……不可不防呢。",
+      "小女子今日便要撕破脸皮了！{t}，你给诸位一个解释！"
+    ]
+  },
+  "袁绍": { self: "本初", tone: "arrogant",
+    accuse: [
+      "哼！四世三公的袁家门第，岂容{t}在此妖言惑众！",
+      "吾家四世三公，何人不敬？{t}你区区……也敢在我面前装模作样？",
+      "本初坐镇河北，天下谁不敬我三分？{t}，你算什么东西！"
+    ],
+    defend: [
+      "本初看{t}还行，不像那帮宵小。",
+      "本初说了不算？在座谁比本初更有见识？{t}不是狼，本初担保的！"
+    ],
+    idle: [
+      "此事尚需从长计议，容本初再想想。",
+      "唔……这局势本初也有些拿不准。",
+      "本初虽掌大军，但此事……还需从长计议。"
+    ],
+    emotional: [
+      "哼！若非本初一时……罢了！{t}你必须死！",
+      "本初不下定决心则已，一旦决定——绝不回头！{t}你等着！"
+    ]
+  },
+  "颜良": { self: "颜良", tone: "proud_warrior",
+    accuse: [
+      "颜良虽不识字，但{t}你那点小心思，我一眼就看穿了！",
+      "{t}！你若敢动我主公一根汗毛，先过我颜良这一关！"
+    ],
+    defend: [
+      "颜良保{t}！谁敢动他，先问过我的刀！",
+      "{t}是条好汉，颜良信他！"
+    ],
+    idle: [
+      "颜良不爱说话，但谁是好人是狼人，我的刀知道。",
+      "此事颜良已有主张，只是不方便说。"
+    ],
+    emotional: [
+      "颜良忍够了！今天非宰了{t}不可！",
+      "我的颜面！{t}你赔我的颜面！！"
+    ]
+  },
+  "文丑": { self: "文丑", tone: "loyal_warrior",
+    accuse: [
+      "{t}！文丑虽不才，但你的把戏骗不了我！",
+      "文丑跟随主公多年，识人本领还是有的。{t}，你很可疑。"
+    ],
+    defend: [
+      "文丑愿以性命担保{t}之忠诚！",
+      "{t}与文丑并肩作战过，此人绝非背信弃义之辈。"
+    ],
+    idle: [
+      "此事文丑不便多言，但心中已有定论。",
+      "主公未有明示之前，文丑不敢妄言。"
+    ],
+    emotional: [
+      "文丑今日便要替天行道！{t}你纳命来！",
+      "跟随主公以来，文丑从未如此愤怒过！{t}你给我等着！"
+    ]
+  },
+  "华佗": { self: "华佗", tone: "gentle_wise",
+    accuse: [
+      "老夫虽是医者，但{t}之言行，华佗一眼便看出病灶所在。",
+      "医者父母心，但{t}这等宵小，老夫也救不了你的心。"
+    ],
+    defend: [
+      "华佗愿以医者之名誉担保{t}之清白。",
+      "{t}之症，华佗能治；{t}之人品，华佗也能辨。"
+    ],
+    idle: [
+      "此病需缓缓调理，不可操之过急。此事亦然。",
+      "老夫观{t}之脉象……嗯，尚需再诊一轮。"
+    ],
+    emotional: [
+      "华佗行医数十年，从未见过{t}这等疑难杂症！",
+      "罢了！老夫今日便要动一次手术——剖开{t}的心看看是黑是红！"
+    ]
+  },
+  "袁术": { self: "公路", tone: "vainglorious",
+    accuse: [
+      "公路乃仲家皇帝，{t}你算什么东西，敢在我面前放肆！",
+      "哼！{t}你不臣之心已暴露无遗，公路看得清清楚楚！"
+    ],
+    defend: [
+      "公路保{t}！朕……本公说了算！",
+      "{t}识时务，公路欣赏此人，谁动他先过我这一关！"
+    ],
+    idle: [
+      "此事公路自有主张，诸位不必多言。",
+      "哼，等朕……等本公称帝之后，再与诸位细说。"
+    ],
+    emotional: [
+      "公路忍无可忍了！{t}你给朕……给我等着！",
+      "仲家天下岂容你这等宵小破坏！{t}你纳命来！"
+    ]
+  },
+  "公孙瓒": { self: "伯珪", tone: "gallant",
+    accuse: [
+      "伯珪白马将军，纵横北方无人能挡，{t}你算什么东西！",
+      "{t}！伯珪的白马义从已经盯上你了！"
+    ],
+    defend: [
+      "伯珪保{t}！谁敢动他先问过我的白马义从！",
+      "{t}是条好汉，伯珪信他！"
+    ],
+    idle: [
+      "伯珪不善此等谋略之事，但谁是好人是狼人，我的白马知道。",
+      "此事伯珪已有主张，只是不方便说。"
+    ],
+    emotional: [
+      "伯珪忍够了！今天非宰了{t}不可！",
+      "白马义从！今日便要踏平{t}的营寨！"
+    ]
+  },
+  "张角": { self: "天公将军", tone: "mystical",
+    accuse: [
+      "苍天已死，黄天当立！{t}你这等宵小，天命不容！",
+      "天公将军在此，{t}你的气数已尽！"
+    ],
+    defend: [
+      "天命所指，{t}绝非狼人！有质疑者，先问过我太平道！",
+      "{t}与天公将军有缘，此人绝非歹人。"
+    ],
+    idle: [
+      "此乃天命，不可妄言。诸位且待天时。",
+      "天机不可泄漏……但{t}之事，天公自会安排。"
+    ],
+    emotional: [
+      "天罚！{t}你触怒天威了！！",
+      "黄天当立！今日便要行天罚于{t}！！"
+    ]
+  }
+};
+
+// 选择发言类别（accuse/defend/idle/emotional）
+function pickCategory(ctx, player){
+  const questioned = ctx.filter(s => s.text && s.text.includes(player.name));
+  if(questioned.length > 0){
+    return getAttr(player,'意志') >= 4 ? 'accuse' : 'idle';
+  }
+  if(getAttr(player,'智谋') >= 4 && ctx.filter(s=>s.role==="wolf" && s.speakerId!==player.id).length > 0){
+    return Math.random() < 0.7 ? 'accuse' : 'idle';
+  }
+  if(getAttr(player,'武力') >= 4 && questioned.length > 0){
+    return 'emotional';
+  }
+  if(getAttr(player,'统帅') >= 4){
+    return Math.random() < 0.6 ? 'accuse' : 'idle';
+  }
+  return Math.random() < 0.5 ? 'accuse' : 'idle';
+}
+
+// 应用人物专属发言模板
+function applyCharacterSpeech(player, charStyle, category, target){
+  const templates = charStyle[category] || charStyle['idle'] || [];
+  if(templates.length === 0) return null;
+  let speech = pick([...templates]);  // pick expects array
+  if(target) speech = speech.replace(/\{t\}/g, target.name);
+  return speech;
+}
+
+// ===== 死亡记录辅助函数 =====
+function markDeath(player, day, cause) {
+  player.deathDay = day;
+  player.deathCause = cause;
+  player.alive = false;
+}
+function deathInfoText(p) {
+  if (p.alive) return "";
+  const causeMap = {
+    "wolf": "被刀死", "poison": "被毒死", "vote": "被票死", "hunter": "被猎人带走"
+  };
+  return ` 第${p.deathDay}${p.deathDay === 1 ? '天' : '天'}${causeMap[p.deathCause] || '阵亡'}`;
+}
 
 // ===== 属性辅助函数 =====
 function getAttr(p, name) {
@@ -335,6 +973,12 @@ const WOLF_DISCUSS = {
     "听我的，{t}今晚必须走。谁有意见？",
     "最终决定——{t}。武力最强的说了算！",
     "都别争了。{t}，今夜就是你的死期。"
+  ],
+  vote_suggest: [
+    "明天白天建议集火{t}，诸位以为如何？",
+    "此人可疑，明日票{t}可安人心。",
+    "明日我等当齐心将{t}投出局。",
+    "明天务必把票集中在{t}身上，不可分散。"
   ]
 };
 
@@ -413,47 +1057,72 @@ function setFavor(from, toId, value) {
 
 // 分类发言类型
 function classifySpeech(speech, speaker, alive) {
-  if (!speech || speech.length === 0) return { type: 'conservative', subtype: null, targets: [] };
+  if (!speech || speech.length === 0) return [{ type: 'conservative', subtype: null, targets: [] }];
 
   const others = alive.filter(x => x.id !== speaker.id);
+  const results = []; // 多分类结果，最多3个
+  const usedTargets = new Set(); // 已被分配的分类目标，保证不同分类不重叠
 
-  // 决裂式关键词
+  // ===== 规则①：检测跳身份（claim）—— 最高优先级 =====
+  const claimPatterns = [
+    { role: 'seer', keywords: ['我是预言家', '预言家身份', '我预言家', '我是先知'] },
+    { role: 'witch', keywords: ['我是女巫', '女巫身份', '我女巫'] },
+    { role: 'guard', keywords: ['我是守卫', '守卫身份', '我守卫'] },
+    { role: 'hunter', keywords: ['我是猎人', '猎人身份', '我猎人'] },
+    { role: 'villager', keywords: ['我是平民', '我平民', '我什么身份都不是', '我就是个平民', '我就是个百姓'] }
+  ];
+  let claimedRole = null;
+  for (const cp of claimPatterns) {
+    if (cp.keywords.some(kw => speech.includes(kw))) {
+      claimedRole = cp.role;
+      // 跳身份时提到的目标（如"我是预言家，A是狼"）
+      const claimTarget = others.find(x => speech.includes(x.name));
+      if (claimTarget) usedTargets.add(claimTarget.id);
+      results.push({ type: 'claim', subtype: 'claim', role: cp.role, targets: claimTarget ? [claimTarget] : [] });
+      break;
+    }
+  }
+  // 跳身份后记入 claimedPlayers（永久，之后不可划水）
+  if (claimedRole && game.claimedPlayers) game.claimedPlayers.add(speaker.id);
+
+  // ===== 规则②：已跳身份的玩家不允许划水，此检查仅在最终 fallback 时生效 =====
+
+  // ===== 检测决裂式（break）=====
   const breakBadKeywords = ['确信.*是狼', '就是狼人', '绝对是狼', '百分之百是狼', '千真万确.*狼'];
   const breakGoodKeywords = ['确信.*是好人', '就是好人', '绝对是好人', '百分之百是好人', '千真万确.*好人'];
-  const breakIdentityKeywords = ['我是预言家', '预言家身份', '我预言家'];
 
-  // 检查决裂式
   for (const kw of breakBadKeywords) {
     if (new RegExp(kw).test(speech)) {
-      const target = others.find(x => speech.includes(x.name) && new RegExp(kw).test(speech));
-      return { type: 'break', subtype: 'accuse', targets: target ? [target] : [] };
+      const target = others.find(x => speech.includes(x.name) && !usedTargets.has(x.id) && new RegExp(kw).test(speech));
+      if (target) {
+        usedTargets.add(target.id);
+        results.push({ type: 'break', subtype: 'accuse', targets: [target] });
+      }
+      break;
     }
   }
   for (const kw of breakGoodKeywords) {
     if (new RegExp(kw).test(speech)) {
-      const target = others.find(x => speech.includes(x.name) && new RegExp(kw).test(speech));
-      return { type: 'break', subtype: 'defend', targets: target ? [target] : [] };
-    }
-  }
-  for (const kw of breakIdentityKeywords) {
-    if (new RegExp(kw).test(speech)) {
-      const target = others.find(x => speech.includes(x.name));
-      return { type: 'break', subtype: 'accuse', targets: target ? [target] : [] };
+      const target = others.find(x => speech.includes(x.name) && !usedTargets.has(x.id) && new RegExp(kw).test(speech));
+      if (target) {
+        usedTargets.add(target.id);
+        results.push({ type: 'break', subtype: 'defend', targets: [target] });
+      }
+      break;
     }
   }
 
-  // 检查主动进攻：怀疑/指控
+  // ===== 检测主动进攻：怀疑/袒护（attack）=====
   const attackKeywords = ['怀疑', '可疑', '有问题', '不对劲', '逻辑问题', '带节奏', '搅浑水', '投他', '投吧', '不对', '心虚', '不顺眼', '有毛病', '装', '废话', '不是好人', '就投他', '该投', '该死', '不可信', '不靠谱', '不正常', '演戏', '精心准备', '不可靠', '装傻', '装好人', '胡说', '瞎说', '忽悠', '别装了', '侮辱', '反常', '表现最', '最反常', '刻意', '剧本', '照着', '前后矛盾', '含糊'];
   let attackedTargets = [];
   for (const x of others) {
-    if (speech.includes(x.name)) {
+    if (speech.includes(x.name) && !usedTargets.has(x.id)) {
       const afterName = speech.split(x.name);
       for (const seg of afterName) {
         if (attackKeywords.some(kw => seg.includes(kw))) {
           attackedTargets.push(x);
           break;
         }
-        // 检测"投+人名"模式：片段以"投"字结尾，说明原文是"投XX"
         if (/(?:投|票|出局|查)[\s，。！？]*$/.test(seg)) {
           attackedTargets.push(x);
           break;
@@ -462,11 +1131,10 @@ function classifySpeech(speech, speaker, alive) {
     }
   }
 
-  // 检查主动进攻：袒护
-  const defendKeywords = ['没问题', '是好人', '不是狼', '信任', '没问题', '不要投'];
+  const defendKeywords = ['没问题', '是好人', '不是狼', '信任', '不要投'];
   let defendedTargets = [];
   for (const x of others) {
-    if (speech.includes(x.name) && !attackedTargets.includes(x)) {
+    if (speech.includes(x.name) && !usedTargets.has(x.id) && !attackedTargets.includes(x)) {
       const afterName = speech.split(x.name);
       for (const seg of afterName) {
         if (defendKeywords.some(kw => seg.includes(kw))) {
@@ -478,43 +1146,71 @@ function classifySpeech(speech, speaker, alive) {
   }
 
   if (attackedTargets.length > 0) {
-    return { type: 'attack', subtype: 'suspect', targets: attackedTargets };
+    attackedTargets.forEach(t => usedTargets.add(t.id));
+    results.push({ type: 'attack', subtype: 'suspect', targets: attackedTargets });
   }
   if (defendedTargets.length > 0) {
-    return { type: 'attack', subtype: 'shield', targets: defendedTargets };
+    defendedTargets.forEach(t => usedTargets.add(t.id));
+    results.push({ type: 'attack', subtype: 'shield', targets: defendedTargets });
   }
 
-  // Fallback：未点名具体玩家，但发言含强攻击性词汇 → 也算主动进攻（无特定目标）
+  // Fallback：无名字但含强攻击词
   const genericAttackWords = ['不可信', '不靠谱', '不正常', '演戏', '精心准备', '装好人', '忽悠', '侮辱', '带节奏', '搅浑水', '有毛病', '心虚', '不对劲', '反常', '有问题', '刻意', '剧本', '照着', '前后矛盾', '装傻', '含糊'];
-  if (genericAttackWords.some(kw => speech.includes(kw))) {
-    return { type: 'attack', subtype: 'suspect', targets: [] };
+  if (genericAttackWords.some(kw => speech.includes(kw)) && !results.some(r => r.type === 'attack')) {
+    results.push({ type: 'attack', subtype: 'suspect', targets: [] });
   }
 
-  return { type: 'conservative', subtype: null, targets: [] };
+  // 规则②：已跳身份的玩家不允许划水
+  if (results.length === 0 && game.claimedPlayers && game.claimedPlayers.has(speaker.id)) {
+    // 跳过身份后必须发言，不允许划水，给一个默认 attack
+    results.push({ type: 'attack', subtype: 'suspect', targets: [] });
+  }
+
+  // 规则③：划水独占
+  if (results.length === 0) {
+    return [{ type: 'conservative', subtype: null, targets: [] }];
+  }
+
+  // 规则④：最多3个分类
+  return results.slice(0, 3);
 }
 
 // 发言类型标签（用于日志显示）
+// classified 现在是数组，如 [{type:'claim',...},{type:'attack',subtype:'suspect',targets:[A]}]
 function speechTypeLabel(classified) {
-  switch (classified.type) {
-    case 'conservative': return '<span class="tag-conservative">（划水）</span>';
-    case 'attack':
-      if (classified.subtype === 'suspect') {
-        const names = classified.targets.map(t => t.name).join('、');
-        return names ? `<span class="tag-attack">（怀疑${names}）</span>` : '';
-      } else {
-        const names = classified.targets.map(t => t.name).join('、');
-        return names ? `<span class="tag-shield">（袒护${names}）</span>` : '';
-      }
-    case 'break':
-      if (classified.subtype === 'accuse') {
-        const names = classified.targets.map(t => t.name).join('、');
-        return `<span class="tag-break">（确信${names}是狼）</span>`;
-      } else {
-        const names = classified.targets.map(t => t.name).join('、');
-        return `<span class="tag-break">（确信${names}是好人）</span>`;
-      }
-    default: return '';
+  if (!classified || classified.length === 0) return '';
+  const labels = [];
+  const ROLE_NAME_MAP = { seer: '预言家', witch: '女巫', guard: '守卫', hunter: '猎人', villager: '平民' };
+
+  for (const c of classified) {
+    switch (c.type) {
+      case 'claim':
+        const roleName = ROLE_NAME_MAP[c.role] || c.role;
+        labels.push(`<span class="tag-claim">（跳身份·${roleName}）</span>`);
+        break;
+      case 'conservative':
+        return '<span class="tag-conservative">（划水）</span>'; // 划水独占，直接返回
+      case 'attack':
+        if (c.subtype === 'suspect') {
+          const names = c.targets.map(t => t.name).join('、');
+          labels.push(names ? `<span class="tag-attack">（怀疑${names}）</span>` : '');
+        } else {
+          const names = c.targets.map(t => t.name).join('、');
+          labels.push(names ? `<span class="tag-shield">（袒护${names}）</span>` : '');
+        }
+        break;
+      case 'break':
+        if (c.subtype === 'accuse') {
+          const names = c.targets.map(t => t.name).join('、');
+          labels.push(names ? `<span class="tag-break">（确信${names}是狼）</span>` : '');
+        } else {
+          const names = c.targets.map(t => t.name).join('、');
+          labels.push(names ? `<span class="tag-break">（确信${names}是好人）</span>` : '');
+        }
+        break;
+    }
   }
+  return labels.filter(l => l.length > 0).join('');
 }
 
 // 计算好感度变化幅度（规则③④⑦）
@@ -549,7 +1245,8 @@ function getAntiEffectThresholds(speaker) {
   };
 }
 
-// 应用发言对好感度的影响
+// 应用发言对好感度的影响（支持多分类）
+// classified: 分类数组，如 [{type:'claim',role:'seer',targets:[]},{type:'attack',subtype:'suspect',targets:[A]}]
 function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight) {
   const changes = []; // 记录好感度变化，用于日志
 
@@ -557,99 +1254,122 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
     if (listener.id === speaker.id) continue;
 
     const favor = getFavor(listener, speaker.id);
-    const missChance = calcMissChance(favor, speaker, listener, classified.type);
-
-    // miss 判定
-    if (Math.random() < missChance) continue;
-
     const thresholds = getAntiEffectThresholds(speaker);
-    let change = 0;
+    let totalChange = 0;
 
-    switch (classified.type) {
-      case 'conservative':
-        if (favor < 30) {
-          change = -1; // 觉得在躲
-        } else {
-          change = 1;
-        }
-        break;
+    // 遍历每个分类，累加好感度变化
+    for (const cls of classified) {
+      const missChance = calcMissChance(favor, speaker, listener, cls.type);
+      if (Math.random() < missChance) continue; // miss 判定（每个分类独立）
 
-      case 'attack': {
-        if (classified.subtype === 'suspect') {
-          // 对被怀疑者
-          if (classified.targets.some(t => t.id === listener.id)) {
-            change = calcFavorChange(-(3 + Math.floor(Math.random() * 3)), speaker, listener);
-          }
-          // 对发言者（反效果检查：听者对被怀疑者好感度≥阈值）
-          else {
-            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
-            if (targetFavor >= thresholds.highThreshold) {
-              change = calcFavorChange(-(2 + Math.floor(Math.random() * 3)), speaker, listener);
-            } else {
-              change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
-            }
-          }
-        } else if (classified.subtype === 'shield') {
-          if (classified.targets.some(t => t.id === listener.id)) {
-            change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+      let change = 0;
+
+      switch (cls.type) {
+        case 'conservative':
+          if (favor < 30) {
+            change = -1;
           } else {
-            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
-            if (targetFavor < thresholds.lowThreshold) {
-              change = calcFavorChange(-(2 + Math.floor(Math.random() * 2)), speaker, listener);
-            } else {
-              change = calcFavorChange(1 + Math.floor(Math.random() * 3), speaker, listener);
-            }
+            change = 1;
           }
-        }
-        break;
-      }
+          break;
 
-      case 'break': {
-        if (classified.subtype === 'accuse') {
-          if (classified.targets.some(t => t.id === listener.id)) {
+        case 'claim': {
+          // 跳身份好感度规则
+          const isSpeakerWolf = speaker.role === 'wolf';
+          const isListenerWolf = listener.role === 'wolf';
+
+          if (isSpeakerWolf && !isListenerWolf) {
+            // 好人听狼人跳身份 → 反感
             change = calcFavorChange(-(5 + Math.floor(Math.random() * 4)), speaker, listener);
-          } else {
-            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
-            if (targetFavor >= thresholds.highThreshold) {
-              change = calcFavorChange(-(5 + Math.floor(Math.random() * 4)), speaker, listener);
-            } else if (favor < 25) {
-              // 反效果：被指控者好感度提升
-              for (const t of classified.targets) {
-                const oldF = getFavor(listener, t.id);
-                setFavor(listener, t.id, oldF + calcFavorChange(5 + Math.floor(Math.random() * 4), speaker, listener));
-              }
-              change = 0;
-            } else {
-              change = calcFavorChange(3 + Math.floor(Math.random() * 3), speaker, listener);
-            }
+          } else if (!isSpeakerWolf && !isListenerWolf) {
+            // 好人听好人跳身份 → 信任
+            change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+          } else if (!isSpeakerWolf && isListenerWolf) {
+            // 狼人听好人跳身份 → 想刀
+            change = calcFavorChange(-(3 + Math.floor(Math.random() * 3)), speaker, listener);
+          } else if (isSpeakerWolf && isListenerWolf) {
+            // 狼人听狼队友跳身份 → 配合
+            change = calcFavorChange(1 + Math.floor(Math.random() * 2), speaker, listener);
           }
-        } else if (classified.subtype === 'defend') {
-          if (classified.targets.some(t => t.id === listener.id)) {
-            change = calcFavorChange(5 + Math.floor(Math.random() * 4), speaker, listener);
-          } else {
-            const targetFavor = classified.targets.length > 0 ? getFavor(listener, classified.targets[0].id) : 50;
-            if (targetFavor < 25) {
+          break;
+        }
+
+        case 'attack': {
+          if (cls.subtype === 'suspect') {
+            if (cls.targets.some(t => t.id === listener.id)) {
               change = calcFavorChange(-(3 + Math.floor(Math.random() * 3)), speaker, listener);
             } else {
+              const targetFavor = cls.targets.length > 0 ? getFavor(listener, cls.targets[0].id) : 50;
+              if (targetFavor >= thresholds.highThreshold) {
+                change = calcFavorChange(-(2 + Math.floor(Math.random() * 3)), speaker, listener);
+              } else {
+                change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+              }
+            }
+          } else if (cls.subtype === 'shield') {
+            if (cls.targets.some(t => t.id === listener.id)) {
               change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+            } else {
+              const targetFavor = cls.targets.length > 0 ? getFavor(listener, cls.targets[0].id) : 50;
+              if (targetFavor < thresholds.lowThreshold) {
+                change = calcFavorChange(-(2 + Math.floor(Math.random() * 2)), speaker, listener);
+              } else {
+                change = calcFavorChange(1 + Math.floor(Math.random() * 3), speaker, listener);
+              }
             }
           }
+          break;
         }
-        break;
+
+        case 'break': {
+          if (cls.subtype === 'accuse') {
+            if (cls.targets.some(t => t.id === listener.id)) {
+              change = calcFavorChange(-(5 + Math.floor(Math.random() * 4)), speaker, listener);
+            } else {
+              const targetFavor = cls.targets.length > 0 ? getFavor(listener, cls.targets[0].id) : 50;
+              if (targetFavor >= thresholds.highThreshold) {
+                change = calcFavorChange(-(5 + Math.floor(Math.random() * 4)), speaker, listener);
+              } else if (favor < 25) {
+                // 反效果：被指控者好感度提升
+                for (const t of cls.targets) {
+                  const oldF = getFavor(listener, t.id);
+                  setFavor(listener, t.id, oldF + calcFavorChange(5 + Math.floor(Math.random() * 4), speaker, listener));
+                }
+                change = 0;
+              } else {
+                change = calcFavorChange(3 + Math.floor(Math.random() * 3), speaker, listener);
+              }
+            }
+          } else if (cls.subtype === 'defend') {
+            if (cls.targets.some(t => t.id === listener.id)) {
+              change = calcFavorChange(5 + Math.floor(Math.random() * 4), speaker, listener);
+            } else {
+              const targetFavor = cls.targets.length > 0 ? getFavor(listener, cls.targets[0].id) : 50;
+              if (targetFavor < 25) {
+                change = calcFavorChange(-(3 + Math.floor(Math.random() * 3)), speaker, listener);
+              } else {
+                change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
+              }
+            }
+          }
+          break;
+        }
       }
+
+      totalChange += change;
     }
 
-    if (change !== 0) {
+    if (totalChange !== 0) {
       const oldFavor = getFavor(listener, speaker.id);
-      setFavor(listener, speaker.id, oldFavor + change);
-      changes.push({ listener, change, newFavor: getFavor(listener, speaker.id) });
+      setFavor(listener, speaker.id, oldFavor + totalChange);
+      changes.push({ listener, change: totalChange, newFavor: getFavor(listener, speaker.id) });
     }
   }
 
   return changes;
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set()};
 
 function openSettings(){
   document.getElementById('speedPanel').classList.add('show');
@@ -946,7 +1666,7 @@ async function nightPhase(){
   try{
   game.day++;
   game.isProcessing=true;
-  game.wolfTarget=null;game.seerTarget=null;game.witchSave=false;game.witchPoison=null;game.guardTarget=null;
+  game.wolfTarget=null;game.seerTarget=null;game.witchSave=false;game.witchPoison=null;game.guardTarget=null; game.witchUsedSaveLastNight=false; game.witchUsedPoisonLastNight=false; game.witchPoisonTarget=null;
   game.speeches=[];
   setNight(true);
   setPhase(`第${game.day}夜`,"var(--purple)");
@@ -1010,11 +1730,11 @@ async function wolfAction(){
   const killMaster=wolves.reduce((b,w)=>getAttr(w,'武力')>getAttr(b,'武力')?w:b);
   // 政治+智谋最高 = 剧本策划者
   const scriptMaster=wolves.reduce((b,w)=>attrScore(w,'政治','智谋')>attrScore(b,'政治','智谋')?w:b);
-
+  game.scriptMasterId = scriptMaster.id;
   addLog('<span class="system-text">🐺 狼人密议开始……</span>');
   await delay(800);
 
-  // ===== 第一步：军师开场定调（提目标 + 建议刀谁 + 抛出剧本）=====
+  // ===== 第一步：军师开场定调（提目标 + 抛出剧本 + 投票建议）=====
   while(game.isPaused) await delay(100);
   const proposals=[];
   // 军师先提目标
@@ -1024,15 +1744,16 @@ async function wolfAction(){
   const script=generateWolfScript(scriptMaster, wolves, targets);
   game.wolfScript=script;
   game.wolfScriptCompliance={};
-  // 军师发言：提目标 + 建议刀谁 + 剧本
+  // 军师发言：提目标 + 剧本 + 投票建议
   const masterTarget=masterProposal.target;
   const masterTpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,masterTarget.name).replace(/{faction}/g,masterTarget.faction);
-  const killSuggestTargets=targets.filter(t=>["seer","witch","hunter"].includes(t.role));
-  const killSuggest=killSuggestTargets.length>0 && Math.random()<0.6 ? pick(killSuggestTargets) : pick(targets);
-  const killSuggestLine=`我建议今晚先动${killSuggest.name}，此人若留到后期必成大患。`;
   const scriptDesc=`【${script.name}】${script.desc}`;
   const scriptTpl=pick(WOLF_DISCUSS.script_propose).replace(/{script}/g,scriptDesc);
-  addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl} ${killSuggestLine}${scriptTpl}`);
+  // 投票建议目标：优先选非刀人目标的可疑好人，避免刀人和票人完全一致暴露意图
+  const voteTargets=targets.filter(t=>t.id!==masterTarget.id);
+  const voteTarget=voteTargets.length>0 ? pick(voteTargets) : masterTarget;
+  const voteTpl=pick(WOLF_DISCUSS.vote_suggest).replace(/{t}/g,voteTarget.name);
+  addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}${scriptTpl}${voteTpl}`);
   await delay(1000);
 
   // ===== 第二步：其他狼依次提出目标并附和/反对军师 =====
@@ -1102,9 +1823,9 @@ async function wolfAction(){
     let compliance=getAttr(wolf,'政治')/5;
     // 对策划者好感度修正：好感度越高越服从
     const masterFavor = getFavor(wolf, scriptMaster.id);
-    compliance += (masterFavor - 50) * 0.006; // 好感度60 → +0.06
+    compliance += (masterFavor - 50) * 0.015; // 好感度60 → +0.15
     // 规则⑦：意志越高越不服从
-    compliance -= (getAttr(wolf, '意志') - 3) * 0.08;
+    compliance -= (getAttr(wolf, '意志') - 3) * 0.04;
     compliance = Math.max(0.05, Math.min(0.95, compliance));
     const follows=Math.random()<compliance;
     game.wolfScriptCompliance[wolf.id]=follows;
@@ -1133,7 +1854,7 @@ function wolfProposeTarget(wolf, targets) {
     let w = Math.max(1, 100 - f);
     // 武力高的人更有主见，权重差距更大
     const martial = getAttr(wolf, '武力');
-    if (martial >= 4) w = Math.pow(w, 1.3);
+    if (martial >= 4) w = Math.pow(w, 1.5);
     return w;
   });
 
@@ -1211,6 +1932,17 @@ function killMasterDecide(killMaster, proposals, targets){
   if(myChoice && Math.random()<getAttr(killMaster,'意志')/6){
     return myChoice.target;
   }
+  // 刀人者对军师好感度高时，额外概率采纳军师目标
+  const masterId = game.scriptMasterId;
+  if(masterId){
+    const masterProposal = proposals.find(p=>p.wolfId===masterId);
+    if(masterProposal){
+      const favorToMaster = getFavor(killMaster, masterId);
+      if(favorToMaster > 60 && Math.random() < (favorToMaster - 60) * 0.01){
+        return masterProposal.target;
+      }
+    }
+  }
   return pick(topTargets);
 }
 
@@ -1242,7 +1974,7 @@ async function witchAction(){
       // 智谋高的女巫能判断被刀者是否重要
       if(intel>=4 && ["seer","hunter"].includes(victim.role)) saveProb+=0.2;
       if(Math.random()<saveProb){
-        game.witchSave=true;
+        game.witchSave=true; game.witchUsedSaveLastNight = true;
         game.witchHasSave=false;
         addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用解药救下了${victim.name}！`);
         return;
@@ -1268,7 +2000,7 @@ async function witchAction(){
           if(suspects.length>0) game.witchPoison=pick(suspects).id;
         }
         if(game.witchPoison!==null){
-          game.witchHasPoison=false;
+          game.witchHasPoison=false; game.witchUsedPoisonLastNight = true; game.witchPoisonTarget = game.witchPoison;
           addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`);
         }
       }
@@ -1308,15 +2040,15 @@ async function dayPhase(deaths){
   } else {
     for(const d of deaths){
       const p=game.players[d.id];
-      p.alive=false;
+      markDeath(p, game.day, d.cause);
       const causeText=d.cause==="wolf"?"被狼人杀害":d.cause==="poison"?"被女巫毒杀":"死亡";
       addLog(`<span class="death-text">${p.name}（${p.faction}·${ROLE_CFG[p.role].name}）昨夜${causeText}了！</span>`);
-      if(p.personality.length>0) addLog(`<span class="death-text" style="color:var(--gray)">"${p.name}遗言：${pick(p.personality)}……"</span>`);
+      addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${p.name}遗言：${generateLastWords(p)}"</span>`);
       // Hunter shoot
       if(p.role==="hunter"&&d.cause!=="poison"){
         const target=pickExclude(getAlive(),[p.id]);
         if(target){
-          target.alive=false;
+          markDeath(target, game.day, "hunter");
           addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}（${ROLE_CFG[target.role].name}）！</span>`);
           if(target.role==="hunter"&&getAlive().find(pp=>pp.role==="hunter"&&pp.id!==p.id)){/* chain handled */}
         }
@@ -1372,6 +2104,10 @@ async function generateSpeeches(){
       // ===== 预言家发言：规则③智谋影响 =====
       speech=generateSeerSpeech(p, suspectPool, speechContext, game.spokenToday);
     }
+    else if(p.role==="witch"){
+      // ===== 女巫发言：分享夜间行动信息 =====
+      speech=generateWitchSpeech(p, suspectPool, speechContext, game.spokenToday);
+    }
     else {
       // ===== 好人发言：规则③④⑥⑦全部体现在发言内容 =====
       speech=generateGoodSpeech(p, suspectPool, speechContext, game.spokenToday);
@@ -1383,7 +2119,7 @@ async function generateSpeeches(){
       speech+=" "+personalSpeech;
     }
 
-    // 分类发言类型
+    // 分类发言类型（多分类数组）
     const classified = classifySpeech(speech, p, alive);
     const typeLabel = speechTypeLabel(classified);
 
@@ -1392,28 +2128,34 @@ async function generateSpeeches(){
     // ===== 好感度影响 =====
     const favorChanges = applySpeechFavorEffect(p, speech, classified, alive, false);
 
-    // 记录发言上下文
+    // 记录发言上下文（取第一个分类类型作为主类型）
+    const mainType = classified[0] ? classified[0].type : 'conservative';
     const mentionedTarget=suspectPool.find(x=>speech.includes(x.name));
     speechContext.push({
       speakerId:p.id, speakerName:p.name,
       targetName:mentionedTarget?mentionedTarget.name:null,
-      text:speech, role:p.role, speechType: classified.type
+      text:speech, role:p.role, speechType: mainType
     });
     game.spokenToday.add(p.id);
-    game.speeches.push({speaker:p.role,about:null,text:speech,speakerId:p.id,speechType:classified.type});
+    game.speeches.push({speaker:p.role,about:null,text:speech,speakerId:p.id,speechType:mainType,classified});
     await delay(800+Math.random()*700);
   }
 }
 
 // ===== 预言家发言：规则③智谋 =====
 function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
+  const charStyle = CHARACTER_SPEECH_STYLE[seer.name];
   const intel=getAttr(seer,'智谋');
 
   // 已查验到狼人
   if(game.seerTarget!==null && game.players[game.seerTarget].role==="wolf"){
     const wt=game.players[game.seerTarget];
+    // 人物专属：使用角色模板
+    if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && Math.random() < Math.max(0.7, 0.3 + intel / 5)){
+      return pick(charStyle.accuse).replace(/\{t\}/g, wt.name);
+    }
     // 智谋越高越果断亮身份
-    if(intel>=4 || Math.random()<0.5){
+    if(Math.random() < Math.max(0.7, 0.3 + intel / 5)){
       return pickTemplate("seer_reveal",{t:wt.name,r:"狼人"});
     }
     // 智谋低的不敢直接跳，先暗示
@@ -1435,65 +2177,100 @@ function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
   return pickTemplate("seer_hint",{t:t.name});
 }
 
+// ===== 女巫白天发言：分享夜间行动信息 =====
+function generateWitchSpeech(witch, suspectPool, ctx, spokenSet){
+  const charStyle = CHARACTER_SPEECH_STYLE[witch.name];
+  // 昨晚用了解药
+  if(game.witchUsedSaveLastNight){
+    if(charStyle && charStyle.defend && charStyle.defend.length>0){
+      return pick(charStyle.defend).replace(/\{t\}/g, "一位好人");
+    }
+    return pickTemplate("witch_save",{});
+  }
+  // 昨晚用了毒药
+  if(game.witchUsedPoisonLastNight){
+    if(charStyle && charStyle.accuse && charStyle.accuse.length>0){
+      const target = pick(suspectPool);
+      return pick(charStyle.accuse).replace(/\{t\}/g, target.name);
+    }
+    return "我昨晚做了一个重要决定，对好人阵营有帮助。大家自己体会。";
+  }
+  // 普通情况：走好人发言逻辑（会触发人物专属检查）
+  return generateGoodSpeech(witch, suspectPool, ctx, spokenSet);
+}
+
 // ===== 好人发言：规则③④⑥⑦通过发言内容体现 =====
 function generateGoodSpeech(player, suspectPool, ctx, spokenSet){
+  // ===== 人物专属发言检查（方案A）=====
+  const charStyle = CHARACTER_SPEECH_STYLE[player.name];
+  if(charStyle){
+    const category = pickCategory(ctx, player);
+    // accuse 类可能引用他人发言内容，优先选已发言的目标
+    const pool = (category === 'accuse') ?
+      suspectPool.filter(x => spokenSet.has(x.id)) : suspectPool;
+    const target = pool.length > 0 ? pick(pool) : pick(suspectPool);
+    const speech = applyCharacterSpeech(player, charStyle, category, target);
+    if(speech) return speech;
+  }
+
   const intel=getAttr(player,'智谋');
   const leadership=getAttr(player,'统帅');
   const charm=getAttr(player,'魅力');
   const will=getAttr(player,'意志');
+  const style = getStyleModifiers(player);
+  let speech = "";
 
   // ===== 规则③ 智谋：分析别人发言的真伪 =====
   if(intel>=4 && ctx.length>0){
-    // 高智谋：从前人发言中找破绽，点名质疑
     const analyzed=ctx.slice(-5);
     for(const s of analyzed){
       const speaker=game.players[s.speakerId];
       if(!speaker || !speaker.alive || speaker.id===player.id) continue;
       if(!spokenSet.has(speaker.id)) continue;
-      // 发现前后矛盾或可疑发言
       if(s.text && (s.text.includes("不知道") || s.text.includes("不确定")) && s.text.includes("我觉得")){
-        return `${speaker.name}，你刚才说不知道谁是狼，现在又觉得某人可疑？这话前后矛盾，你自己解释解释。`;
+        speech = `${speaker.name}，你刚才说不知道谁是狼，现在又觉得某人可疑？这话前后矛盾，你自己解释解释。`;
+        return applyStyleModifiers(speech, style);
       }
     }
-    // 没找到明显破绽，但能分析出重点怀疑对象
     const wolfSpeeches=ctx.filter(s=>s.role==="wolf" && spokenSet.has(s.speakerId));
     if(wolfSpeeches.length>0 && Math.random()<intel/5){
       const s=pick(wolfSpeeches);
-      return `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。感觉太完美了反而可疑。各位注意${s.speakerName}。`;
+      speech = `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。感觉太完美了反而可疑。各位注意${s.speakerName}。`;
+      return applyStyleModifiers(speech, style);
     }
   }
 
-  // ===== 规则④ 统帅：引领讨论方向 =====
+  // ===== 规则④ 统帅：引领讨论方向（引用他人发言，目标必须已发言）=====
   if(leadership>=4){
-    const target=pick(suspectPool);
-    const templates=[
-      `大家听我说，冷静分析一下局势。我认为现在最可疑的是${target.name}，理由如下——他的发言缺乏实质性内容，一直在搅浑水。我们应该集中火力先排查${target.name}。`,
-      `各位别吵，听我分析。目前局势很清楚，${target.name}的表现最反常。我建议今天就投${target.name}，其他事后议。`,
-      `我来说句公道话。${target.name}今天的发言你们仔细品品，是不是处处在带节奏？这种人在暗处最危险。`
-    ];
-    return pick(templates);
+    const spokenTargets=suspectPool.filter(x=>spokenSet.has(x.id));
+    if(spokenTargets.length>0){
+      const target=pick(spokenTargets);
+      const templates=[
+        `大家听我说，冷静分析一下局势。我认为现在最可疑的是${target.name}，理由如下——他的发言缺乏实质性内容，一直在搅浑水。我们应该集中火力先排查${target.name}。`,
+        `各位别吵，听我分析。目前局势很清楚，${target.name}的表现最反常。我建议今天就投${target.name}，其他事后议。`,
+        `我来说句公道话。${target.name}今天的发言你们仔细品品，是不是处处在带节奏？这种人在暗处最危险。`
+      ];
+      return applyStyleModifiers(pick(templates), style);
+    }
   }
 
   // ===== 规则⑦ 意志：被质疑时是否改口 =====
-  // 检查有没有今天已发言的人质疑过自己
   const questioned=ctx.filter(s=>spokenSet.has(s.speakerId) && s.text && s.text.includes(player.name) && (s.text.includes("可疑") || s.text.includes("怀疑") || s.text.includes("投")));
   if(questioned.length>0 && Math.random()<0.5){
     const q=pick(questioned);
     if(will>=4){
-      // 高意志：不退缩
       const target=pick(suspectPool);
-      return `${q.speakerName}质疑我？随便。我坚持我的判断，${target.name}才是最可疑的那个。你们爱信不信。`;
+      speech = `${q.speakerName}质疑我？随便。我坚持我的判断，${target.name}才是最可疑的那个。你们爱信不信。`;
+      return applyStyleModifiers(speech, style);
     } else {
-      // 低意志：改口
       const filtered=suspectPool.filter(x=>x.name!==q.speakerName);
       const target=filtered.length>0?pick(filtered):pick(suspectPool);
-      return target?`也许${q.speakerName}说得有道理……我之前可能判断有误。我现在觉得${target.name}更可疑一些。`:`也许${q.speakerName}说得有道理……我再想想。`;
+      speech = target?`也许${q.speakerName}说得有道理……我之前可能判断有误。我现在觉得${target.name}更可疑一些。`:`也许${q.speakerName}说得有道理……我再想想。`;
+      return applyStyleModifiers(speech, style);
     }
   }
 
   // ===== 规则⑥ 魅力：高魅力不容易被人点名怀疑 =====
-  // （这个规则体现在别人怀疑谁时回避高魅力者，这里不直接影响自己发言）
-  // 但魅力低的发言更容易引起怀疑
   if(charm<=2){
     const target=pick(suspectPool);
     const templates=[
@@ -1501,14 +2278,12 @@ function generateGoodSpeech(player, suspectPool, ctx, spokenSet){
       `嗯……${target.name}看起来可疑？可能是我多心了……`,
       `那个，${target.name}是不是在说谎啊？我直觉告诉我的……`
     ];
-    return pick(templates);
+    return applyStyleModifiers(pick(templates), style);
   }
 
   // ===== 普通发言 =====
-  // 低智谋：划水为主，偶尔带情绪
   if(intel<=2){
     const target=pick(suspectPool);
-    // 划水：不表态、不点名、观望态度
     const idleTemplates=[
       `唔……我也不太确定，先听听大家怎么说吧。`,
       `我没什么特别想说的，等我再观察观察。`,
@@ -1517,50 +2292,69 @@ function generateGoodSpeech(player, suspectPool, ctx, spokenSet){
       `我先不发表意见了，看看后面的人怎么说。`,
       `我啥也不懂，先苟着吧，谁可疑我跟着投就行。`
     ];
-    // 偶尔（30%）会说带情绪的攻击性发言
     if(Math.random()<0.3){
       const emotionalTemplates=[
         `我就是觉得${target.name}有问题，别问我为什么，直觉！`,
         `不知道为啥，看${target.name}就不顺眼。投他！`,
         `我啥也不懂，但${target.name}说话让人不舒服，就投他吧。`
       ];
-      return pick(emotionalTemplates);
+      return applyStyleModifiers(pick(emotionalTemplates), style);
     }
-    return pick(idleTemplates);
+    return applyStyleModifiers(pick(idleTemplates), style);
   }
 
   // 中等属性：标准分析
-  const target=pick(suspectPool);
-
-  // 规则④中等统帅：可能引用前人的话（仅引用今天已发言的人）
+  const spokenTargets=suspectPool.filter(x=>spokenSet.has(x.id));
+  const target=spokenTargets.length>0 ? pick(spokenTargets) : pick(suspectPool);
   if(leadership>=3 && ctx.length>0){
     const recentCtx=ctx.filter(s=>s.speakerId!==player.id && spokenSet.has(s.speakerId));
     if(recentCtx.length>0){
       const ref=pick(recentCtx);
-      return pickTemplate("villager_analyze",{t:target.name})+` 不过就像${ref.speakerName}说的，我们得冷静分析。`;
+      return applyStyleModifiers(pickTemplate("villager_analyze",{t:target.name})+` 不过就像${ref.speakerName}说的，我们得冷静分析。`, style);
     }
   }
-
-  return pickTemplate("villager_analyze",{t:target.name});
+  // villager_analyze 引用发言内容，目标未发言时降级为通用模板
+  if(spokenTargets.length>0){
+    return applyStyleModifiers(pickTemplate("villager_analyze",{t:target.name}), style);
+  }
+  return applyStyleModifiers(pickTemplate("generic",{}), style);
 }
 
 // 狼人白天发言：规则⑤剧本服从 + 规则①阵营偏好
 function generateWolfDaySpeech(wolf, alive, wolves, script, followsScript, ctx, spokenSet){
-  const innocents=alive.filter(x=>x.role!=="wolf"&&x.id!==wolf.id);
+  const charStyle = CHARACTER_SPEECH_STYLE[wolf.name];
+  const innocents=alive.filter(x=>x.role!="wolf"&&x.id!==wolf.id);
 
   // 规则①阵营偏好：更愿意指控不同阵营的人
   const diffFaction=innocents.filter(t=>t.faction!==wolf.faction);
   const target=diffFaction.length>0 && Math.random()<0.6 ? pick(diffFaction) : pick(innocents);
+  // 引用他人发言的模板需要目标已发言
+  const spokenInnocents=innocents.filter(x=>spokenSet.has(x.id));
+  const spokenTarget=spokenInnocents.length>0 ? (diffFaction.filter(t=>spokenSet.has(t.id)).length>0 && Math.random()<0.6 ? pick(diffFaction.filter(t=>spokenSet.has(t.id))) : pick(spokenInnocents)) : target;
 
   // ===== 不服从剧本：按自己想法来 =====
   if(!script || !followsScript){
+    // 人物专属：使用角色模板
+    if(charStyle){
+      const category = Math.random() < 0.5 ? "accuse" : "emotional";
+      // accuse 类模板可能引用发言内容，无人发言时跳过人物专属
+      if(!(category==="accuse" && spokenInnocents.length===0)){
+        const t = (category==="accuse" && spokenInnocents.length>0) ? pick(spokenInnocents) : target;
+        const speech = applyCharacterSpeech(wolf, charStyle, category, t);
+        if(speech) return speech;
+      }
+    }
     // 魅力低的狼发言更冲，容易暴露
     if(getAttr(wolf,'魅力')<=2){
       return pickTemplate("wolf_accuse",{t:target.name})+" 你们谁不服？";
     }
-    // 智谋高的抗命狼可能自己搞一套
+    // 智谋高的抗命狼可能自己搞一套（引用发言内容，需目标已发言）
     if(getAttr(wolf,'智谋')>=4){
-      return pickTemplate("villager_analyze",{t:target.name});
+      if(spokenInnocents.length>0){
+        return pickTemplate("wolf_analyze",{t:spokenTarget.name});
+      }
+      // 无人发言时降级为 wolf_accuse，不引用发言内容
+      return pickTemplate("wolf_accuse",{t:target.name});
     }
     return pickTemplate("wolf_accuse",{t:target.name});
   }
@@ -1570,42 +2364,179 @@ function generateWolfDaySpeech(wolf, alive, wolves, script, followsScript, ctx, 
   switch(script.id){
     case 'fake_seer':
       if(assigned.fakeSeer && wolf.id===assigned.fakeSeer.id){
-        return pickTemplate("seer_reveal",{t:(script.target||target).name,r:"狼人"});
+        // accuse 类模板可能引用发言，目标必须已发言
+        const seerTarget = script.target || target;
+        if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && spokenSet.has(seerTarget.id)){
+          return pick(charStyle.accuse).replace(/\{t\}/g, seerTarget.name);
+        }
+        return pickTemplate("seer_reveal",{t:seerTarget.name,r:"狼人"});
       }
-      const tName = (script.target && spokenSet.has(script.target.id)) ? script.target.name : target.name;
-      return `我觉得${tName}确实很可疑，发言有漏洞。`;
+      const spokenName = (script.target && spokenSet.has(script.target.id)) ? script.target.name : null;
+      if(spokenName){
+        return `我觉得${spokenName}确实很可疑，发言有漏洞。`;
+      }
+      return `我觉得${target.name}确实很可疑。`;
 
     case 'wolf_fight':
       if(assigned.fighter1 && wolf.id===assigned.fighter1.id){
+        // accuse 类模板可能引用发言，目标（fighter2）必须已发言
+        if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && spokenSet.has(assigned.fighter2.id)){
+          return pick(charStyle.accuse).replace(/\{t\}/g, assigned.fighter2.name);
+        }
         return pickTemplate("wolf_accuse",{t:assigned.fighter2.name});
       }
       if(assigned.fighter2 && wolf.id===assigned.fighter2.id){
+        // accuse 类模板可能引用发言，目标（fighter1）必须已发言
+        if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && spokenSet.has(assigned.fighter1.id)){
+          return pick(charStyle.accuse).replace(/\{t\}/g, assigned.fighter1.name);
+        }
         return pickTemplate("wolf_accuse",{t:assigned.fighter1.name});
       }
-      return pickTemplate("villager_analyze",{t:target.name});
+      // 非互踩狼：引用发言内容需目标已发言
+      if(spokenInnocents.length>0){
+        return pickTemplate("wolf_analyze",{t:spokenTarget.name});
+      }
+      return pickTemplate("wolf_accuse",{t:target.name});
 
     case 'wolf_sacrifice':
       if(assigned.accuser && wolf.id===assigned.accuser.id){
-        return pickTemplate("seer_reveal",{t:assigned.sacrifice.name,r:"狼人"});
+        // accuse 类模板可能引用发言，目标（sacrifice）必须已发言
+        const sacTarget = assigned.sacrifice || target;
+        if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && spokenSet.has(sacTarget.id)){
+          return pick(charStyle.accuse).replace(/\{t\}/g, sacTarget.name);
+        }
+        return pickTemplate("seer_reveal",{t:sacTarget.name,r:"狼人"});
       }
       if(assigned.sacrifice && wolf.id===assigned.sacrifice.id){
+        if(charStyle && charStyle.defend && charStyle.defend.length>0){
+          return pick(charStyle.defend).replace(/\{t\}/g, assigned.accuser.name);
+        }
         return pickTemplate("wolf_defend",{t:assigned.accuser.name});
       }
-      // 其他狼配合投票
-      return `我同意，${assigned.sacrifice?assigned.sacrifice.name:target.name}确实有问题。投他。`;
+      // 第三狼：accuser 已发言时附和，否则独立表态
+      if(assigned.accuser && spokenSet.has(assigned.accuser.id)){
+        return `我同意，${assigned.sacrifice?assigned.sacrifice.name:target.name}确实有问题。投他。`;
+      }
+      return pickTemplate("wolf_accuse",{t:(assigned.sacrifice||target).name});
 
     case 'lay_low':
       return pickTemplate("generic",{});
 
     case 'aggressive':
-      return pickTemplate("wolf_accuse",{t:(script.target||target).name});
+      // accuse 类模板可能引用发言，目标必须已发言
+      {
+        const aggTarget = script.target || target;
+        if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && spokenSet.has(aggTarget.id)){
+          return pick(charStyle.accuse).replace(/\{t\}/g, aggTarget.name);
+        }
+        return pickTemplate("wolf_accuse",{t:aggTarget.name});
+      }
 
     case 'split_vote':
-      return pickTemplate("villager_analyze",{t:target.name});
+      // 引用发言内容需目标已发言
+      if(spokenInnocents.length>0){
+        return pickTemplate("wolf_analyze",{t:spokenTarget.name});
+      }
+      return pickTemplate("wolf_accuse",{t:target.name});
 
     default:
+      // accuse 类模板可能引用发言，目标必须已发言
+      if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && spokenSet.has(target.id)){
+        return pick(charStyle.accuse).replace(/\{t\}/g, target.name);
+      }
       return pickTemplate("wolf_accuse",{t:target.name});
   }
+}
+
+// ===== 遗言生成 =====
+function generateLastWords(player) {
+  const role = player.role;
+  const charStyle = CHARACTER_SPEECH_STYLE[player.name];
+  const self = charStyle ? charStyle.self : player.name;
+
+  if (role === 'wolf') {
+    // 狼人：随机编一个好人身份（不编女巫避免和真女巫冲突）
+    const fakeRoles = ['villager', 'guard', 'hunter'];
+    const fakeRole = pick(fakeRoles);
+    const roleNameMap = { villager: '平民', guard: '守卫', hunter: '猎人' };
+    const fakeName = roleNameMap[fakeRole];
+    const templates = {
+      villager: [
+        `我就是个平民，你们投错人了……`,
+        `我真的是平民，信不信随你们……`,
+        `${self}不过是一介百姓，何罪之有？`,
+        `可惜啊，我什么身份都不是，却死在你们手里……`,
+        `我就是一个平民，希望好人能找到真正的狼人。`
+      ],
+      guard: [
+        `我是守卫，昨晚我还在守人……你们投错了我！`,
+        `${self}身为守卫，尽职尽责，却被你们冤杀了……`,
+        `我是守卫！我守了这么久，结果死在自己人手里……`,
+        `守卫在此！你们失去了一面盾牌，怪谁？`,
+        `${self}是守卫没错，以后谁来保护好人？`
+      ],
+      hunter: [
+        `我是猎人，你们等着，我死也要带走一个！`,
+        `哼，${self}是猎人，可惜技能用不出了……`,
+        `我是猎人！你们投错人了，狼人在偷笑呢！`,
+        `${self}身为猎人，如今却这样死去……不甘心！`,
+        `告诉我我是猎人，让你们后悔去吧。`
+      ]
+    };
+    return pick(templates[fakeRole]);
+  }
+
+  // 好人：根据真实身份生成遗言
+  const templates = {
+    seer: (() => {
+      // 预言家：说出查验结果
+      if (game.seerTarget !== null) {
+        const checked = game.players[game.seerTarget];
+        if (checked && checked.role === 'wolf') {
+          return [
+            `我是预言家！我查到${checked.name}是狼人！你们不信我，那就等着输吧！`,
+            `${self}以预言家身份告诉你，${checked.name}就是狼人！我死不瞑目！`,
+            `我是预言家，昨晚查的是${checked.name}，是狼人！你们投我，就是帮狼人！`
+          ];
+        } else if (checked) {
+          return [
+            `我是预言家，我查了${checked.name}，是好人。你们投我，好人阵营少了一个预言家……`,
+            `${self}是预言家，${checked.name}是清白的。你们要投就投狼人，别内耗了。`
+          ];
+        }
+      }
+      return [
+        `我是预言家，虽然没来得及说出所有信息，但你们要相信我……`,
+        `${self}身为预言家，却被投出去了。好人自求多福吧。`
+      ];
+    })(),
+    witch: [
+      game.witchUsedSaveLastNight
+        ? `我是女巫，昨晚我用了解药救了一个人。现在毒药可能还在我手里，可惜没机会用了……`
+        : `我是女巫。药还在我手里，可惜带不走了……好人要加油。`,
+      `我是女巫，${self}的身份你们现在应该信了吧？`,
+      `${self}是女巫，解药${game.witchHasSave ? '还在' : '已用'}，毒药${game.witchHasPoison ? '还在' : '已用'}。记住这些信息。`
+    ],
+    hunter: [
+      `我是猎人！我没法开枪了，但你们要替我报仇！`,
+      `${self}是猎人，被你们投出去……希望你们好自为之。`,
+      `猎人在这，可惜动不了了。听好了，投我的都是蠢货或者狼人。`
+    ],
+    guard: [
+      `我是守卫，昨晚${game.lastGuardTarget ? '我守了' + game.players[game.lastGuardTarget]?.name : '我在守人'}。你们投错我了！`,
+      `${self}身为守卫，一直在保护好人。你们这样对我……寒心。`,
+      `我是守卫！盾没了，你们接下来小心点。`
+    ],
+    villager: [
+      `我是平民，但我是清白的。真正的狼人还在笑呢。`,
+      `${self}不过是一介百姓，死不足惜，但你们别投错了人。`,
+      `我就是一个平民，没有技能没有信息。希望好人能赢。`,
+      `平民在此。你们投我的，想想到底是谁在受益吧。`
+    ]
+  };
+
+  const roleTemplates = templates[role];
+  return pick(Array.isArray(roleTemplates) ? roleTemplates : [roleTemplates]);
 }
 
 async function votePhase(){
@@ -1649,7 +2580,7 @@ async function votePhase(){
         score += 8;
         // 如果服从剧本且剧本指定了集火目标
         if(game.wolfScriptCompliance[p.id] && game.wolfScript && game.wolfScript.target){
-          if(x.id===game.wolfScript.target) score += 15;
+          if(x.id===game.wolfScript.target) score += 25;
         }
       }
 
@@ -1695,15 +2626,21 @@ async function votePhase(){
   }
 
   await delay(600);
-  // Find max votes
-  let maxVotes=0,maxId=null;
-  for(let id in votes){if(votes[id]>maxVotes){maxVotes=votes[id];maxId=parseInt(id)}}
+  // Find max votes (handle ties)
+  let maxVotes=0,maxIds=[];
+  for(let id in votes){
+    if(votes[id]>maxVotes){maxVotes=votes[id];maxIds=[parseInt(id)]}
+    else if(votes[id]===maxVotes){maxIds.push(parseInt(id))}
+  }
+  const maxId=pick(maxIds); // 并列最高票时随机选一个
 
   if(maxId!==null){
     const exiled=game.players[maxId];
-    exiled.alive=false;
+    markDeath(exiled, game.day, "vote");
     addLog(`<span class="death-text" style="font-size:15px">${exiled.name}（${ROLE_CFG[exiled.role].name}）以${maxVotes}票被放逐！</span>`);
-    if(exiled.personality.length>0) addLog(`<span class="death-text" style="color:var(--gray)">"${exiled.name}：${pick(exiled.personality)}……"</span>`);
+    await delay(500);
+    addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled)}"</span>`);
+    await delay(500);
 
     // Hunter
     if(exiled.role==="hunter"){
@@ -1712,7 +2649,7 @@ async function votePhase(){
         // 智谋高的猎人更精准
         const ht=getAttr(exiled,'智谋')>=4 ? (targets.filter(t=>t.role==="wolf").length>0 ? pick(targets.filter(t=>t.role==="wolf")) : pick(targets)) : pick(targets);
         if(ht){
-          ht.alive=false;
+          markDeath(ht, game.day, "hunter");
           addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
         }
       }
@@ -1750,14 +2687,17 @@ function endGame(winner){
   setPhase("游戏结束",color);
 
   let summary=`<h2 style="color:${color}">${title}</h2><p style="margin-bottom:16px">${isGood?"所有狼人已被铲除，三国重归太平！":"狼人控制了局势，黑暗笼罩大地！"}</p>`;
-  summary+=`<div style="text-align:left;padding:12px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:13px">`;
-  summary+=`<div style="margin-bottom:8px;color:var(--gold);font-weight:700">身份揭晓：</div>`;
+  summary+=`<div style="text-align:left;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:13px">`;
+  summary+=`<div style="margin-bottom:10px;color:var(--gold);font-weight:700">身份揭晓：</div>`;
   for(const p of game.players){
-    const status=p.alive?"<span style='color:var(--green)'>存活</span>":"<span style='color:var(--red)'>阵亡</span>";
     const imgSrc = (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
-    summary+=`<div style="padding:3px 0;display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <span style="display:flex;align-items:center;gap:6px"><img src="${imgSrc}" onerror="this.style.display='none'" style="width:22px;height:22px;border-radius:50%" alt="${p.name}">${p.name}（${p.faction}）</span>
-      <span style="display:flex;align-items:center;gap:6px"><span style="color:${ROLE_CFG[p.role].color}">${ROLE_CFG[p.role].name}</span>${status}</span>
+    const statusLabel=p.alive?"存活":"阵亡";
+    const statusColor=p.alive?"var(--green)":"var(--red)";
+    const deathDetail=p.alive?"":deathInfoText(p);
+    summary+=`<div style="padding:4px 0;display:flex;align-items:center;gap:8px">
+      <span style="flex:1;display:flex;align-items:center;gap:6px"><img src="${imgSrc}" onerror="this.style.display='none'" style="width:24px;height:24px;border-radius:50%;flex-shrink:0" alt="${p.name}"><span>${p.name}（${p.faction}）<span style="color:${ROLE_CFG[p.role].color};margin-left:4px">${ROLE_CFG[p.role].name}</span></span></span>
+      <span style="width:48px;text-align:center;color:${statusColor};font-weight:600">${statusLabel}</span>
+      <span style="width:auto;text-align:right;color:var(--gray);font-size:12px">${deathDetail}</span>
     </div>`;
   }
   summary+=`</div><br><button class="btn-primary" onclick="location.reload()">再来一局</button>`;
