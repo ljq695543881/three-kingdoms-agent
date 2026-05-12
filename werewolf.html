@@ -2085,10 +2085,45 @@ async function generateSpeeches(){
   // ===== 每天重置已发言集合 =====
   game.spokenToday=new Set();
 
+  // ===== 确定发言顺序：由死去的人顺/逆时针开始 =====
+  let speechOrder = [...alive];
+
+  // 找到昨晚死去的人（deathDay === game.day）
+  const lastNightDeaths = game.players.filter(p => p.deathDay === game.day);
+
+  if (lastNightDeaths.length > 0) {
+    // 使用最后一个死去的人作为起点（若多人死，取最后一位）
+    const startPlayer = lastNightDeaths[lastNightDeaths.length - 1];
+    const startIndex = game.players.findIndex(p => p.id === startPlayer.id);
+
+    // 确定方向：奇数天顺时针(+1)，偶数天逆时针(-1)
+    const direction = (game.day % 2 === 1) ? 1 : -1;
+
+    // 构建发言顺序：从起点按方向遍历，只包括存活玩家
+    const ordered = [];
+    const n = game.players.length;
+
+    // 从起点的下一个位置开始（按方向），跳过死者
+    let current = (startIndex + direction + n) % n;
+
+    const visited = new Set();
+    while (!visited.has(current)) {
+      visited.add(current);
+      const player = game.players[current];
+      if (player.alive) {
+        ordered.push(player);
+      }
+      current = (current + direction + n) % n;
+    }
+
+    speechOrder = ordered;
+  }
+  // 没死人，保持原顺序（按 alive 数组顺序）
+
   // ===== 收集本轮发言上下文（用于后面的角色引用前人发言）=====
   const speechContext=[]; // {speakerId, speakerName, targetName, text}
 
-  for(const p of alive){
+  for(const p of speechOrder){
     while(game.isPaused) await delay(100);
 
     let speech="";
