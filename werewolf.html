@@ -679,7 +679,7 @@ function getStyleModifiers(player){
   const style = { prefix: [], suffix: [], tones: [] };
   const checks = [
     ['武力', 'force'], ['智谋', 'intel'], ['统帅', 'leadership'],
-    ['魅力', 'charm'], ['政治', 'politic'], ['意志', 'will']
+    ['政治', 'politic'], ['魅力', 'charm'], ['意志', 'will']
   ];
   for(const [attr, key] of checks){
     const val = getAttr(player, attr);
@@ -3346,7 +3346,7 @@ function confirmQuitGame(){
 // ===== 角色创建 =====
 let _selectedFaction = '群';
 function renderCharAttrGrid(){
-  const attrs = ['智谋','政治','领导力','魅力','意志','运气'];
+  const attrs = ['武力','智谋','统帅','政治','魅力','意志'];
   let html = '';
   for(const a of attrs){
     html += `<div class="attr-row" data-attr="${a}">
@@ -3370,7 +3370,7 @@ function changeAttr(attr, delta){
   checkCharReady();
 }
 function updateAttrLeft(){
-  const attrs = ['智谋','政治','领导力','魅力','意志','运气'];
+  const attrs = ['武力','智谋','统帅','政治','魅力','意志'];
   let used = 0;
   for(const a of attrs){
     used += parseInt(document.getElementById('attr-val-'+a).textContent) - 1;
@@ -3392,7 +3392,7 @@ function selectFaction(fac){
 function confirmCharCreate(){
   const name = document.getElementById('charNameInput').value.trim();
   if(!name) return;
-  const attrs = ['智谋','政治','领导力','魅力','意志','运气'];
+  const attrs = ['武力','智谋','统帅','政治','魅力','意志'];
   let attr = {};
   for(const a of attrs) attr[a] = parseInt(document.getElementById('attr-val-'+a).textContent);
   const optPlayer = { name, faction: _selectedFaction, attr, growthPts: 0 };
