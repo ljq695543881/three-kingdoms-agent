@@ -58,15 +58,14 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .btn-pause.paused:hover{background:var(--red);color:#fff}
 .btn-settings{position:fixed;top:12px;right:120px;z-index:300;padding:8px 18px;border:2px solid var(--gold);border-radius:20px;background:rgba(15,52,96,0.95);color:var(--gold);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px)}
 .btn-settings:hover{background:var(--gold);color:var(--bg);transform:scale(1.05)}
-.speed-panel{position:fixed;top:56px;right:80px;z-index:400;background:rgba(22,33,62,0.98);border:2px solid var(--gold);border-radius:12px;padding:16px;backdrop-filter:blur(8px);display:none;flex-direction:column;gap:8px;min-width:160px}
-.speed-panel.show{display:flex}
-.btn-favor{position:fixed;top:12px;left:12px;z-index:300;padding:8px 18px;border:2px solid var(--purple);border-radius:20px;background:rgba(15,52,96,0.95);color:var(--purple);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px)}
-.btn-favor:hover{background:var(--purple);color:#fff;transform:scale(1.05)}
-.speed-panel h4{color:var(--gold);font-size:13px;margin-bottom:4px;text-align:center}
+.settings-section{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.settings-section h4{color:var(--gold);font-size:13px;margin:0 0 8px 0;text-align:center;letter-spacing:1px}
 .speed-btns{display:flex;gap:6px;justify-content:center}
 .speed-btn{padding:6px 14px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:transparent;color:var(--gray);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s}
 .speed-btn:hover{border-color:var(--gold);color:var(--white)}
 .speed-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.btn-favor{position:fixed;top:12px;left:12px;z-index:300;padding:8px 18px;border:2px solid var(--purple);border-radius:20px;background:rgba(15,52,96,0.95);color:var(--purple);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(4px)}
+.btn-favor:hover{background:var(--purple);color:#fff;transform:scale(1.05)}
 .favor-panel{position:fixed;top:56px;left:12px;z-index:400;background:rgba(22,33,62,0.98);border:2px solid var(--purple);border-radius:12px;padding:14px;backdrop-filter:blur(8px);display:none;flex-direction:column;gap:6px;max-width:calc(100vw - 24px);width:max-content;max-height:75vh;overflow-y:auto;overflow-x:auto;color:var(--white);font-size:13px}
 .favor-panel.show{display:flex}
 .favor-panel h4{color:var(--purple);font-size:13px;margin-bottom:4px;text-align:center}
@@ -133,7 +132,6 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   .btn-pause{top:8px;right:8px;padding:6px 14px;font-size:12px}
   .btn-settings{top:8px;right:100px;padding:6px 14px;font-size:12px}
   .btn-favor{top:8px;left:8px;padding:6px 14px;font-size:12px}
-  .speed-panel{top:48px;right:60px;padding:12px;min-width:140px}
   .favor-panel{top:48px;left:8px;max-height:60vh;padding:10px}
   .modal{padding:16px;width:92%}
   .modal h2{font-size:18px}
@@ -146,22 +144,378 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .tag-shield{color:var(--green);font-size:11px;font-weight:700}
 .tag-break{color:var(--red);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(192,57,43,0.4)}
 .tag-claim{color:var(--gold);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(241,196,15,0.4)}
+
+/* ===== 标题画面 ===== */
+#titleScreen{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#0d1b2a 0%,#1b2838 40%,#16213e 100%)}
+#titleScreen.hide{display:none}
+.title-logo{font-size:52px;color:var(--gold);text-shadow:0 0 30px rgba(226,183,20,0.5);letter-spacing:12px;margin-bottom:6px}
+.title-sub{color:var(--gray);font-size:15px;margin-bottom:40px;letter-spacing:2px}
+.title-btns{display:flex;flex-direction:column;gap:12px;align-items:center}
+.title-btn{padding:12px 48px;border:2px solid var(--gold);border-radius:30px;background:transparent;color:var(--gold);font-size:16px;font-weight:700;cursor:pointer;transition:all 0.25s;letter-spacing:4px;min-width:200px}
+.title-btn:hover{background:var(--gold);color:var(--bg);transform:scale(1.05)}
+.title-btn.danger{border-color:var(--red);color:var(--red)}
+.title-btn.danger:hover{background:var(--red);color:#fff}
+.title-btn.sub{border-color:rgba(255,255,255,0.25);color:var(--gray);min-width:160px;padding:8px 32px;font-size:13px}
+.title-btn.sub:hover{background:rgba(255,255,255,0.1);color:var(--white);border-color:rgba(255,255,255,0.5)}
+.title-footer{position:absolute;bottom:24px;color:rgba(255,255,255,0.2);font-size:12px;letter-spacing:1px}
+
+/* ===== 角色创建面板 ===== */
+#charCreate{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
+#charCreate.hide{display:none}
+.char-card{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:28px 32px;min-width:360px;text-align:center}
+.char-card h2{color:var(--gold);font-size:20px;margin-bottom:16px;letter-spacing:4px}
+.char-card input[type=text]{width:80%;padding:8px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:var(--card);color:var(--white);font-size:15px;text-align:center;margin-bottom:16px;outline:none}
+.char-card input[type=text]:focus{border-color:var(--gold)}
+.attr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;text-align:left}
+.attr-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:8px;padding:6px 10px}
+.attr-row .attr-name{font-size:13px;color:var(--white);min-width:36px}
+.attr-row .attr-val{font-size:15px;font-weight:700;color:var(--gold);min-width:20px;text-align:center}
+.attr-row .attr-btns{display:flex;gap:4px}
+.attr-row .attr-btns button{width:24px;height:24px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.attr-row .attr-btns button:hover{background:var(--gold);color:var(--bg)}
+.attr-row .attr-btns button:disabled{opacity:0.3;cursor:not-allowed}
+.attr-pts{color:var(--gold);font-size:13px;margin-bottom:12px}
+.attr-pts span{font-weight:700;font-size:16px}
+.char-start{padding:10px 36px;border:none;border-radius:20px;background:var(--gold);color:var(--bg);font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:2px}
+.char-start:hover{transform:scale(1.05)}
+.char-start:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.char-attr-tip{color:var(--gray);font-size:11px;margin-top:8px}
+
+/* ===== 发言选择面板 ===== */
+#speechPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+#speechPanel.hide{display:none}
+.speech-card{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:24px 28px;min-width:380px;text-align:center}
+.speech-card h2{color:var(--gold);font-size:18px;margin-bottom:4px}
+.speech-card .speech-hint{color:var(--gray);font-size:12px;margin-bottom:14px}
+.speech-types{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.speech-type-btn{padding:12px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:14px;cursor:pointer;transition:all 0.2s}
+.speech-type-btn:hover{border-color:var(--gold);color:var(--gold)}
+.speech-type-btn.selected{border-color:var(--gold);background:rgba(226,183,20,0.1);color:var(--gold)}
+.speech-type-btn .st-icon{font-size:22px;display:block;margin-bottom:4px}
+.speech-type-btn .st-label{font-weight:700;font-size:13px}
+.speech-target-row{margin-bottom:14px;display:none}
+.speech-target-row.show{display:block}
+.speech-target-row select{width:80%;padding:6px 10px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:var(--card);color:var(--white);font-size:13px}
+.speech-confirm{padding:8px 32px;border:none;border-radius:20px;background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.speech-confirm:hover{transform:scale(1.05)}
+.speech-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* ===== 投票选择面板 ===== */
+#votePanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+#votePanel.hide{display:none}
+.vote-card{background:var(--bg2);border:2px solid var(--blue);border-radius:16px;padding:24px 28px;min-width:360px;text-align:center}
+.vote-card h2{color:var(--blue);font-size:18px;margin-bottom:12px}
+.vote-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:40vh;overflow-y:auto;padding:4px 0}
+.vote-opt-btn{padding:8px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;background:transparent;color:var(--white);font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;display:flex;align-items:center;gap:8px}
+.vote-opt-btn:hover{border-color:var(--blue);color:var(--blue)}
+.vote-opt-btn.selected{border-color:var(--blue);background:rgba(41,128,185,0.15);color:var(--blue)}
+.vote-confirm{padding:8px 32px;border:none;border-radius:20px;background:var(--blue);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.vote-confirm:hover{transform:scale(1.05)}
+.vote-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* ===== 夜晚行动面板 ===== */
+#nightPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+#nightPanel.hide{display:none}
+.night-card{background:var(--bg2);border:2px solid #4a90d9;border-radius:16px;padding:24px 28px;min-width:380px;text-align:center}
+.night-card h2{color:#4a90d9;font-size:18px;margin-bottom:4px}
+.night-card .night-hint{color:var(--gray);font-size:12px;margin-bottom:12px}
+.night-info{color:var(--gray);font-size:12px;margin-bottom:10px;text-align:left;background:var(--card);padding:8px 12px;border-radius:8px}
+.night-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:40vh;overflow-y:auto}
+.night-opt-btn{padding:8px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;background:transparent;color:var(--white);font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;display:flex;align-items:center;gap:8px}
+.night-opt-btn:hover{border-color:#4a90d9;color:#4a90d9}
+.night-opt-btn.selected{border-color:#4a90d9;background:rgba(74,144,217,0.15);color:#4a90d9}
+.night-confirm{padding:8px 32px;border:none;border-radius:20px;background:#4a90d9;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.night-confirm:hover{transform:scale(1.05)}
+.night-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* ===== 天意附体选择面板 ===== */
+#destinySelect{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
+#destinySelect.hide{display:none}
+.destiny-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:24px 28px;min-width:420px;text-align:center;max-height:85vh;overflow-y:auto}
+.destiny-card h2{color:#9b59b6;font-size:20px;margin-bottom:4px;letter-spacing:2px}
+.destiny-card .destiny-hint{color:var(--gray);font-size:12px;margin-bottom:14px}
+.destiny-players{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.destiny-p-btn{padding:8px 4px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:12px;cursor:pointer;transition:all 0.2s;text-align:center}
+.destiny-p-btn:hover{border-color:#9b59b6;color:#9b59b6}
+.destiny-p-btn.selected{border-color:#9b59b6;background:rgba(155,89,182,0.15);color:#9b59b6}
+.destiny-p-btn .dp-name{font-weight:700;font-size:13px}
+.destiny-p-btn .dp-faction{font-size:10px;color:var(--gray)}
+.destiny-confirm{padding:8px 32px;border:none;border-radius:20px;background:#9b59b6;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.destiny-confirm:hover{transform:scale(1.05)}
+.destiny-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* ===== 角色创建 - 阵营选择 ===== */
+.faction-select{margin:12px 0;text-align:center}
+.fs-label{font-size:13px;color:var(--gray);margin-bottom:8px}
+.fs-btns{display:flex;gap:8px;justify-content:center}
+.fs-btn{padding:6px 20px;border:2px solid var(--gray);border-radius:20px;background:transparent;color:var(--white);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.fs-btn:hover{border-color:var(--white);transform:scale(1.05)}
+.fs-btn.active[data-faction="魏"]{border-color:var(--blue);color:var(--blue);background:rgba(68,136,255,0.15)}
+.fs-btn.active[data-faction="蜀"]{border-color:var(--green);color:var(--green);background:rgba(76,175,80,0.15)}
+.fs-btn.active[data-faction="吴"]{border-color:var(--purple);color:var(--purple);background:rgba(155,89,182,0.15)}
+.fs-btn.active[data-faction="群"]{border-color:var(--gold);color:var(--gold);background:rgba(241,196,15,0.15)}
+
+/* ===== 天意干预面板 ===== */
+#destinyPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+#destinyPanel.hide{display:none}
+.destiny-panel-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:20px 24px;min-width:360px;text-align:center}
+.destiny-panel-card h2{color:#9b59b6;font-size:16px;margin-bottom:4px}
+.destiny-panel-card .dp-hint{color:var(--gray);font-size:12px;margin-bottom:10px}
+.destiny-actions{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
+.destiny-act-btn{padding:10px 18px;border:2px solid rgba(255,255,255,0.2);border-radius:10px;background:transparent;color:var(--white);font-size:13px;cursor:pointer;transition:all 0.2s}
+.destiny-act-btn:hover{border-color:#9b59b6;color:#9b59b6}
+.destiny-act-btn.selected{border-color:#9b59b6;background:rgba(155,89,182,0.15)}
+.destiny-target-row{margin-bottom:12px;display:none}
+.destiny-target-row.show{display:block}
+.destiny-target-row select{width:80%;padding:6px 10px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:var(--card);color:var(--white);font-size:13px}
+.destiny-pt-pts{color:#9b59b6;font-size:12px;margin-bottom:10px}
+
+/* ===== 属性成长面板 ===== */
+#growthPanel{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
+#growthPanel.hide{display:none}
+.growth-card{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:28px 32px;min-width:340px;text-align:center}
+.growth-card h2{color:var(--gold);font-size:20px;margin-bottom:4px}
+.growth-card .growth-result{font-size:16px;margin-bottom:4px}
+.growth-card .growth-result.win{color:var(--green)}
+.growth-card .growth-result.lose{color:var(--red)}
+.growth-card .growth-pts{color:var(--gold);font-size:14px;margin-bottom:14px}
+.growth-card .growth-pts span{font-weight:700;font-size:18px}
+.growth-attr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.growth-attr-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:8px;padding:6px 10px}
+.growth-attr-row .ga-name{font-size:13px;color:var(--white);min-width:36px}
+.growth-attr-row .ga-val{font-size:15px;font-weight:700;color:var(--gold);min-width:20px;text-align:center}
+.growth-attr-row .ga-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.growth-attr-row .ga-btn:hover{background:var(--gold);color:var(--bg)}
+.growth-attr-row .ga-btn:disabled{opacity:0.3;cursor:not-allowed}
+.growth-confirm{padding:10px 36px;border:none;border-radius:20px;background:var(--gold);color:var(--bg);font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:2px}
+.growth-confirm:hover{transform:scale(1.05)}
+.growth-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* ===== 设置面板 ===== */
+#settingsOverlay{position:fixed;inset:0;z-index:9995;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6)}
+#settingsOverlay.hide{display:none}
+.settings-card{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:24px 28px;min-width:280px;text-align:center}
+.settings-card h2{color:var(--gold);font-size:18px;margin-bottom:16px;letter-spacing:2px}
+.settings-btns{display:flex;flex-direction:column;gap:10px}
+.settings-btn{padding:10px 24px;border:2px solid rgba(255,255,255,0.2);border-radius:20px;background:transparent;color:var(--white);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:2px}
+.settings-btn:hover{border-color:var(--gold);color:var(--gold)}
+.settings-btn.danger{border-color:var(--red);color:var(--red)}
+.settings-btn.danger:hover{background:var(--red);color:#fff}
+.settings-btn.cancel{border-color:var(--gray);color:var(--gray)}
+.settings-btn.cancel:hover{border-color:var(--white);color:var(--white)}
+
+/* ===== 确认弹窗 ===== */
+#confirmOverlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+#confirmOverlay.hide{display:none}
+.confirm-card{background:var(--bg2);border:2px solid var(--red);border-radius:16px;padding:24px 28px;min-width:320px;text-align:center}
+.confirm-card h2{color:var(--red);font-size:18px;margin-bottom:8px}
+.confirm-card p{color:var(--white);font-size:14px;margin-bottom:16px}
+.confirm-btns{display:flex;gap:12px;justify-content:center}
+.confirm-yes{background:var(--red);color:#fff;border:2px solid var(--red)}
+.confirm-yes:hover{transform:scale(1.05)}
+.confirm-no{background:transparent;color:var(--gray);border:2px solid var(--gray)}
+.confirm-no:hover{border-color:var(--white);color:var(--white)}
+
+/* ===== 结束画面 ===== */
+#endScreen{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.8)}
+#endScreen.show{display:flex}
+.endscreen-card{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:32px 36px;min-width:340px;text-align:center;max-height:85vh;overflow-y:auto}
+.endscreen-card h2{color:var(--gold);font-size:24px;margin-bottom:8px;letter-spacing:4px}
+.endscreen-card .end-msg{font-size:15px;color:var(--white);margin-bottom:16px}
+.endscreen-btns{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.endscreen-btns button{padding:10px 24px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;border:2px solid transparent}
+.endscreen-btns .es-retry{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.endscreen-btns .es-title{background:transparent;color:var(--gold);border-color:var(--gold)}
+.endscreen-btns .es-retry:hover,.endscreen-btns .es-title:hover{transform:scale(1.05)}}
+
+/* ===== 移动端适配补充 ===== */
+@media(max-width:768px){
+  .title-logo{font-size:36px;letter-spacing:6px}
+  .title-sub{font-size:13px;margin-bottom:28px}
+  .title-btn{padding:10px 36px;font-size:14px;min-width:180px}
+  .char-card{min-width:90vw;padding:20px}
+  .speech-card,.vote-card,.night-card,.destiny-card,.growth-card,.settings-card,.confirm-card,.endscreen-card{min-width:92vw;padding:16px 12px;box-sizing:border-box}
+  .destiny-players{grid-template-columns:repeat(2,1fr)}
+  .speech-types{grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
 <body>
+<!-- ===== 标题画面 ===== -->
+<div id="titleScreen">
+  <div class="title-logo">三国·狼人杀</div>
+  <div class="title-sub">智谋对决·好感为刃</div>
+  <div class="title-btns">
+    <button class="title-btn" onclick="startPlayerMode()">玩 家 扮 演</button>
+    <button class="title-btn" onclick="startDestinyMode()">天 意 扮 演</button>
+    <button class="title-btn" onclick="startGodMode()">上 帝 视 角</button>
+    <button class="title-btn sub" onclick="openSettingsFromTitle()">游 戏 设 置</button>
+    <button class="title-btn danger" onclick="confirmQuitGame()">退 出 游 戏</button>
+  </div>
+  <div class="title-footer">v1.0 · 三国狼人杀</div>
+</div>
+
+<!-- ===== 角色创建面板 ===== -->
+<div id="charCreate" class="hide">
+  <div class="char-card">
+    <h2>创建角色</h2>
+    <input type="text" id="charNameInput" placeholder="请输入角色名" maxlength="6">
+    <div class="faction-select">
+      <div class="fs-label">选择阵营</div>
+      <div class="fs-btns">
+        <button class="fs-btn" data-faction="魏" onclick="selectFaction('魏')">魏</button>
+        <button class="fs-btn" data-faction="蜀" onclick="selectFaction('蜀')">蜀</button>
+        <button class="fs-btn" data-faction="吴" onclick="selectFaction('吴')">吴</button>
+        <button class="fs-btn active" data-faction="群" onclick="selectFaction('群')">群</button>
+      </div>
+    </div>
+    <div class="attr-grid" id="attrGrid"></div>
+    <div class="attr-pts">剩余属性点：<span id="attrLeft">3</span></div>
+    <button class="char-start" id="charStartBtn" onclick="confirmCharCreate()" disabled>开始游戏</button>
+    <div class="char-attr-tip">六维属性每项上限6点，初始每项1点，可自由分配3点</div>
+  </div>
+</div>
+
+<!-- ===== 发言选择面板 ===== -->
+<div id="speechPanel" class="hide">
+  <div class="speech-card">
+    <h2>轮到你发言！</h2>
+    <div class="speech-hint">选择一个发言类型</div>
+    <div class="speech-types" id="speechTypes">
+      <button class="speech-type-btn" onclick="selectSpeechType('conservative')" id="st-conservative">
+        <span class="st-icon">😶</span>
+        <span class="st-label">划水</span>
+      </button>
+      <button class="speech-type-btn" onclick="selectSpeechType('attack')" id="st-attack">
+        <span class="st-icon">⚔️</span>
+        <span class="st-label">怀疑某人</span>
+      </button>
+      <button class="speech-type-btn" onclick="selectSpeechType('shield')" id="st-shield">
+        <span class="st-icon">🛡️</span>
+        <span class="st-label">袒护某人</span>
+      </button>
+      <button class="speech-type-btn" onclick="selectSpeechType('break')" id="st-break">
+        <span class="st-icon">💥</span>
+        <span class="st-label">确信判定</span>
+      </button>
+    </div>
+    <div class="speech-target-row" id="speechTargetRow">
+      <select id="speechTargetSel"></select>
+    </div>
+    <button class="speech-confirm" id="speechConfirmBtn" onclick="confirmPlayerSpeech()" disabled>确认发言</button>
+  </div>
+</div>
+
+<!-- ===== 投票选择面板 ===== -->
+<div id="votePanel" class="hide">
+  <div class="vote-card">
+    <h2>投票放逐</h2>
+    <div class="vote-options" id="voteOptions"></div>
+    <button class="vote-confirm" id="voteConfirmBtn" onclick="confirmPlayerVote()" disabled>确认投票</button>
+  </div>
+</div>
+
+<!-- ===== 夜晚行动面板 ===== -->
+<div id="nightPanel" class="hide">
+  <div class="night-card">
+    <h2 id="nightTitle">夜晚行动</h2>
+    <div class="night-hint" id="nightHint">请做出你的选择</div>
+    <div class="night-info" id="nightInfo"></div>
+    <div class="night-options" id="nightOptions"></div>
+    <button class="night-confirm" id="nightConfirmBtn" onclick="confirmNightAction()" disabled>确认</button>
+  </div>
+</div>
+
+<!-- ===== 天意附体选择面板 ===== -->
+<div id="destinySelect" class="hide">
+  <div class="destiny-card">
+    <h2>天意附体</h2>
+    <div class="destiny-hint">选择一个角色附体（将知晓其身份，助其获胜）</div>
+    <div class="destiny-players" id="destinyPlayers"></div>
+    <button class="destiny-confirm" id="destinyConfirmBtn" onclick="confirmDestinySelect()" disabled>确认附体</button>
+  </div>
+</div>
+
+<!-- ===== 天意干预面板 ===== -->
+<div id="destinyPanel" class="hide">
+  <div class="destiny-panel-card">
+    <h2>天意干预</h2>
+    <div class="dp-hint" id="destinyPanelHint">每轮白天可使用一次干预</div>
+    <div class="destiny-actions">
+      <button class="destiny-act-btn" onclick="selectDestinyAction('help')" id="da-help">🙏 暗中助某人</button>
+      <button class="destiny-act-btn" onclick="selectDestinyAction('harm')" id="da-harm">⚡ 暗中害某人</button>
+      <button class="destiny-act-btn" onclick="selectDestinyAction('wait')" id="da-wait">⏳ 静观其变</button>
+    </div>
+    <div class="destiny-target-row" id="destinyTargetRow">
+      <select id="destinyTargetSel"></select>
+    </div>
+    <div class="destiny-pt-pts">剩余干预次数：<span id="destinyPts">1</span></div>
+    <button class="speech-confirm" id="destinyConfirmBtn" onclick="confirmDestinyAction()" disabled>确认干预</button>
+  </div>
+</div>
+
+<!-- ===== 属性成长面板 ===== -->
+<div id="growthPanel" class="hide">
+  <div class="growth-card">
+    <h2>角色成长</h2>
+    <div class="growth-result" id="growthResult"></div>
+    <div class="growth-pts">可获得属性点：<span id="growthPts">0</span></div>
+    <div class="growth-attr-grid" id="growthAttrGrid"></div>
+    <button class="growth-confirm" id="growthConfirmBtn" onclick="confirmGrowth()" disabled>确认成长</button>
+  </div>
+</div>
+
+<!-- ===== 设置面板 ===== -->
+<div id="settingsOverlay" class="hide">
+  <div class="settings-card">
+    <h2>游戏设置</h2>
+    <div class="settings-section">
+      <h4>游戏速度</h4>
+      <div class="speed-btns">
+        <button class="speed-btn" onclick="setSpeed(0.5)">0.5x</button>
+        <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
+        <button class="speed-btn" onclick="setSpeed(2)">2x</button>
+        <button class="speed-btn" onclick="setSpeed(3)">3x</button>
+      </div>
+    </div>
+    <div class="settings-btns">
+      <button class="settings-btn" onclick="confirmRestart()">🔄 重新开始</button>
+      <button class="settings-btn" onclick="confirmBackToTitle()">🏠 返回标题</button>
+      <button class="settings-btn cancel" onclick="closeSettings()">关闭设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 确认弹窗 ===== -->
+<div id="confirmOverlay" class="hide">
+  <div class="confirm-card">
+    <h2 id="confirmTitle">确认操作</h2>
+    <p id="confirmMsg">确定要执行此操作吗？</p>
+    <div class="confirm-btns">
+      <button class="confirm-yes" id="confirmYesBtn" onclick="executeConfirm()">确认</button>
+      <button class="confirm-no" onclick="closeConfirm()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 结束画面 ===== -->
+<div id="endScreen">
+  <div class="endscreen-card">
+    <h2 id="endTitle">游戏结束</h2>
+    <div class="end-msg" id="endMsg"></div>
+    <div id="endSummary"></div>
+    <div class="endscreen-btns">
+      <button class="es-retry" onclick="retryGame()">🔄 再来一局</button>
+      <button class="es-title" onclick="backToTitle()">🏠 返回标题</button>
+    </div>
+  </div>
+</div>
+
 <div class="night-overlay" id="nightOverlay"></div>
 <button class="btn-favor" id="favorBtn" onclick="openFavorPanel()">♡ 好感度</button>
 <button class="btn-settings" id="settingsBtn" onclick="openSettings()">⚙ 设置</button>
 <button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ 暂停</button>
-<div class="speed-panel" id="speedPanel">
-  <h4>游戏速度</h4>
-  <div class="speed-btns">
-    <button class="speed-btn" onclick="setSpeed(0.5)">0.5x</button>
-    <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
-    <button class="speed-btn" onclick="setSpeed(2)">2x</button>
-    <button class="speed-btn" onclick="setSpeed(3)">3x</button>
-  </div>
-</div>
 <div class="favor-panel" id="favorPanel">
   <h4>好感度面板（上帝视角）</h4>
   <div class="fp-hint">点击数值可手动修改 · 滚轮调整</div>
@@ -192,7 +546,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 
 <script src="characters_data.js"></script>
 <script>
-const FACTION_DIR = {"魏":"avatars/wei","蜀":"avatars/shu","吴":"avatars/wu","群雄":"avatars/qun"};
+const FACTION_DIR = {"魏":"avatars/wei","蜀":"avatars/shu","吴":"avatars/wu","群雄":"avatars/qun","群":"avatars/qun"};
 const ALL_CHARS = typeof ALL_CHARACTERS !== 'undefined' ? ALL_CHARACTERS : [];
 
 // 人设特有发言索引：按角色名，运行时动态生成
@@ -1052,7 +1406,7 @@ function getFavor(from, toId) {
 // 设置好感度（clamp 0~100）
 function setFavor(from, toId, value) {
   if (!from.favor) from.favor = {};
-  from.favor[toId] = Math.max(0, Math.min(100, value));
+  from.favor[toId] = Math.max(1, Math.min(99, value));
 }
 
 // 分类发言类型
@@ -1369,10 +1723,10 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
   return changes;
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set()};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),destiny:null};
 
 function openSettings(){
-  document.getElementById('speedPanel').classList.add('show');
+  document.getElementById('settingsOverlay').classList.remove('hide');
   // 打开设置时自动暂停游戏
   if(!game.isPaused){
     game.isPaused=true;
@@ -1384,7 +1738,7 @@ function openSettings(){
 }
 
 function closeSettings(){
-  document.getElementById('speedPanel').classList.remove('show');
+  document.getElementById('settingsOverlay').classList.add('hide');
   // 退出设置时如果之前是设置面板导致的暂停，则自动恢复
   if(game._pausedBySettings){
     game.isPaused=false;
@@ -1462,7 +1816,9 @@ function renderFavorGrid(){
       const fid=parseInt(this.dataset.from);
       const tid=parseInt(this.dataset.to);
       const old=getFavor(game.players[fid],tid);
-      const nv=Math.max(0,Math.min(100,old+(e.deltaY>0?-1:1)));
+      let nv=old;
+      if(e.deltaY>0 && old>1) nv=old-1;
+      else if(e.deltaY<0 && old<99) nv=old+1;
       setFavor(game.players[fid],tid,nv);
       this.textContent=nv;
       this.style.color=favorColor(nv);
@@ -1473,9 +1829,9 @@ function renderFavorGrid(){
       const fid=parseInt(this.dataset.from);
       const tid=parseInt(this.dataset.to);
       const old=getFavor(game.players[fid],tid);
-      const nv=prompt(`修改好感度\n${game.players[fid].name} → ${game.players[tid].name}`,old);
+      const nv=prompt(`修改好感度（1~99）\n${game.players[fid].name} → ${game.players[tid].name}`,old);
       if(nv!==null){
-        const val=Math.max(0,Math.min(100,parseInt(nv)||0));
+        const val=Math.max(1,Math.min(99,parseInt(nv)||1));
         setFavor(game.players[fid],tid,val);
         renderFavorGrid();
       }
@@ -1492,11 +1848,6 @@ function setSpeed(s){
 
 // 点击面板外部关闭
 document.addEventListener('click',function(e){
-  const panel=document.getElementById('speedPanel');
-  const btn=document.getElementById('settingsBtn');
-  if(panel.classList.contains('show') && !panel.contains(e.target) && !btn.contains(e.target)){
-    closeSettings();
-  }
   const fp=document.getElementById('favorPanel');
   const fb=document.getElementById('favorBtn');
   if(fp.classList.contains('show') && !fp.contains(e.target) && !fb.contains(e.target)){
@@ -1521,22 +1872,59 @@ function togglePause(){
 
 function delay(ms){
   return new Promise(resolve=>{
-    const actual=Math.round(ms/game.speed);
+    const gen=game.generation||0;
     const check=()=>{
+      if((game.generation||0)!==gen){resolve();return;}
       if(game.isPaused){
         game.pauseResolvers.push(()=>setTimeout(check,50));
       } else {
-        setTimeout(resolve,actual);
+        setTimeout(resolve,Math.round(ms/game.speed));
       }
     };
     check();
   });
 }
 
-function init(){
+function init(optPlayer){
+  document.getElementById('logArea').innerHTML='';
+  // 清理所有覆盖层和面板，防止旧局残留
+  document.getElementById('endScreen').classList.remove('show');
+  document.getElementById('settingsOverlay').classList.add('hide');
+  document.getElementById('confirmOverlay').classList.add('hide');
+  document.getElementById('speechPanel').classList.add('hide');
+  document.getElementById('votePanel').classList.add('hide');
+  document.getElementById('nightPanel').classList.add('hide');
+  document.getElementById('destinySelect').classList.add('hide');
+  document.getElementById('destinyPanel').classList.add('hide');
+  document.getElementById('growthPanel').classList.add('hide');
+  document.getElementById('charCreate').classList.add('hide');
+  document.getElementById('modalArea').innerHTML='';
+  document.getElementById('phaseBar').innerHTML='';
+  document.getElementById('actionBar').innerHTML='';
+  document.getElementById('nightOverlay').className='night-overlay';
+  // 完整重置游戏状态（用新对象替换，避免旧属性残留）
+  const keepSpeed = game.speed;
+  const keepMode = game.mode;
+  game={players:[],phase:"start",day:0,mode:keepMode,speed:keepSpeed,generation:(game.generation||0)+1,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},claimedPlayers:new Set(),destiny:null,_confirmCallback:null,_pausedBySettings:false,_pausedByFavor:false,pendingSpeechResolve:null,pendingVoteResolve:null,pendingNightResolve:null,pendingDestinyResolve:null,player:null,playerId:null,playerDied:false,spokenToday:new Set()};
+  _activeGen=game.generation;
+  // 重置暂停按钮外观
+  const pauseBtn=document.getElementById("pauseBtn");
+  pauseBtn.textContent="⏸ 暂停";
+  pauseBtn.classList.remove("paused");
   // 从 219 人的角色库中随机抽取 15 人
   const pool = shuffle([...ALL_CHARS]);
-  const selected = pool.slice(0, 15);
+  let selected = pool.slice(0, 15);
+
+  // 玩家扮演模式：将玩家角色替换到 15 人名单中
+  if(optPlayer && game.mode==='player'){
+    const replaceIdx = Math.floor(Math.random()*15);
+    selected[replaceIdx] = {
+      name: optPlayer.name,
+      faction: optPlayer.faction || '群',
+      attr: optPlayer.attr || {},
+      growthPts: optPlayer.growthPts || 0
+    };
+  }
 
   let roles=[];
   for(let r in ROLE_CFG) for(let i=0;i<ROLE_CFG[r].count;i++) roles.push(r);
@@ -1548,6 +1936,13 @@ function init(){
     alive: true,
     votedFor: null
   }));
+
+  // 设置 playerId
+  if(game.mode==='player' && optPlayer){
+    game.playerId = game.players.findIndex(p => p.name === optPlayer.name);
+    game.playerDied = false;
+  }
+
   renderPlayers();
   initFavor();
   showStartModal();
@@ -1556,6 +1951,45 @@ function init(){
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
 function showStartModal(){
+  // ===== 玩家扮演模式 =====
+  if(game.mode==='player' && game.playerId!=null){
+    const me=game.players[game.playerId];
+    const myRole=ROLE_CFG[me.role];
+    const roleTip={wolf:'你是狼人，夜晚与同伴商议击杀目标，白天伪装好人。',seer:'你是预言家，每晚可查验一人身份。',witch:'你是女巫，拥有一瓶解药和一瓶毒药。',hunter:'你是猎人，被杀或被放逐时可带走一人。',guard:'你是守卫，每晚可守护一人（不能连续守同一人）。',villager:'你是平民，通过发言和投票找出狼人。'};
+    document.getElementById("modalArea").innerHTML=`
+  <div class="modal-overlay"><div class="modal">
+    <h2>三国狼人杀</h2>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    好人阵营拥有：<span class="highlight" style="color:var(--seer)">预言家</span>、
+    <span class="highlight" style="color:var(--witch)">女巫</span>、
+    <span class="highlight" style="color:var(--hunter)">猎人</span>、
+    <span class="highlight" style="color:var(--guard)">守卫</span>。</p>
+    <div style="margin:16px 0;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:center;border:2px solid ${myRole.color}">
+      <div style="font-size:13px;color:var(--gray);margin-bottom:6px">你的身份</div>
+      <div style="font-size:22px;font-weight:700;color:${myRole.color}">${myRole.name}</div>
+      <div style="font-size:14px;margin-top:4px">${me.name}（${me.faction}）</div>
+      <div style="font-size:12px;color:var(--gray);margin-top:8px">${roleTip[me.role]||'祝你好运！'}</div>
+    </div>
+    <p style="font-size:12px;color:var(--gray)">其他玩家身份将在游戏中揭晓</p>
+    <button class="btn-primary" onclick="closeModal();startGame()">开始游戏</button>
+  </div></div>`;
+    return;
+  }
+
+  // ===== 天意模式 =====
+  if(game.mode==='destiny'){
+    document.getElementById("modalArea").innerHTML=`
+  <div class="modal-overlay"><div class="modal">
+    <h2>三国狼人杀 · 天意模式</h2>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    你将以天意之力附体于一位角色，暗中助其获胜。<br>
+    每轮白天可使用一次干预。</p>
+    <button class="btn-primary" onclick="closeModal();showDestinySelect()">选择附体</button>
+  </div></div>`;
+    return;
+  }
+
+  // ===== 上帝视角（默认）=====
   const wolves=game.players.filter(p=>p.role==="wolf");
   const seer=game.players.find(p=>p.role==="seer");
   const witch=game.players.find(p=>p.role==="witch");
@@ -1591,16 +2025,23 @@ function closeModal(){document.getElementById("modalArea").innerHTML=""}
 
 function renderPlayers(){
   const grid=document.getElementById("playerGrid");
+  // 玩家模式下隐藏他人角色（玩家死亡后自动变为上帝视角）
+  const hideRoles = game.mode==='player' && !game.playerDied;
   grid.innerHTML=game.players.map(p=>{
-    const fc={"魏":"faction-wei","蜀":"faction-shu","吴":"faction-wu","群":"faction-qun"}[p.faction];
+    const fc={"魏":"faction-wei","蜀":"faction-shu","吴":"faction-wu","群雄":"faction-qun","群":"faction-qun"}[p.faction];
     const rc=ROLE_CFG[p.role].color;
     const imgSrc = (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
+    const showRole = !hideRoles || p.id===game.playerId;
+    const roleDiv = showRole ? `<div style="font-size:10px;color:${rc};font-weight:700">${ROLE_CFG[p.role].name}</div>` : '';
+    const isMe = game.mode==='player' && p.id===game.playerId;
+    const meBadge = isMe ? '<div style="font-size:9px;color:var(--gold);font-weight:700">★ 你</div>' : '';
     return `<div class="p-card ${fc} ${p.alive?"":"dead"}" id="pc${p.id}" onclick="onPlayerClick(${p.id})">
       ${!p.alive?'<div class="status-icon" style="color:var(--red)">X</div>':''}
       <div class="avatar"><img src="${imgSrc}" onerror="this.parentElement.innerHTML='${p.name[0]}'" alt="${p.name}"></div>
       <div class="name">${p.name}</div>
       <div class="faction">${p.faction}</div>
-      <div style="font-size:10px;color:${rc};font-weight:700">${ROLE_CFG[p.role].name}</div>
+      ${roleDiv}
+      ${meBadge}
     </div>`;
   }).join("");
   renderInfoBar();
@@ -1627,8 +2068,11 @@ function speakerHTML(player, label){
   return `<span class="speaker" style="color:${color}"><img src="${imgSrc}" onerror="this.style.display='none'" alt="${plainText(name)}">${name}：</span>`;
 }
 
+let _activeGen=0;
 function addLog(html){
+  if(game.generation!==_activeGen)return;
   const area=document.getElementById("logArea");
+  if(!area)return;
   const div=document.createElement("div");
   div.className="log-entry";
   div.innerHTML=html;
@@ -1651,19 +2095,22 @@ function pickExclude(arr,exclude){return pick(arr.filter(x=>!exclude.includes(x)
 
 function pickTemplate(group,vars){
   let t=pick(SPEECH_TEMPLATES[group]||SPEECH_TEMPLATES.generic);
-  for(let k in vars) t=t.replaceAll(`{${k}}`,vars[k]);
+  for(let k in vars) t=t.replaceAll('{'+k+'}',vars[k]);
   return t;
 }
 
 async function startGame(){
+  const gen=game.generation;
   game.day=0;
   addLog('<span class="system-text">=== 游戏开始！15位三国豪杰入座 ===</span>');
   await delay(800);
+  if(game.generation!==gen)return;
   nightPhase();
 }
 
 async function nightPhase(){
   try{
+  const gen=game.generation;
   game.day++;
   game.isProcessing=true;
   game.wolfTarget=null;game.seerTarget=null;game.witchSave=false;game.witchPoison=null;game.guardTarget=null; game.witchUsedSaveLastNight=false; game.witchUsedPoisonLastNight=false; game.witchPoisonTarget=null;
@@ -1675,24 +2122,46 @@ async function nightPhase(){
   await delay(1000);
 
   // Guard
-  await guardAction();
+  const guard=getAlive().find(p=>p.role==="guard"&&p.alive);
+  if(game.mode==='player' && guard && guard.id===game.playerId){
+    await player_guardAction();
+  } else {
+    await ai_guardAction();
+  }
   await delay(600);
 
   // Wolves
-  await wolfAction();
+  const wolves=getAliveWolves();
+  if(game.mode==='player' && wolves.find(w=>w.id===game.playerId)){
+    await player_wolfAction();
+  } else {
+    await ai_wolfAction();
+  }
   await delay(600);
 
   // Seer
-  await seerAction();
+  const seer=getAlive().find(p=>p.role==="seer"&&p.alive);
+  if(game.mode==='player' && seer && seer.id===game.playerId){
+    await player_seerAction();
+  } else {
+    await ai_seerAction();
+  }
   await delay(600);
 
   // Witch
-  await witchAction();
+  const witch=getAlive().find(p=>p.role=="witch"&&p.alive);
+  if(game.mode==='player' && witch && witch.id===game.playerId){
+    await player_witchAction();
+  } else {
+    await ai_witchAction();
+  }
   await delay(600);
+  if(game.generation!==gen)return;
 
   // Resolve night
   resolveNight();
   }catch(e){
+    if(game.generation!==gen){console.warn('nightPhase aborted: generation changed');return;}
     addLog(`<span style="color:var(--red)">[系统错误] ${e.message}</span>`);
     console.error('nightPhase error:',e);
     await delay(1000);
@@ -1700,7 +2169,19 @@ async function nightPhase(){
   }
 }
 
-async function guardAction(){
+async function player_guardAction(){
+  const gen=game.generation;
+  const guard=getAlive().find(p=>p.role==="guard"&&p.alive);
+  if(!guard)return;
+  const targets=getAlive().filter(p=>p.id!==game.lastGuardTarget);
+  if(targets.length===0)return;
+  const result = await showNightPanel('guard', {targets:targets});
+  game.guardTarget=result;
+  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${game.players[result].name}……</span>`);
+}
+
+async function ai_guardAction(){
+  const gen=game.generation;
   const guard=getAlive().find(p=>p.role==="guard"&&p.alive);
   if(!guard)return;
   const targets=getAlive().filter(p=>p.id!==game.lastGuardTarget);
@@ -1719,7 +2200,28 @@ async function guardAction(){
   addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${guardTarget.name}……</span>`);
 }
 
-async function wolfAction(){
+async function player_wolfAction(){
+  const gen=game.generation;
+  const wolves=getAliveWolves();
+  if(wolves.length===0)return;
+  const targets=getAliveGood();
+  if(targets.length===0)return;
+  const playerWolf=wolves.find(w=>w.id===game.playerId);
+  if(!playerWolf) return;
+  addLog('<span class="system-text">🐺 狼人密议开始……</span>');
+  await delay(500);
+  const teammates=wolves.filter(w=>w.id!==game.playerId);
+  if(teammates.length>0){
+    addLog(`<span style="color:var(--red)">你的同伴：${teammates.map(w=>w.name).join('、')}</span>`);
+    await delay(500);
+  }
+  const result = await showNightPanel('wolf', {targets:targets});
+  game.wolfTarget=result;
+  addLog(`${speakerHTML(playerWolf,'<span style="color:var(--red)">【狼人】'+playerWolf.name+'</span>')}<span class="night-text">决定击杀${game.players[result].name}……</span>`);
+}
+
+async function ai_wolfAction(){
+  const gen=game.generation;
   const wolves=getAliveWolves();
   if(wolves.length===0)return;
   const targets=getAliveGood();
@@ -1946,7 +2448,21 @@ function killMasterDecide(killMaster, proposals, targets){
   return pick(topTargets);
 }
 
-async function seerAction(){
+async function player_seerAction(){
+  const gen=game.generation;
+  const seer=getAlive().find(p=>p.role==="seer");
+  if(!seer)return;
+  const targets=getAlive().filter(p=>p.id!==seer.id&&p.role!=="seer");
+  if(targets.length===0)return;
+  const result = await showNightPanel('seer', {targets:targets, info:'选择要查验的玩家'});
+  game.seerTarget=result;
+  const target=game.players[result];
+  const isWolf=target.role==="wolf";
+  addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`);
+}
+
+async function ai_seerAction(){
+  const gen=game.generation;
   const seer=getAlive().find(p=>p.role==="seer");
   if(!seer)return;
   const targets=getAlive().filter(p=>p.id!==seer.id&&p.role!=="seer");
@@ -1960,29 +2476,61 @@ async function seerAction(){
   addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`);
 }
 
-async function witchAction(){
+async function player_witchAction(){
+  const gen=game.generation;
   const witch=getAlive().find(p=>p.role==="witch");
   if(!witch)return;
-  const intel=getAttr(witch,'智谋');
-  const politic=getAttr(witch,'政治');
-  if(game.witchHasSave&&game.wolfTarget!==null){
+  const victim = game.wolfTarget!=null ? game.players[game.wolfTarget] : null;
+  const canSave = game.witchHasSave && victim && victim.id!=witch.id && victim.role!="witch";
+  const poisonTargets = game.witchHasPoison && game.day>=2 ? getAlive().filter(p=>p.id!=witch.id) : [];
+  const hintParts = [];
+  if(canSave) hintParts.push(`今晚 <b style="color:var(--red)">${victim.name}</b> 被狼人杀害了`);
+  if(!game.witchHasSave) hintParts.push('解药已用完');
+  if(poisonTargets.length>0) hintParts.push('毒药可用');
+  else if(!game.witchHasPoison) hintParts.push('毒药已用完');
+  const hint = hintParts.join('；');
+  const result = await showNightPanel('witch', {
+    canSave:canSave, poisonTargets:poisonTargets,
+    info: hint
+  });
+  if(result=='save'){
+    game.witchSave=true; game.witchUsedSaveLastNight=true; game.witchHasSave=false;
+    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`);
+  } else if(result && typeof result==='object' && result.action==='poison'){
+    game.witchPoison=result.target; game.witchHasPoison=false;
+    game.witchUsedPoisonLastNight=true; game.witchPoisonTarget=result.target;
+    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`);
+  } else {
+    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}<span class="night-text">选择按兵不动。</span>`);
+  }
+}
+
+async function ai_witchAction(){
+  const gen=game.generation;
+  const witch=getAlive().find(p=>p.role==="witch");
+  if(!witch)return;
+  const intel=getAttr(witch,"智谋");
+  const politic=getAttr(witch,"政治");
+  if(game.witchHasSave&&game.wolfTarget!=null){
     const victim=game.players[game.wolfTarget];
     if(victim.role==="witch"){} // can't self-save rule
     else {
-      // 政治高的女巫更懂得保全关键人物
+      // 基础救活概率50%，政治属性加成
       let saveProb=0.5+politic*0.05;
-      // 智谋高的女巫能判断被刀者是否重要
+      // 高智谋优先救关键角色
       if(intel>=4 && ["seer","hunter"].includes(victim.role)) saveProb+=0.2;
+      if(game.generation!==gen)return;
       if(Math.random()<saveProb){
-        game.witchSave=true; game.witchUsedSaveLastNight = true;
+        game.witchSave=true; game.witchUsedSaveLastNight=true;
         game.witchHasSave=false;
-        addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用解药救下了${victim.name}！`);
+        addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`);
         return;
       }
     }
   }
   if(game.witchHasPoison&&game.day>=2){
-    // 智谋影响毒药精准度
+    if(game.generation!==gen)return;
+    // 毒杀概率随智谋增长
     let poisonProb=0.2+intel*0.05;
     if(game.day>=3) poisonProb+=0.1;
     if(Math.random()<poisonProb){
@@ -1992,7 +2540,7 @@ async function witchAction(){
         if(knownWolves.length>0){
           game.witchPoison=pick(knownWolves).id;
         } else if(intel>=4){
-          // 高智谋女巫能从发言中推断狼人
+          // 高智谋分析嫌疑发言
           const wolfSpeakers=wolves.filter(w=>game.speeches.some(s=>s.speakerId===w.id));
           if(wolfSpeakers.length>0) game.witchPoison=pick(wolfSpeakers).id;
         } else {
@@ -2000,7 +2548,7 @@ async function witchAction(){
           if(suspects.length>0) game.witchPoison=pick(suspects).id;
         }
         if(game.witchPoison!==null){
-          game.witchHasPoison=false; game.witchUsedPoisonLastNight = true; game.witchPoisonTarget = game.witchPoison;
+          game.witchHasPoison=false; game.witchUsedPoisonLastNight=true; game.witchPoisonTarget=game.witchPoison;
           addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`);
         }
       }
@@ -2754,7 +3302,414 @@ function clearSelection(){
   document.querySelectorAll(".p-card").forEach(c=>{c.classList.remove("selected");c.classList.remove("wolf-glow")});
 }
 
-init();
+
+// ===== 标题画面控制 =====
+function showTitle(){
+  document.getElementById('titleScreen').classList.remove('hide');
+}
+function hideTitle(){
+  document.getElementById('titleScreen').classList.add('hide');
+  document.getElementById('favorBtn').style.display='';
+  document.getElementById('settingsBtn').style.display='';
+  document.getElementById('pauseBtn').style.display='';
+}
+
+// ===== 模式启动 =====
+function startGodMode(){
+  hideTitle();
+  game.mode='god';
+  init();
+}
+function startPlayerMode(){
+  hideTitle();
+  game.mode='player';
+  document.getElementById('charCreate').classList.remove('hide');
+  // 初始化属性网格
+  renderCharAttrGrid();
+}
+function startDestinyMode(){
+  hideTitle();
+  game.mode='destiny';
+  init();
+}
+
+// ===== 标题画面设置/退出 =====
+function openSettingsFromTitle(){
+  document.getElementById('settingsOverlay').classList.remove('hide');
+}
+function confirmQuitGame(){
+  if(confirm('确定要退出游戏吗？')){
+    location.reload();
+  }
+}
+
+// ===== 角色创建 =====
+let _selectedFaction = '群';
+function renderCharAttrGrid(){
+  const attrs = ['智谋','政治','领导力','魅力','意志','运气'];
+  let html = '';
+  for(const a of attrs){
+    html += `<div class="attr-row" data-attr="${a}">
+      <span class="attr-name">${a}</span>
+      <button class="attr-btn-minus" onclick="changeAttr('${a}',-1)">-</button>
+      <span class="attr-val" id="attr-val-${a}">1</span>
+      <button class="attr-btn-plus" onclick="changeAttr('${a}',1)">+</button>
+    </div>`;
+  }
+  document.getElementById('attrGrid').innerHTML = html;
+  updateAttrLeft();
+}
+function changeAttr(attr, delta){
+  const el = document.getElementById('attr-val-'+attr);
+  let v = parseInt(el.textContent);
+  const left = parseInt(document.getElementById('attrLeft').textContent);
+  if(delta>0 && left<=0) return;
+  v = Math.max(1, Math.min(6, v+delta));
+  el.textContent = v;
+  updateAttrLeft();
+  checkCharReady();
+}
+function updateAttrLeft(){
+  const attrs = ['智谋','政治','领导力','魅力','意志','运气'];
+  let used = 0;
+  for(const a of attrs){
+    used += parseInt(document.getElementById('attr-val-'+a).textContent) - 1;
+  }
+  document.getElementById('attrLeft').textContent = 3 - used;
+}
+function checkCharReady(){
+  const name = document.getElementById('charNameInput').value.trim();
+  const left = parseInt(document.getElementById('attrLeft').textContent);
+  document.getElementById('charStartBtn').disabled = !(name.length>0 && left===0);
+}
+function selectFaction(fac){
+  _selectedFaction = fac;
+  document.querySelectorAll('.fs-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.faction===fac);
+  });
+}
+
+function confirmCharCreate(){
+  const name = document.getElementById('charNameInput').value.trim();
+  if(!name) return;
+  const attrs = ['智谋','政治','领导力','魅力','意志','运气'];
+  let attr = {};
+  for(const a of attrs) attr[a] = parseInt(document.getElementById('attr-val-'+a).textContent);
+  const optPlayer = { name, faction: _selectedFaction, attr, growthPts: 0 };
+  document.getElementById('charCreate').classList.add('hide');
+  init(optPlayer);
+}
+
+// ===== 天意选择 =====
+let _destinySelected = null;
+function showDestinySelect(){
+  const container = document.getElementById('destinyPlayers');
+  container.innerHTML = game.players.map(p => {
+    const imgSrc = (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
+    return `<div class="destiny-player-card" data-id="${p.id}" onclick="selectDestinyPlayer(${p.id})">
+      <img src="${imgSrc}" onerror="this.style.display='none'">
+      <div>${p.name}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('destinySelect').classList.remove('hide');
+}
+function selectDestinyPlayer(id){
+  _destinySelected = id;
+  document.querySelectorAll('.destiny-player-card').forEach(c=>{
+    c.classList.toggle('selected', parseInt(c.dataset.id)===id);
+  });
+  document.getElementById('destinyConfirmBtn').disabled = false;
+}
+function confirmDestinySelect(){
+  if(_destinySelected===null) return;
+  game.destiny = _destinySelected;
+  document.getElementById('destinySelect').classList.add('hide');
+  // 天意模式已选好附体，等待游戏开始
+  showStartModal();
+}
+
+// ===== 玩家发言面板 =====
+let _selectedSpeechType = null;
+function selectSpeechType(type){
+  _selectedSpeechType = type;
+  document.querySelectorAll('.speech-type-btn').forEach(b=>{
+    b.classList.remove('selected');
+  });
+  document.getElementById('st-'+type).classList.add('selected');
+  // 更新目标选择
+  updateSpeechTarget(type);
+  document.getElementById('speechConfirmBtn').disabled = false;
+}
+function updateSpeechTarget(type){
+  const sel = document.getElementById('speechTargetSel');
+  if(type==='conservative'){
+    sel.style.display='none';
+    return;
+  }
+  sel.style.display='';
+  const alive = getAlive().filter(p=>p.id!==game.playerId);
+  sel.innerHTML = alive.map(p=>`<option value="${p.id}">${p.name}（${p.faction}）</option>`).join('');
+}
+function confirmPlayerSpeech(){
+  const type = _selectedSpeechType;
+  const sel = document.getElementById('speechTargetSel');
+  let targetId = null;
+  if(type!=='conservative' && sel.value) targetId = parseInt(sel.value);
+  
+  document.getElementById('speechPanel').classList.add('hide');
+  _selectedSpeechType = null;
+  
+  if(game.pendingSpeechResolve){
+    game.pendingSpeechResolve({type, targetId});
+    game.pendingSpeechResolve = null;
+  }
+}
+
+// ===== 玩家投票面板 =====
+function confirmPlayerVote(){
+  const sel = document.getElementById('voteOptions');
+  const targetId = sel.value ? parseInt(sel.value) : null;
+  
+  document.getElementById('votePanel').classList.add('hide');
+  
+  if(game.pendingVoteResolve){
+    game.pendingVoteResolve(targetId);
+    game.pendingVoteResolve = null;
+  }
+}
+
+// ===== 夜晚行动面板 =====
+let _nightResult = null;
+function confirmNightAction(){
+  const action = _nightResult;
+  document.getElementById('nightPanel').classList.add('hide');
+  _nightResult = null;
+  
+  if(game.pendingNightResolve){
+    game.pendingNightResolve(action);
+    game.pendingNightResolve = null;
+  }
+}
+
+// ===== 天意干预 =====
+let _destinyAction = null;
+let _destinyTarget = null;
+function selectDestinyAction(action){
+  _destinyAction = action;
+  document.querySelectorAll('.destiny-act-btn').forEach(b=>{
+    b.classList.remove('selected');
+    if(b.id==='da-'+action) b.classList.add('selected');
+  });
+  const row = document.getElementById('destinyTargetRow');
+  if(action==='wait'){
+    row.style.display='none';
+  } else {
+    row.style.display='';
+    updateDestinyTargets();
+  }
+  checkDestinyReady();
+}
+function updateDestinyTargets(){
+  const sel = document.getElementById('destinyTargetSel');
+  const alive = getAlive();
+  sel.innerHTML = alive.map(p=>`<option value="${p.id}">${p.name}（${p.faction}）</option>`).join('');
+}
+function checkDestinyReady(){
+  const action = _destinyAction;
+  if(!action) return;
+  let ready = (action==='wait');
+  if(action==='help'||action==='harm'){
+    const sel = document.getElementById('destinyTargetSel');
+    ready = !!sel.value;
+  }
+  document.getElementById('destinyConfirmBtn').disabled = !ready;
+}
+function confirmDestinyAction(){
+  const action = _destinyAction;
+  const sel = document.getElementById('destinyTargetSel');
+  let targetId = null;
+  if(action!=='wait' && sel.value) targetId = parseInt(sel.value);
+  
+  document.getElementById('destinyPanel').classList.add('hide');
+  _destinyAction = null;
+  
+  if(game.pendingDestinyResolve){
+    game.pendingDestinyResolve({action, targetId});
+    game.pendingDestinyResolve = null;
+  }
+}
+
+// ===== 属性成长 =====
+function confirmGrowth(){
+  // 简化：直接关闭面板
+  document.getElementById('growthPanel').classList.add('hide');
+}
+
+// ===== 确认弹窗 =====
+function executeConfirm(){
+  const callback = game._confirmCallback;
+  closeConfirm();
+  if(callback) callback();
+}
+function closeConfirm(){
+  document.getElementById('confirmOverlay').classList.add('hide');
+}
+
+// ===== 设置面板操作 =====
+function confirmRestart(){
+  executeConfirm();
+  document.getElementById('settingsOverlay').classList.add('hide');
+  init();
+}
+function confirmBackToTitle(){
+  executeConfirm();
+  document.getElementById('settingsOverlay').classList.add('hide');
+  backToTitle();
+}
+
+// ===== 返回标题/重试 =====
+function backToTitle(){
+  game.mode = null;
+  showTitle();
+}
+function retryGame(){
+  init();
+}
+
+// ===== 初始化角色创建面板 =====
+document.getElementById('charNameInput').addEventListener('input', checkCharReady);
+
+
+// ===== 夜晚行动面板 =====
+
+function showNightPanel(type, data){
+  return new Promise(resolve => {
+    game.pendingNightResolve = resolve;
+    const titleEl = document.getElementById('nightTitle');
+    const hintEl = document.getElementById('nightHint');
+    const infoEl = document.getElementById('nightInfo');
+    const optEl = document.getElementById('nightOptions');
+    const confirmBtn = document.getElementById('nightConfirmBtn');
+
+    _nightResult = null;
+    confirmBtn.disabled = true;
+
+    if(type === 'guard'){
+      titleEl.textContent = '🛡️ 守卫行动';
+      hintEl.textContent = '选择今晚要守护的人（不能连续守护同一人）';
+      infoEl.textContent = data.info || '';
+      optEl.innerHTML = data.targets.map(p =>
+        `<div class="night-opt" data-id="${p.id}" onclick="selectNightTarget(${p.id})">${p.name}（${p.faction}）</div>`
+      ).join('');
+    }
+    else if(type === 'wolf'){
+      titleEl.textContent = '🐺 狼人行动';
+      hintEl.textContent = '选择今晚要击杀的目标';
+      infoEl.textContent = data.info || '';
+      optEl.innerHTML = data.targets.map(p =>
+        `<div class="night-opt" data-id="${p.id}" onclick="selectNightTarget(${p.id})">${p.name}（${p.faction}）</div>`
+      ).join('');
+    }
+    else if(type === 'seer'){
+      titleEl.textContent = '🔮 预言家行动';
+      hintEl.textContent = '选择今晚要查验的人';
+      infoEl.textContent = data.info || '';
+      optEl.innerHTML = data.targets.map(p =>
+        `<div class="night-opt" data-id="${p.id}" onclick="selectNightTarget(${p.id})">${p.name}（${p.faction}）</div>`
+      ).join('');
+    }
+    else if(type === 'witch'){
+      titleEl.textContent = '🧪 女巫行动';
+      hintEl.textContent = '选择要救的人或要毒的人';
+      infoEl.textContent = data.info || '';
+      let html = '';
+      if(data.canSave){
+        html += `<div class="night-opt" data-action="save" onclick="selectNightTarget('save')">使用解药救下${data.victimName}</div>`;
+      }
+      if(data.poisonTargets && data.poisonTargets.length > 0){
+        html += data.poisonTargets.map(p =>
+          `<div class="night-opt" data-id="${p.id}" data-action="poison" onclick="selectNightTarget('poison',${p.id})">对${p.name}使用毒药</div>`
+        ).join('');
+      }
+      html += `<div class="night-opt" data-action="skip" onclick="selectNightTarget('skip')">按兵不动</div>`;
+      optEl.innerHTML = html;
+    }
+
+    document.getElementById('nightPanel').classList.remove('hide');
+  });
+}
+
+function selectNightTarget(id, subId){
+  const optEl = document.getElementById('nightOptions');
+  optEl.querySelectorAll('.night-opt').forEach(o => o.classList.remove('selected'));
+  
+  // Find and highlight the clicked option
+  let targetOpt = null;
+  if(id === 'save' || id === 'skip'){
+    targetOpt = optEl.querySelector(`[data-action="${id}"]`);
+  } else if(id === 'poison'){
+    targetOpt = optEl.querySelector(`[data-id="${subId}"]`);
+  } else {
+    targetOpt = optEl.querySelector(`[data-id="${id}"]`);
+  }
+  if(targetOpt) targetOpt.classList.add('selected');
+
+  if(id === 'save'){
+    _nightResult = { action: 'save' };
+  } else if(id === 'poison'){
+    _nightResult = { action: 'poison', target: subId };
+  } else if(id === 'skip'){
+    _nightResult = { action: 'skip' };
+  } else {
+    _nightResult = { target: id };
+  }
+  document.getElementById('nightConfirmBtn').disabled = false;
+}
+
+
+// ===== 发言面板 =====
+function showSpeechPanel(){
+  return new Promise(resolve => {
+    game.pendingSpeechResolve = resolve;
+    _selectedSpeechType = null;
+    document.querySelectorAll('.speech-type-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('speechTargetRow').style.display = 'none';
+    document.getElementById('speechConfirmBtn').disabled = true;
+    document.getElementById('speechPanel').classList.remove('hide');
+  });
+}
+
+// ===== 投票面板 =====
+function showVotePanel(){
+  return new Promise(resolve => {
+    game.pendingVoteResolve = resolve;
+    const sel = document.getElementById('voteOptions');
+    const alive = getAlive().filter(p => p.id !== game.playerId);
+    sel.innerHTML = alive.map(p =>
+      `<div class="vote-opt" data-id="${p.id}" onclick="selectVoteTarget(${p.id})">${p.name}（${p.faction}）</div>`
+    ).join('');
+    document.getElementById('voteConfirmBtn').disabled = true;
+    document.getElementById('votePanel').classList.remove('hide');
+  });
+}
+
+
+function selectVoteTarget(id){
+  document.querySelectorAll('.vote-opt').forEach(o => o.classList.remove('selected'));
+  const targetOpt = document.querySelector(`#voteOptions .vote-opt[data-id="${id}"]`);
+  if(targetOpt) targetOpt.classList.add('selected');
+  document.getElementById('voteConfirmBtn').disabled = false;
+}
+
+
+// ===== 结束画面 =====
+function showEndScreen(){
+  document.getElementById('endScreen').classList.add('show');
+}
+
+
+// 页面加载时显示标题画面，由用户选择模式
+showTitle();
 </script>
 </body>
 </html>
