@@ -234,12 +234,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .destiny-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:24px 28px;min-width:420px;text-align:center;max-height:85vh;overflow-y:auto}
 .destiny-card h2{color:#9b59b6;font-size:20px;margin-bottom:4px;letter-spacing:2px}
 .destiny-card .destiny-hint{color:var(--gray);font-size:12px;margin-bottom:14px}
-.destiny-players{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.destiny-p-btn{padding:8px 4px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:12px;cursor:pointer;transition:all 0.2s;text-align:center}
-.destiny-p-btn:hover{border-color:#9b59b6;color:#9b59b6}
-.destiny-p-btn.selected{border-color:#9b59b6;background:rgba(155,89,182,0.15);color:#9b59b6}
-.destiny-p-btn .dp-name{font-weight:700;font-size:13px}
-.destiny-p-btn .dp-faction{font-size:10px;color:var(--gray)}
+.destiny-players{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.destiny-player-card{padding:6px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:11px;cursor:pointer;transition:all 0.2s;text-align:center}
+.destiny-player-card:hover{border-color:#9b59b6;background:rgba(155,89,182,0.1)}
+.destiny-player-card.selected{border-color:#9b59b6;background:rgba(155,89,182,0.2);box-shadow:0 0 12px rgba(155,89,182,0.6)}
+.destiny-player-card img{width:36px;height:36px;border-radius:50%;margin-bottom:4px;object-fit:cover}
+.destiny-player-card div{font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .destiny-confirm{padding:8px 32px;border:none;border-radius:20px;background:#9b59b6;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
 .destiny-confirm:hover{transform:scale(1.05)}
 .destiny-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
@@ -265,10 +265,11 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .destiny-act-btn{padding:10px 18px;border:2px solid rgba(255,255,255,0.2);border-radius:10px;background:transparent;color:var(--white);font-size:13px;cursor:pointer;transition:all 0.2s}
 .destiny-act-btn:hover{border-color:#9b59b6;color:#9b59b6}
 .destiny-act-btn.selected{border-color:#9b59b6;background:rgba(155,89,182,0.15)}
-.destiny-target-row{margin-bottom:12px;display:none}
-.destiny-target-row.show{display:block}
-.destiny-target-row select{width:80%;padding:6px 10px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:var(--card);color:var(--white);font-size:13px}
-.destiny-pt-pts{color:#9b59b6;font-size:12px;margin-bottom:10px}
+.destiny-target-list{display:none;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1)}
+.destiny-target-card{padding:6px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:11px;cursor:pointer;transition:all 0.2s;text-align:center}
+.destiny-target-card:hover{border-color:#9b59b6;background:rgba(155,89,182,0.15);transform:scale(1.05)}
+.destiny-target-card img{width:36px;height:36px;border-radius:50%;margin-bottom:4px;object-fit:cover}
+.destiny-target-card div{font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ===== 属性成长面板 ===== */
 #growthPanel{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
@@ -447,11 +448,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
       <button class="destiny-act-btn" onclick="selectDestinyAction('harm')" id="da-harm">⚡ 暗中害某人</button>
       <button class="destiny-act-btn" onclick="selectDestinyAction('wait')" id="da-wait">⏳ 静观其变</button>
     </div>
-    <div class="destiny-target-row" id="destinyTargetRow">
-      <select id="destinyTargetSel"></select>
-    </div>
-    <div class="destiny-pt-pts">剩余干预次数：<span id="destinyPts">1</span></div>
-    <button class="speech-confirm" id="destinyConfirmBtn" onclick="confirmDestinyAction()" disabled>确认干预</button>
+    <div class="destiny-target-list" id="destinyTargetList"></div>
   </div>
 </div>
 
@@ -1905,7 +1902,7 @@ function init(optPlayer){
   // 完整重置游戏状态（用新对象替换，避免旧属性残留）
   const keepSpeed = game.speed;
   const keepMode = game.mode;
-  game={players:[],phase:"start",day:0,mode:keepMode,speed:keepSpeed,generation:(game.generation||0)+1,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},claimedPlayers:new Set(),destiny:null,_confirmCallback:null,_pausedBySettings:false,_pausedByFavor:false,pendingSpeechResolve:null,pendingVoteResolve:null,pendingNightResolve:null,pendingDestinyResolve:null,player:null,playerId:null,playerDied:false,spokenToday:new Set()};
+  game={players:[],phase:"start",day:0,mode:keepMode,speed:keepSpeed,generation:(game.generation||0)+1,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},claimedPlayers:new Set(),destiny:null,destinyEffects:{},_confirmCallback:null,_pausedBySettings:false,_pausedByFavor:false,pendingSpeechResolve:null,pendingVoteResolve:null,pendingNightResolve:null,pendingDestinyResolve:null,player:null,playerId:null,playerDied:false,spokenToday:new Set()};
   _activeGen=game.generation;
   // 重置暂停按钮外观
   const pauseBtn=document.getElementById("pauseBtn");
@@ -1978,7 +1975,29 @@ function showStartModal(){
 
   // ===== 天意模式 =====
   if(game.mode==='destiny'){
-    document.getElementById("modalArea").innerHTML=`
+    if(game.destiny!==null && game.destiny!==undefined){
+      // 已选附体，显示开始游戏
+      const destinyChar = game.players[game.destiny];
+      const destinyRole = ROLE_CFG[destinyChar.role];
+      document.getElementById("modalArea").innerHTML=`
+  <div class="modal-overlay"><div class="modal">
+    <h2>三国狼人杀 · 天意模式</h2>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    好人阵营拥有：<span class="highlight" style="color:var(--seer)">预言家</span>、
+    <span class="highlight" style="color:var(--witch)">女巫</span>、
+    <span class="highlight" style="color:var(--hunter)">猎人</span>、
+    <span class="highlight" style="color:var(--guard)">守卫</span>。</p>
+    <div style="margin:16px 0;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:center;border:2px solid ${destinyRole.color}">
+      <div style="font-size:13px;color:var(--gray);margin-bottom:6px">你附体的角色</div>
+      <div style="font-size:22px;font-weight:700;color:${destinyRole.color}">${destinyRole.name}</div>
+      <div style="font-size:14px;margin-top:4px">${destinyChar.name}（${destinyChar.faction}）</div>
+      <div style="font-size:12px;color:var(--gray);margin-top:8px">每轮白天可使用一次干预</div>
+    </div>
+    <button class="btn-primary" onclick="closeModal();startGame()">开始游戏</button>
+  </div></div>`;
+    }else{
+      // 未选附体，显示选择界面
+      document.getElementById("modalArea").innerHTML=`
   <div class="modal-overlay"><div class="modal">
     <h2>三国狼人杀 · 天意模式</h2>
     <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
@@ -1986,6 +2005,7 @@ function showStartModal(){
     每轮白天可使用一次干预。</p>
     <button class="btn-primary" onclick="closeModal();showDestinySelect()">选择附体</button>
   </div></div>`;
+    }
     return;
   }
 
@@ -2026,15 +2046,37 @@ function closeModal(){document.getElementById("modalArea").innerHTML=""}
 function renderPlayers(){
   const grid=document.getElementById("playerGrid");
   // 玩家模式下隐藏他人角色（玩家死亡后自动变为上帝视角）
-  const hideRoles = game.mode==='player' && !game.playerDied;
+  // 天意模式下只显示附体角色身份（如果附体狼人则显示其他狼人）
+  let hideRoles = false;
+  let visibleRoleIds = []; // 可以看到身份的角色ID列表
+  
+  if(game.mode==='player' && !game.playerDied){
+    hideRoles = true;
+    visibleRoleIds = [game.playerId];
+  } else if(game.mode==='destiny' && game.destiny!==null){
+    hideRoles = true;
+    const destinyChar = game.players[game.destiny];
+    if(destinyChar){
+      visibleRoleIds.push(game.destiny);
+      // 如果附体角色是狼人，显示所有狼人身份
+      if(destinyChar.alive && destinyChar.role==='wolf'){
+        game.players.filter(p=>p.role==='wolf').forEach(p=>{
+          if(!visibleRoleIds.includes(p.id)) visibleRoleIds.push(p.id);
+        });
+      }
+    }
+  }
+  
   grid.innerHTML=game.players.map(p=>{
     const fc={"魏":"faction-wei","蜀":"faction-shu","吴":"faction-wu","群雄":"faction-qun","群":"faction-qun"}[p.faction];
     const rc=ROLE_CFG[p.role].color;
     const imgSrc = (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
-    const showRole = !hideRoles || p.id===game.playerId;
+    const showRole = !hideRoles || visibleRoleIds.includes(p.id);
     const roleDiv = showRole ? `<div style="font-size:10px;color:${rc};font-weight:700">${ROLE_CFG[p.role].name}</div>` : '';
     const isMe = game.mode==='player' && p.id===game.playerId;
     const meBadge = isMe ? '<div style="font-size:9px;color:var(--gold);font-weight:700">★ 你</div>' : '';
+    const isDestinyMe = game.mode==='destiny' && p.id===game.destiny;
+    const destinyBadge = isDestinyMe ? '<div style="font-size:9px;color:#9b59b6;font-weight:700">★ 附体</div>' : '';
     return `<div class="p-card ${fc} ${p.alive?"":"dead"}" id="pc${p.id}" onclick="onPlayerClick(${p.id})">
       ${!p.alive?'<div class="status-icon" style="color:var(--red)">X</div>':''}
       <div class="avatar"><img src="${imgSrc}" onerror="this.parentElement.innerHTML='${p.name[0]}'" alt="${p.name}"></div>
@@ -2042,6 +2084,7 @@ function renderPlayers(){
       <div class="faction">${p.faction}</div>
       ${roleDiv}
       ${meBadge}
+      ${destinyBadge}
     </div>`;
   }).join("");
   renderInfoBar();
@@ -2609,6 +2652,27 @@ async function dayPhase(deaths){
 
   // Check win
   if(checkWin())return;
+
+  // 清空昨日天意效果
+  game.destinyEffects = {};
+
+  // 天意模式干预（只有附体角色存活时才触发）
+  if(game.mode==='destiny' && game.destiny!==null){
+    const destinyChar = game.players[game.destiny];
+    if(destinyChar && destinyChar.alive){
+      addLog('<span class="system-text" style="color:#9b59b6">=== 天意干预 ===</span>');
+      await delay(400);
+      const result = await showDestinyPanel();
+      if(result && result.action){
+        if(result.action === 'help' || result.action === 'harm'){
+          game.destinyEffects[result.targetId] = result.action;
+          const targetChar = game.players[result.targetId];
+          addLog(`<span style="color:#9b59b6">天意对 ${targetChar.name} 施加了「${result.action === 'help' ? '暗中相助' : '暗中加害'}」</span>`);
+        }
+      }
+      await delay(400);
+    }
+  }
 
   // Discussion
   addLog('<span class="system-text">=== 进入讨论环节 ===</span>');
@@ -3182,6 +3246,16 @@ async function votePhase(){
         if(accuseCount>=2) score += accuseCount*3;
       }
 
+      // 7) 天意干预效果（仅天意模式生效）
+      if(game.destinyEffects && game.destinyEffects[x.id]){
+        if(game.destinyEffects[x.id] === 'harm'){
+          score += 15; // 天意加害，更容易被投
+        } else if(game.destinyEffects[x.id] === 'help'){
+          score -= 10; // 天意相助，更不容易被投
+          if(score < 0) score = 0;
+        }
+      }
+
       suspectScores[x.id] = score;
     }
 
@@ -3494,48 +3568,54 @@ function confirmNightAction(){
 // ===== 天意干预 =====
 let _destinyAction = null;
 let _destinyTarget = null;
+
+function showDestinyPanel(){
+  return new Promise(resolve=>{
+    game.pendingDestinyResolve = resolve;
+    document.getElementById('destinyPanel').classList.remove('hide');
+    document.getElementById('destinyPanelHint').textContent = `每轮白天可使用一次干预（第${game.day}天）`;
+    _destinyAction = null;
+    document.querySelectorAll('.destiny-act-btn').forEach(b=>b.classList.remove('selected'));
+    document.getElementById('destinyTargetList').style.display = 'none';
+  });
+}
+
 function selectDestinyAction(action){
+  if(action==='wait'){
+    // 静观其变，直接确认
+    document.querySelectorAll('.destiny-act-btn').forEach(b=>{
+      b.classList.remove('selected');
+      if(b.id==='da-wait') b.classList.add('selected');
+    });
+    document.getElementById('destinyPanel').classList.add('hide');
+    if(game.pendingDestinyResolve){
+      game.pendingDestinyResolve({action:'wait',targetId:null});
+      game.pendingDestinyResolve=null;
+    }
+    return;
+  }
   _destinyAction = action;
   document.querySelectorAll('.destiny-act-btn').forEach(b=>{
     b.classList.remove('selected');
     if(b.id==='da-'+action) b.classList.add('selected');
   });
-  const row = document.getElementById('destinyTargetRow');
-  if(action==='wait'){
-    row.style.display='none';
-  } else {
-    row.style.display='';
-    updateDestinyTargets();
-  }
-  checkDestinyReady();
-}
-function updateDestinyTargets(){
-  const sel = document.getElementById('destinyTargetSel');
+  // 显示角色选择列表
+  const container = document.getElementById('destinyTargetList');
   const alive = getAlive();
-  sel.innerHTML = alive.map(p=>`<option value="${p.id}">${p.name}（${p.faction}）</option>`).join('');
+  container.innerHTML = alive.map(p=>{
+    const imgSrc = (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
+    return `<div class="destiny-target-card" data-id="${p.id}" onclick="selectDestinyTarget(${p.id})">
+      <img src="${imgSrc}" onerror="this.style.display='none'">
+      <div>${p.name}</div>
+    </div>`;
+  }).join('');
+  container.style.display = 'grid';
 }
-function checkDestinyReady(){
-  const action = _destinyAction;
-  if(!action) return;
-  let ready = (action==='wait');
-  if(action==='help'||action==='harm'){
-    const sel = document.getElementById('destinyTargetSel');
-    ready = !!sel.value;
-  }
-  document.getElementById('destinyConfirmBtn').disabled = !ready;
-}
-function confirmDestinyAction(){
-  const action = _destinyAction;
-  const sel = document.getElementById('destinyTargetSel');
-  let targetId = null;
-  if(action!=='wait' && sel.value) targetId = parseInt(sel.value);
-  
+function selectDestinyTarget(id){
   document.getElementById('destinyPanel').classList.add('hide');
-  _destinyAction = null;
-  
   if(game.pendingDestinyResolve){
-    game.pendingDestinyResolve({action, targetId});
-    game.pendingDestinyResolve = null;
+    game.pendingDestinyResolve({action:_destinyAction,targetId:id});
+    game.pendingDestinyResolve=null;
   }
 }
 
