@@ -258,6 +258,8 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 /* ===== 天意干预面板 ===== */
 #destinyPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
 #destinyPanel.hide{display:none}
+#destinyDeathPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+#destinyDeathPanel.hide{display:none}
 .destiny-panel-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:20px 24px;min-width:360px;text-align:center}
 .destiny-panel-card h2{color:#9b59b6;font-size:16px;margin-bottom:4px}
 .destiny-panel-card .dp-hint{color:var(--gray);font-size:12px;margin-bottom:10px}
@@ -449,6 +451,18 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
       <button class="destiny-act-btn" onclick="selectDestinyAction('wait')" id="da-wait">⏳ 静观其变</button>
     </div>
     <div class="destiny-target-list" id="destinyTargetList"></div>
+  </div>
+</div>
+
+<!-- ===== 天意附体死亡选择面板 ===== -->
+<div id="destinyDeathPanel" class="hide">
+  <div class="destiny-panel-card" style="border-color:var(--red)">
+    <h2 style="color:var(--red)">☠️ 附体角色已死亡</h2>
+    <p class="dp-hint">你的附体角色已经死亡，天意游戏失败。</p>
+    <div class="destiny-actions">
+      <button class="destiny-act-btn" onclick="selectDestinyDeathOption('god')">👁️ 转上帝视角（继续观看但无法干预）</button>
+      <button class="destiny-act-btn" onclick="selectDestinyDeathOption('end')">🚪 结束天意游戏</button>
+    </div>
   </div>
 </div>
 
@@ -1259,10 +1273,29 @@ function applyCharacterSpeech(player, charStyle, category, target){
 }
 
 // ===== 死亡记录辅助函数 =====
-function markDeath(player, day, cause) {
+async function markDeath(player, day, cause) {
+  // 首先标记死亡状态
   player.deathDay = day;
   player.deathCause = cause;
   player.alive = false;
+  
+  // 检查是否是天意附体角色死亡
+  if(game.mode==='destiny' && player.id === game.destiny){
+    // 等待玩家选择：是转上帝视角还是结束游戏
+    const option = await showDestinyDeathPanel();
+    if(option === 'god'){
+      game.destiny = null; // 转为上帝视角，可见所有人身份
+      addLog('<span style="color:#9b59b6">【天意失败】你已转为上帝视角，继续观看游戏但无法干预。</span>');
+      renderPlayers();
+    } else {
+      game.destiny = null;
+      game.destinyEnded = true; // 天意游戏结束
+      // 显示游戏结束画面（天意模式失败）
+      const aliveWolves = game.players.filter(p => p.role === 'wolf' && p.alive);
+      endGame(aliveWolves.length === 0 ? 'good' : 'wolf');
+    }
+    return;
+  }
 }
 function deathInfoText(p) {
   if (p.alive) return "";
@@ -1940,7 +1973,9 @@ function init(optPlayer){
     game.playerDied = false;
   }
 
-  renderPlayers();
+  if(game.mode!=='destiny' || game.destiny!==null){
+    renderPlayers();
+  }
   initFavor();
   showStartModal();
 }
@@ -2631,7 +2666,7 @@ async function dayPhase(deaths){
   } else {
     for(const d of deaths){
       const p=game.players[d.id];
-      markDeath(p, game.day, d.cause);
+      await markDeath(p, game.day, d.cause);
       const causeText=d.cause==="wolf"?"被狼人杀害":d.cause==="poison"?"被女巫毒杀":"死亡";
       addLog(`<span class="death-text">${p.name}（${p.faction}·${ROLE_CFG[p.role].name}）昨夜${causeText}了！</span>`);
       addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${p.name}遗言：${generateLastWords(p)}"</span>`);
@@ -2639,7 +2674,7 @@ async function dayPhase(deaths){
       if(p.role==="hunter"&&d.cause!=="poison"){
         const target=pickExclude(getAlive(),[p.id]);
         if(target){
-          markDeath(target, game.day, "hunter");
+          await markDeath(target, game.day, "hunter");
           addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}（${ROLE_CFG[target.role].name}）！</span>`);
           if(target.role==="hunter"&&getAlive().find(pp=>pp.role==="hunter"&&pp.id!==p.id)){/* chain handled */}
         }
@@ -3293,7 +3328,7 @@ async function votePhase(){
 
   if(maxId!==null){
     const exiled=game.players[maxId];
-    markDeath(exiled, game.day, "vote");
+    await markDeath(exiled, game.day, "vote");
     addLog(`<span class="death-text" style="font-size:15px">${exiled.name}（${ROLE_CFG[exiled.role].name}）以${maxVotes}票被放逐！</span>`);
     await delay(500);
     addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled)}"</span>`);
@@ -3306,7 +3341,7 @@ async function votePhase(){
         // 智谋高的猎人更精准
         const ht=getAttr(exiled,'智谋')>=4 ? (targets.filter(t=>t.role==="wolf").length>0 ? pick(targets.filter(t=>t.role==="wolf")) : pick(targets)) : pick(targets);
         if(ht){
-          markDeath(ht, game.day, "hunter");
+          await markDeath(ht, game.day, "hunter");
           addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
         }
       }
@@ -3476,6 +3511,14 @@ function confirmCharCreate(){
 
 // ===== 天意选择 =====
 let _destinySelected = null;
+let _destinyDeathResolve = null;
+
+function showDestinyDeathPanel(){
+  return new Promise(resolve => {
+    _destinyDeathResolve = resolve;
+    document.getElementById('destinyDeathPanel').classList.remove('hide');
+  });
+}
 function showDestinySelect(){
   const container = document.getElementById('destinyPlayers');
   container.innerHTML = game.players.map(p => {
@@ -3498,7 +3541,7 @@ function confirmDestinySelect(){
   if(_destinySelected===null) return;
   game.destiny = _destinySelected;
   document.getElementById('destinySelect').classList.add('hide');
-  // 天意模式已选好附体，等待游戏开始
+  renderPlayers();
   showStartModal();
 }
 
@@ -3616,6 +3659,13 @@ function selectDestinyTarget(id){
   if(game.pendingDestinyResolve){
     game.pendingDestinyResolve({action:_destinyAction,targetId:id});
     game.pendingDestinyResolve=null;
+  }
+}
+function selectDestinyDeathOption(option){
+  document.getElementById('destinyDeathPanel').classList.add('hide');
+  if(_destinyDeathResolve){
+    _destinyDeathResolve(option);
+    _destinyDeathResolve = null;
   }
 }
 
