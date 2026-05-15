@@ -159,6 +159,21 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .title-btn.sub:hover{background:rgba(255,255,255,0.1);color:var(--white);border-color:rgba(255,255,255,0.5)}
 .title-footer{position:absolute;bottom:24px;color:rgba(255,255,255,0.2);font-size:12px;letter-spacing:1px}
 
+/* ===== 玩家扮演模式选择面板 ===== */
+#playerModeSelect{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8)}
+#playerModeSelect.hide{display:none}
+.pms-card{background:var(--bg2);border:2px solid var(--gold);border-radius:16px;padding:32px 40px;min-width:320px;text-align:center}
+.pms-card h2{color:var(--gold);font-size:22px;margin-bottom:8px;letter-spacing:4px}
+.pms-hint{color:var(--gray);font-size:14px;margin-bottom:24px}
+.pms-btns{display:flex;flex-direction:column;gap:12px}
+.pms-btn{padding:14px 32px;border:2px solid rgba(255,255,255,0.2);border-radius:30px;background:transparent;color:var(--white);font-size:16px;font-weight:700;cursor:pointer;transition:all 0.25s;letter-spacing:2px}
+.pms-btn:hover{border-color:var(--gold);color:var(--gold);transform:scale(1.03)}
+.pms-btn.primary{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.pms-btn.primary:hover{background:#d4a500}
+.pms-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.pms-back{margin-top:20px;padding:8px 24px;border:none;background:transparent;color:var(--gray);font-size:14px;cursor:pointer;transition:all 0.2s}
+.pms-back:hover{color:var(--white)}
+
 /* ===== 角色创建面板 ===== */
 #charCreate{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
 #charCreate.hide{display:none}
@@ -359,6 +374,19 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   <div class="title-footer">v1.0 · 三国狼人杀</div>
 </div>
 
+<!-- ===== 玩家扮演模式选择面板 ===== -->
+<div id="playerModeSelect" class="hide">
+  <div class="pms-card">
+    <h2>玩家扮演</h2>
+    <p class="pms-hint">选择一个选项开始游戏</p>
+    <div class="pms-btns">
+      <button class="pms-btn primary" onclick="startNewGame()">🎮 新游戏</button>
+      <button class="pms-btn" id="continueBtn" onclick="continueGame()">📂 继续游戏</button>
+    </div>
+    <button class="pms-back" onclick="backToTitle()">← 返回</button>
+  </div>
+</div>
+
 <!-- ===== 角色创建面板 ===== -->
 <div id="charCreate" class="hide">
   <div class="char-card">
@@ -487,7 +515,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
         <button class="speed-btn" onclick="setSpeed(0.5)">0.5x</button>
         <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
         <button class="speed-btn" onclick="setSpeed(2)">2x</button>
-        <button class="speed-btn" onclick="setSpeed(3)">3x</button>
+        <button class="speed-btn" onclick="setSpeed(10)">10x</button>
       </div>
     </div>
     <div class="settings-btns">
@@ -1295,6 +1323,13 @@ async function markDeath(player, day, cause) {
       endGame(aliveWolves.length === 0 ? 'good' : 'wolf');
     }
     return;
+  }
+  
+  // 检查是否是玩家角色死亡（玩家模式）
+  if(game.mode==='player' && player.id === game.playerId){
+    game.playerDied = true;
+    addLog('<span style="color:var(--gold)">【玩家死亡】你的角色已阵亡，现在转为上帝视角。</span>');
+    renderPlayers();
   }
 }
 function deathInfoText(p) {
@@ -2718,6 +2753,11 @@ async function dayPhase(deaths){
 
   // Vote
   await votePhase();
+  
+  // 保存游戏进度（玩家模式）
+  if(game.mode === 'player'){
+    savePlayerGame();
+  }
   }catch(e){
     addLog(`<span style="color:var(--red)">[系统错误] ${e.message}</span>`);
     console.error('dayPhase error:',e);
@@ -3392,9 +3432,14 @@ function endGame(winner){
       <span style="width:auto;text-align:right;color:var(--gray);font-size:12px">${deathDetail}</span>
     </div>`;
   }
-  summary+=`</div><br><button class="btn-primary" onclick="location.reload()">再来一局</button>`;
+  summary+=`</div><br><div style="display:flex;gap:12px;justify-content:center"><button class="btn-primary" onclick="retryGame()">🔄 再来一局</button><button class="btn-primary" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:var(--white)" onclick="backToTitle()">🏠 返回标题</button></div>`;
 
   document.getElementById("modalArea").innerHTML=`<div class="modal-overlay"><div class="modal">${summary}</div></div>`;
+  
+  // 清除存档（玩家模式）
+  if(game.mode === 'player'){
+    clearSavePlayerGame();
+  }
 }
 
 function onPlayerClick(id){
@@ -3429,13 +3474,89 @@ function startGodMode(){
   game.mode='god';
   init();
 }
+// ===== 玩家扮演模式选择 =====
 function startPlayerMode(){
   hideTitle();
   game.mode='player';
+  // 检查是否有存档
+  const savedGame = localStorage.getItem('playerModeSave');
+  const continueBtn = document.getElementById('continueBtn');
+  if(savedGame){
+    continueBtn.disabled = false;
+  } else {
+    continueBtn.disabled = true;
+  }
+  document.getElementById('playerModeSelect').classList.remove('hide');
+}
+function startNewGame(){
+  document.getElementById('playerModeSelect').classList.add('hide');
   document.getElementById('charCreate').classList.remove('hide');
-  // 初始化属性网格
   renderCharAttrGrid();
 }
+function continueGame(){
+  const savedGame = localStorage.getItem('playerModeSave');
+  if(!savedGame){
+    alert('没有找到存档！');
+    return;
+  }
+  try {
+    const data = JSON.parse(savedGame);
+    // 恢复游戏状态
+    Object.assign(game, data.gameState);
+    // 恢复好感度
+    if(data.favors){
+      for(const key in data.favors){
+        FAVOR[key] = data.favors[key];
+      }
+    }
+    document.getElementById('playerModeSelect').classList.add('hide');
+    renderPlayers();
+    showStartModal();
+    addLog('<span style="color:var(--gold)">【读档成功】继续游戏！</span>');
+  } catch(e){
+    alert('读档失败：' + e.message);
+    console.error(e);
+  }
+}
+function backToTitle(){
+  document.getElementById('playerModeSelect').classList.add('hide');
+  showTitle();
+}
+function savePlayerGame(){
+  // 保存玩家模式游戏进度
+  const saveData = {
+    gameState: {
+      players: game.players,
+      phase: game.phase,
+      day: game.day,
+      mode: game.mode,
+      playerId: game.playerId,
+      playerDied: game.playerDied,
+      destiny: game.destiny,
+      destinyEnded: game.destinyEnded,
+      destinyEffects: game.destinyEffects,
+      wolfTarget: game.wolfTarget,
+      seerTarget: game.seerTarget,
+      guardTarget: game.guardTarget,
+      lastGuardTarget: game.lastGuardTarget,
+      witchSave: game.witchSave,
+      witchPoison: game.witchPoison,
+      witchHasSave: game.witchHasSave,
+      witchHasPoison: game.witchHasPoison,
+      hunterCanShoot: game.hunterCanShoot,
+      speeches: game.speeches,
+      logs: game.logs,
+      spokenToday: [...game.spokenToday]
+    },
+    favors: Object.assign({}, FAVOR),
+    timestamp: Date.now()
+  };
+  localStorage.setItem('playerModeSave', JSON.stringify(saveData));
+}
+function clearSavePlayerGame(){
+  localStorage.removeItem('playerModeSave');
+}
+
 function startDestinyMode(){
   hideTitle();
   game.mode='destiny';
@@ -3506,6 +3627,8 @@ function confirmCharCreate(){
   for(const a of attrs) attr[a] = parseInt(document.getElementById('attr-val-'+a).textContent);
   const optPlayer = { name, faction: _selectedFaction, attr, growthPts: 0 };
   document.getElementById('charCreate').classList.add('hide');
+  // 开始新游戏前清除存档
+  clearSavePlayerGame();
   init(optPlayer);
 }
 
@@ -3700,9 +3823,14 @@ function confirmBackToTitle(){
 // ===== 返回标题/重试 =====
 function backToTitle(){
   game.mode = null;
+  document.getElementById('playerModeSelect').classList.add('hide');
+  document.getElementById('modalArea').innerHTML='';
+  document.getElementById('endScreen').classList.remove('show');
   showTitle();
 }
 function retryGame(){
+  document.getElementById('modalArea').innerHTML='';
+  document.getElementById('endScreen').classList.remove('show');
   init();
 }
 
