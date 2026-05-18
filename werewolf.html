@@ -2062,7 +2062,20 @@ function init(optPlayer){
   // 完整重置游戏状态（用新对象替换，避免旧属性残留）
   const keepSpeed = game.speed;
   const keepMode = game.mode;
-  game={players:[],phase:"start",day:0,mode:keepMode,speed:keepSpeed,generation:(game.generation||0)+1,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},claimedPlayers:new Set(),destiny:null,destinyEffects:{},_confirmCallback:null,_pausedBySettings:false,_pausedByFavor:false,pendingSpeechResolve:null,pendingVoteResolve:null,pendingNightResolve:null,pendingDestinyResolve:null,player:null,playerId:null,playerDied:false,spokenToday:new Set()};
+  game={
+    players:[], phase:"start", day:0, mode:keepMode, speed:keepSpeed,
+    generation:(game.generation||0)+1, selectedPlayer:null, wolfTarget:null,
+    seerTarget:null, seerChecks:[], witchSave:false, witchPoison:null,
+    guardTarget:null, lastGuardTarget:null, witchHasSave:true, witchHasPoison:true,
+    witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
+    scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
+    hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
+    wolfScriptCompliance:{}, claimedPlayers:new Set(), destiny:null, destinyEffects:{},
+    _confirmCallback:null, _pausedBySettings:false, _pausedByFavor:false,
+    pendingSpeechResolve:null, pendingVoteResolve:null, pendingNightResolve:null,
+    pendingDestinyResolve:null, player:null, playerId:null, playerDied:false,
+    spokenToday:new Set()
+  };
   _activeGen=game.generation;
   // 重置暂停按钮外观
   const pauseBtn=document.getElementById("pauseBtn");
@@ -2424,15 +2437,76 @@ async function ai_guardAction(){
   if(!guard)return;
   const targets=getAlive().filter(p=>p.id!==game.lastGuardTarget);
   if(targets.length===0)return;
-  // 政治高的守卫更懂得保护关键人物
+  
   let target;
+  const intel=getAttr(guard,'智谋');
   const politic=getAttr(guard,'政治');
-  if(politic>=4){
-    // 优先保护特殊角色
+  
+  // ===== 核心修复：优先守已跳身份的预言家 =====
+  const exposedSeer = getAlive().find(p => 
+    p.role === "seer" && 
+    (game.claimedPlayers.has(p.id) || 
+     game.speeches.some(s => s.speakerId === p.id && s.speechType === "claim_seer"))
+  );
+  
+  // 如果有已跳身份的预言家，高智谋/高政治的守卫会优先守他
+  if(exposedSeer) {
+    if(intel >= 3 || politic >= 3) {
+      target = exposedSeer;
+    } else if(Math.random() < 0.6) {
+      target = exposedSeer;
+    }
+  }
+  
+  // 智谋≥4：预判狼刀逻辑
+  if(!target && intel >= 4){
+    const wolves=getAliveWolves();
+    if(wolves.length > 0){
+      // 分析狼人可能的目标
+      let predictedTargets = [];
+      
+      // 策略1：狼人可能刀预言家（最大威胁）
+      const seer = targets.find(p => p.role === "seer");
+      if(seer && !exposedSeer) predictedTargets.push({target: seer, weight: 3});
+      
+      // 策略2：狼人可能刀女巫（第二威胁）
+      const witch = targets.find(p => p.role === "witch");
+      if(witch && !game.witchHasSave) predictedTargets.push({target: witch, weight: 2});
+      
+      // 策略3：分析发言，找狼人针对的人
+      const recentCtx = game.speeches.slice(-10);
+      const wolfSpeeches = recentCtx.filter(s => s.speakerId && wolves.some(w => w.id === s.speakerId));
+      if(wolfSpeeches.length > 0){
+        const mentionedTargets = wolfSpeeches.map(s => s.targetName).filter(n => n);
+        const mentionedCount = {};
+        mentionedTargets.forEach(n => mentionedCount[n] = (mentionedCount[n] || 0) + 1);
+        for(const [name, count] of Object.entries(mentionedCount)){
+          const p = targets.find(t => t.name === name);
+          if(p) predictedTargets.push({target: p, weight: count * 0.5});
+        }
+      }
+      
+      // 加权随机选择
+      if(predictedTargets.length > 0){
+        const totalWeight = predictedTargets.reduce((s, t) => s + t.weight, 0);
+        let r = Math.random() * totalWeight;
+        for(const pt of predictedTargets){
+          r -= pt.weight;
+          if(r <= 0){ target = pt.target; break; }
+        }
+      }
+    }
+  }
+  
+  // 政治高：优先保护关键角色（兜底）
+  if(!target && politic >= 4){
     const specials=targets.filter(p=>["seer","witch"].includes(p.role));
     if(specials.length>0 && Math.random()<0.6) target=pick(specials);
   }
+  
+  // 随机守护
   if(!target) target=pick(targets);
+  
   game.guardTarget=target.id;
   const guardTarget=game.players[game.guardTarget];
   addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${guardTarget.name}……</span>`,'guard');
@@ -2587,7 +2661,28 @@ async function ai_wolfAction(){
 
 // 狼人提出目标（规则①：好感度驱动，更愿意刀好感度低的人）
 function wolfProposeTarget(wolf, targets) {
-  // 按好感度加权：好感度越低，权重越高
+  // ===== 核心修复：优先刀已跳身份的预言家 =====
+  const exposedSeer = getAlive().find(p => 
+    p.role === "seer" && 
+    (game.claimedPlayers.has(p.id) || 
+     game.speeches.some(s => s.speakerId === p.id && s.speechType === "claim_seer"))
+  );
+  
+  // 如果有已跳身份的预言家，高智谋/高政治的狼人会优先提议刀他
+  if(exposedSeer) {
+    const intel = getAttr(wolf, '智谋');
+    const politic = getAttr(wolf, '政治');
+    // 智谋≥3 或 政治≥3 的狼人能识别预言家威胁
+    if(intel >= 3 || politic >= 3) {
+      return { wolfId: wolf.id, target: exposedSeer };
+    }
+    // 低智谋/低政治的狼人50%概率也能识别
+    if(Math.random() < 0.5) {
+      return { wolfId: wolf.id, target: exposedSeer };
+    }
+  }
+  
+  // 原逻辑：按好感度加权
   const weights = targets.map(t => {
     const f = getFavor(wolf, t.id);
     // 反转权重：好感度10 → 权重90，好感度90 → 权重10
@@ -2597,7 +2692,7 @@ function wolfProposeTarget(wolf, targets) {
     if (martial >= 4) w = Math.pow(w, 1.5);
     return w;
   });
-
+  
   // 加权随机选择
   const totalWeight = weights.reduce((s, w) => s + w, 0);
   let r = Math.random() * totalWeight;
@@ -2606,7 +2701,7 @@ function wolfProposeTarget(wolf, targets) {
     r -= weights[i];
     if (r <= 0) { target = targets[i]; break; }
   }
-
+  
   return { wolfId: wolf.id, target };
 }
 
@@ -2656,7 +2751,28 @@ function generateWolfScript(scriptMaster, wolves, targets){
 
 // 武力最高者决定最终目标
 function killMasterDecide(killMaster, proposals, targets){
-  // 武力最高者先看多数意见
+  // ===== 核心修复：优先刀已跳身份的预言家 =====
+  const exposedSeer = getAlive().find(p => 
+    p.role === "seer" && 
+    (game.claimedPlayers.has(p.id) || 
+     game.speeches.some(s => s.speakerId === p.id && s.speechType === "claim_seer"))
+  );
+  
+  // 如果有已跳身份的预言家，决策者有概率优先刀他
+  if(exposedSeer) {
+    const intel = getAttr(killMaster, '智谋');
+    const politic = getAttr(killMaster, '政治');
+    // 智谋≥3 或 政治≥3 的决策者能识别预言家威胁
+    if(intel >= 3 || politic >= 3) {
+      return exposedSeer;
+    }
+    // 低智谋/低政治的决策者30%概率也能识别
+    if(Math.random() < 0.3) {
+      return exposedSeer;
+    }
+  }
+  
+  // 原逻辑：先看多数意见
   const voteCount={};
   for(const p of proposals){
     voteCount[p.target.id]=(voteCount[p.target.id]||0)+1;
@@ -2708,10 +2824,32 @@ async function ai_seerAction(){
   if(!seer)return;
   const targets=getAlive().filter(p=>p.id!==seer.id&&p.role!=="seer");
   if(targets.length===0)return;
-  // Smart: check suspicious people first
-  let target=pick(targets);
-  const unchecked=targets.filter(p=>!game.speeches.find(s=>s.speaker==="seer"&&s.about===p.id));
-  if(unchecked.length>0) target=pick(unchecked);
+  
+  // ===== 核心修复：避免重复验人 =====
+  // 从 seerChecks 中提取已查验过的玩家ID
+  const checkedIds = game.seerChecks.map(check => check.targetId);
+  const unchecked = targets.filter(p => !checkedIds.includes(p.id));
+  
+  let target;
+  if(unchecked.length > 0){
+    // 优先验未查验过的人
+    target = pick(unchecked);
+    
+    // 如果有可疑目标（被发言指控的），优先查验
+    const suspects = unchecked.filter(p => {
+      return game.speeches.some(s => 
+        s.text && s.text.includes(p.name) && 
+        (s.text.includes("可疑") || s.text.includes("狼"))
+      );
+    });
+    if(suspects.length > 0){
+      target = pick(suspects);
+    }
+  } else {
+    // 所有人都验过了，只能重复验（通常不会发生）
+    target = pick(targets);
+  }
+  
   game.seerTarget=target.id;
   // 记录历史查验
   game.seerChecks.push({day: game.day, targetId: target.id, isWolf: target.role === "wolf"});
@@ -2753,22 +2891,21 @@ async function ai_witchAction(){
   const witch=getAlive().find(p=>p.role==="witch");
   if(!witch)return;
   const intel=getAttr(witch,"智谋");
-  const politic=getAttr(witch,"政治");
+  const charm=getAttr(witch,"魅力");
   if(game.witchHasSave&&game.wolfTarget!=null){
     const victim=game.players[game.wolfTarget];
-    if(victim.role==="witch"){} // can't self-save rule
-    else {
-      // 基础救活概率50%，政治属性加成
-      let saveProb=0.5+politic*0.05;
-      // 高智谋优先救关键角色
-      if(intel>=4 && ["seer","hunter"].includes(victim.role)) saveProb+=0.2;
-      if(game.generation!==gen)return;
-      if(Math.random()<saveProb){
-        game.witchSave=true; game.witchUsedSaveLastNight=true;
-        game.witchHasSave=false;
-        addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`,'witch');
-        return;
-      }
+    // 计算救活概率：0% + 魅力×5%
+    let saveProb=0 + charm*0.05;
+    // 自救：100%概率
+    if(victim.id===witch.id) saveProb=1.0;
+    // 高智谋优先救关键角色
+    if(intel>=4 && ["seer","hunter"].includes(victim.role)) saveProb+=0.2;
+    if(game.generation!==gen)return;
+    if(Math.random()<saveProb){
+      game.witchSave=true; game.witchUsedSaveLastNight=true;
+      game.witchHasSave=false;
+      addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`,'witch');
+      return;
     }
   }
   if(game.witchHasPoison&&game.day>=2){
@@ -2974,8 +3111,16 @@ async function generateSpeeches(){
       // ===== 守卫发言：分享守护信息 =====
       speech=generateGuardSpeech(p, suspectPool, speechContext, game.spokenToday);
     }
+    else if(p.role==="hunter"){
+      // ===== 猎人发言：激进但有底线 =====
+      speech=generateHunterSpeech(p, suspectPool, speechContext, game.spokenToday);
+    }
+    else if(p.role==="villager"){
+      // ===== 平民发言：无信息、求生欲强、容易从众 =====
+      speech=generateVillagerSpeech(p, suspectPool, speechContext, game.spokenToday);
+    }
     else {
-      // ===== 好人发言：规则③④⑥⑦全部体现在发言内容 =====
+      // ===== 其他好人发言：规则③④⑥⑦全部体现在发言内容 =====
       speech=generateGoodSpeech(p, suspectPool, speechContext, game.spokenToday);
     }
 
@@ -3081,26 +3226,68 @@ function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
 // ===== 女巫白天发言：分享夜间行动信息 =====
 function generateWitchSpeech(witch, suspectPool, ctx, spokenSet){
   const charStyle = CHARACTER_SPEECH_STYLE[witch.name];
-  // 昨晚用了解药
+  const charm = getAttr(witch, '魅力');
+  const intel = getAttr(witch, '智谋');
+  const alive = getAlive();
+  const goodCount = alive.filter(p => p.role !== "wolf").length;
+  
+  // ===== 核心修复：女巫跳身份时机 =====
+  // 检查是否需要跳身份
+  const shouldReveal = 
+    // 被质疑/被抗推
+    ctx.some(s => s.text && s.text.includes(witch.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))) ||
+    // 残局（≤5好人）必须跳
+    goodCount <= 5 ||
+    // 有狼人穿女巫衣服
+    ctx.some(s => s.speechType === "claim_witch");
+  
+  // 昨晚用了解药 → 可以跳身份（建立可信度）
   if(game.witchUsedSaveLastNight){
+    if(shouldReveal || charm >= 4){
+      // 跳身份，明确说自己是女巫
+      const revealTemplates = [
+        `我是女巫。昨晚我用了解药救了一个人，所以昨晚是平安夜。`,
+        `【女巫】就是我。我用解药救了人，希望大家相信我。`,
+        `我是女巫，昨晚的解药用在了对的人身上。现在我有重要信息要分享。`
+      ];
+      if(charStyle && charStyle.reveal && charStyle.reveal.length > 0 && Math.random() < 0.7){
+        return pick(charStyle.reveal);
+      }
+      return pick(revealTemplates);
+    }
+    
+    // 不跳身份，给暗示
     if(charStyle && charStyle.defend && charStyle.defend.length>0){
       return pick(charStyle.defend).replace(/\{t\}/g, "一位好人");
     }
-    // 更明确地提示解药使用（但不直接说身份）
     const hints = [
-      pickTemplate("witch_save",{}),
-      "昨晚有人被杀，但我用解药救了他。好人阵营少损失一人，大家投票要更谨慎。",
-      "我做了一个重要决定，用了解药。被救的人自己心里清楚，我希望你能站出来带领好人。"
+      "昨晚有人被杀，但我做了一件正确的事。昨晚是平安夜，大家应该相信我。",
+      "我做了一个重要决定，用了解药。被救的人自己心里清楚，我希望你能站出来。",
+      "昨晚的平安夜不是巧合。我有能力保护好人，但需要你们配合。"
     ];
     return pick(hints);
   }
-  // 昨晚用了毒药
+  
+  // 昨晚用了毒药 → 可以跳身份（表明立场）
   if(game.witchUsedPoisonLastNight){
+    if(shouldReveal || charm >= 4){
+      // 跳身份，明确说自己是女巫
+      const revealTemplates = [
+        `我是女巫。昨晚我用毒药毒了一个人，我知道他是狼人。`,
+        `【女巫】就是我。我用毒药排除一个威胁，大家应该相信我的判断。`,
+        `我是女巫，昨晚的行动很成功。现在我可以明确告诉大家谁是狼人。`
+      ];
+      if(charStyle && charStyle.reveal && charStyle.reveal.length > 0 && Math.random() < 0.7){
+        return pick(charStyle.reveal);
+      }
+      return pick(revealTemplates);
+    }
+    
+    // 不跳身份，给暗示
     if(charStyle && charStyle.accuse && charStyle.accuse.length>0){
       const target = game.witchPoisonTarget ? game.players[game.witchPoisonTarget] : pick(suspectPool);
       return pick(charStyle.accuse).replace(/\{t\}/g, target.name);
     }
-    // 更明确地提示毒药使用
     const target = game.witchPoisonTarget ? game.players[game.witchPoisonTarget].name : "一个人";
     const hints = [
       `我昨晚做了一个艰难的决定。${target}已经不在了，好人阵营少了一个威胁。`,
@@ -3109,46 +3296,181 @@ function generateWitchSpeech(witch, suspectPool, ctx, spokenSet){
     ];
     return pick(hints);
   }
-  // 普通情况：走好人发言逻辑（会触发人物专属检查）
+  
+  // 普通情况：有信息就跳身份（高魅力/高智谋）
+  if((charm >= 5 || intel >= 5) && shouldReveal){
+    return `我是女巫。虽然我还没用过药，但我有信息要分享。希望大家相信我。`;
+  }
+  
+  // 普通情况：走好人发言逻辑
   return generateGoodSpeech(witch, suspectPool, ctx, spokenSet);
 }
 
 // ===== 守卫白天发言：分享守护信息 =====
 function generateGuardSpeech(guard, suspectPool, ctx, spokenSet){
   const charStyle = CHARACTER_SPEECH_STYLE[guard.name];
+  const intel = getAttr(guard, '智谋');
+  const alive = getAlive();
+  const goodCount = alive.filter(p => p.role !== "wolf").length;
   
-  // 昨晚守护了人
-  if(game.guardTarget!==null){
-    const guarded = game.players[game.guardTarget];
-    
-    // 人物专属：使用角色模板
-    if(charStyle && charStyle.defend && charStyle.defend.length>0){
-      const speech = pick(charStyle.defend).replace(/\{t\}/g, guarded.name);
-      // 70%概率明确说自己是守卫
-      if(Math.random() < 0.7 || speech.includes("守卫") || speech.includes("守护")){
-        return speech;
+  // 检查是否需要跳身份
+  const shouldReveal = 
+    // 被狼人查杀/抗推
+    ctx.some(s => s.text && s.text.includes(guard.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))) ||
+    // 有狼人穿守卫衣服
+    ctx.some(s => s.speechType === "claim_guard") ||
+    // 残局必须跳
+    goodCount <= 5;
+  
+  // 情况1：昨晚守护了人（但绝不透露具体守护了谁）
+  if(game.guardTarget !== null){
+    if(shouldReveal){
+      // 跳身份，但不透露守护目标
+      const revealTemplates = [
+        "我是守卫。虽然我不能说昨晚守护了谁，但我知道谁是狼人。",
+        "守卫在此。我不是攻击型神牌，但我会用我的方式保护好人。",
+        "我是守卫，昨晚我做了该做的事。相信我，投狼人。",
+        "守卫就是我。我的守护目标不能公开，但我的立场是明确的。"
+      ];
+      if(charStyle && charStyle.reveal && charStyle.reveal.length > 0 && Math.random() < 0.7){
+        return pick(charStyle.reveal);
       }
+      return pick(revealTemplates);
     }
     
-    // 标准发言：暗示或明确身份
-    const templates = [
-      `我昨晚保护了一个重要人物，${guarded.name}还活着，这就有我的一份功劳。`,
-      `有人昨晚差点被杀，但他活下来了。我自己体会。`,
-      `我是守卫。我守护了${guarded.name}，他是对的。大家信我。`,
-      `我做了我的职责。${guarded.name}今天还站着，不是运气。`
+    // 不跳身份，用暗示性发言（绝不透露守护目标）
+    const hintTemplates = [
+      "我觉得局势没那么简单，大家别急着下结论。",
+      "有些信息我还不能公开，但请相信我的判断。",
+      "今晚应该不会有人死……我只是猜测。",
+      "我觉得某人很安全，你们懂的。",
+      "守护的意义在于不被发现。我自己体会。"
     ];
-    
-    // 智谋高的守卫更果断亮身份
-    const intel = getAttr(guard, '智谋');
-    if(intel >= 4 && Math.random() < 0.8){
-      // 高智谋直接跳身份
-      return pick(templates.filter(t => t.includes("守卫") || t.includes("我是")));
-    }
-    return pick(templates);
+    return pick(hintTemplates);
   }
   
-  // 还没守护或死亡：走好人发言逻辑
+  // 情况2：还没守护过（第1夜）→ 绝对不跳身份
+  if(shouldReveal){
+    // 被抗推时自证身份
+    const revealTemplates = [
+      "我是守卫，不是狼人。你们投错人了。",
+      "守卫就是我。虽然我不能证明，但请相信我一次。"
+    ];
+    return pick(revealTemplates);
+  }
+  
   return generateGoodSpeech(guard, suspectPool, ctx, spokenSet);
+}
+
+// ===== 猎人白天发言：激进但有底线 =====
+function generateHunterSpeech(hunter, suspectPool, ctx, spokenSet){
+  const charStyle = CHARACTER_SPEECH_STYLE[hunter.name];
+  const intel = getAttr(hunter, '智谋');
+  const will = getAttr(hunter, '意志');
+  
+  // 检查是否需要跳身份（被抗推/被质疑）
+  const isQuestioned = ctx.some(s => s.text && s.text.includes(hunter.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼") || s.text.includes("抗推")));
+  
+  // ===== 情况1：被抗推/被质疑 → 跳身份并威胁开枪 =====
+  if(isQuestioned){
+    const threatTemplates = [
+      "我是猎人！你们投我，我死了必带一个！想清楚！",
+      `${hunter.name}就是猎人！谁投我，我死盯谁！`,
+      "猎人在此！你们敢投我，今晚就有人陪葬！",
+      "我是猎人，信不信我死了带走一个？好好想想！",
+      "动我？我可是猎人，死了也要拉个垫背的！"
+    ];
+    if(charStyle && charStyle.reveal && charStyle.reveal.length > 0 && Math.random() < 0.7){
+      return pick(charStyle.reveal);
+    }
+    return pick(threatTemplates);
+  }
+  
+  // ===== 情况2：智谋≥4，主动分析发言 =====
+  if(intel >= 4 && ctx.length > 0){
+    // 高智谋猎人：分析发言，找出可疑目标
+    const analyzed = ctx.slice(-3);
+    for(const s of analyzed){
+      if(s.speakerId && s.text){
+        const speaker = game.players[s.speakerId];
+        if(speaker && speaker.alive && speaker.id !== hunter.id){
+          return `我观察了一下${speaker.name}的发言，感觉有点问题。大家多注意一下，别被忽悠了。`;
+        }
+      }
+    }
+  }
+  
+  // ===== 情况3：普通发言（不跳身份，但比平民激进）=====
+  const normalTemplates = [
+    "我觉得局势还没明朗，大家别急着下结论。",
+    "先观察观察，别被带节奏了。我可不想不明不白死去。",
+    "我觉得有人发言有点可疑，但不确定，再看看。",
+    "你们有没有觉得谁的发言有点问题？别被狼人带跑了。",
+    "我总觉得不太对劲，但具体说不上来。再议再议。"
+  ];
+  
+  return pick(normalTemplates);
+}
+
+// ===== 平民白天发言：无信息、求生欲强、容易从众 =====
+function generateVillagerSpeech(villager, suspectPool, ctx, spokenSet){
+  const charStyle = CHARACTER_SPEECH_STYLE[villager.name];
+  const intel = getAttr(villager, '智谋');
+  const charm = getAttr(villager, '魅力');
+  const will = getAttr(villager, '意志');
+  const leadership = getAttr(villager, '统帅');
+  
+  // ===== 情况1：被质疑 → 平民容易慌乱 =====
+  const questioned = ctx.some(s => s.text && s.text.includes(villager.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼")));
+  
+  if(questioned){
+    // 意志低 → 容易改口，跟随质疑者
+    if(will <= 3){
+      const target = pick(suspectPool.filter(x => x.name !== villager.name));
+      return `也许${ctx.find(s => s.text.includes(villager.name)).speakerName}说得对……我可能真的有问题。我觉得${target.name}更可疑，投他吧。`;
+    }
+    // 意志高 → 坚持自己
+    else {
+      return `我真的是平民！你们别乱怀疑我啊……我没有信息，只能靠感觉。求求你们别投我！`;
+    }
+  }
+  
+  // ===== 情况2：有人跳身份 → 平民跟风 =====
+  const someoneClaimed = ctx.some(s => s.speechType === "claim_seer" || s.speechType === "claim_witch" || s.speechType === "claim_guard" || s.speechType === "claim_hunter");
+  
+  if(someoneClaimed && intel <= 3){
+    const claimer = ctx.find(s => s.speechType && s.speechType.includes("claim"));
+    if(claimer){
+      return `${claimer.speakerName}跳了身份，我觉得应该相信他。大家跟着投吧，别把神职投出去了。`;
+    }
+  }
+  
+  // ===== 情况3：智谋≥4，尝试分析 =====
+  if(intel >= 4 && ctx.length > 0){
+    // 平民智谋高，可以尝试分析发言
+    const analyzed = ctx.slice(-3);
+    for(const s of analyzed){
+      if(s.text && s.speakerId){
+        const speaker = game.players[s.speakerId];
+        if(speaker && speaker.alive && speaker.id !== villager.id){
+          return `我听了半天，觉得${speaker.name}的发言有点意思……虽然我是平民没信息，但感觉可以关注一下。`;
+        }
+      }
+    }
+  }
+  
+  // ===== 情况4：普通发言（无信息，靠感觉）=====
+  const target = pick(suspectPool);
+  const normalTemplates = [
+    `我是个平民，没信息没技能，只能靠感觉。大家多分析分析。`,
+    `平民在此，求不被投……我觉得你们应该多讨论，别急着投票。`,
+    `我啥也不知道，就觉得气氛有点怪。你们分析吧，我跟着投。`,
+    `平民一个，没信息。但我觉得有人发言太安静了，是不是在藏？`,
+    `我就是个平民，求生欲拉满。你们别投我，我帮你们找狼。`,
+    `平民没信息，但我观察了一下，觉得${target.name}有点怪。`
+  ];
+  
+  return pick(normalTemplates);
 }
 
 // ===== 好人发言：规则③④⑥⑦通过发言内容体现 =====
@@ -3421,9 +3743,9 @@ function generateLastWords(player) {
         `我就是一个平民，希望好人能找到真正的狼人。`
       ],
       guard: [
-        `我是守卫，昨晚我还在守人……你们投错了我！`,
+        `我是守卫。虽然我不能说昨晚守护了谁，但我知道谁是狼人。`,
         `${self}身为守卫，尽职尽责，却被你们冤杀了……`,
-        `我是守卫！我守了这么久，结果死在自己人手里……`,
+        `我是守卫！我的守护让今晚有人说不了话，你们自己品。`,
         `守卫在此！你们失去了一面盾牌，怪谁？`,
         `${self}是守卫没错，以后谁来保护好人？`
       ],
@@ -3466,11 +3788,41 @@ function generateLastWords(player) {
       `我是女巫，${self}的身份你们现在应该信了吧？`,
       `${self}是女巫，解药${game.witchHasSave ? '还在' : '已用'}，毒药${game.witchHasPoison ? '还在' : '已用'}。记住这些信息。`
     ],
-    hunter: [
-      `我是猎人！我没法开枪了，但你们要替我报仇！`,
-      `${self}是猎人，被你们投出去……希望你们好自为之。`,
-      `猎人在这，可惜动不了了。听好了，投我的都是蠢货或者狼人。`
-    ],
+    hunter: (() => {
+      // 猎人遗言逻辑
+      const isClaimed = game.claimedPlayers.has(player.id);
+      const deathCause = player.deathCause || ''; // 'wolf', 'poison', 'vote', 'hunter'
+      
+      // 情况1：被毒杀 → 不能开枪
+      if (deathCause === 'poison') {
+        return [
+          `我是猎人……但被毒杀了，开不了枪了。狼人真阴险！`,
+          `${self}是猎人，可惜被毒了……报不了仇了……`,
+          `猎人${self}被毒杀，没法开枪……狼人你得逞了！`
+        ];
+      }
+      
+      // 情况2：跳了身份后被投出/被杀 → 威胁开枪
+      if (isClaimed) {
+        // 选择一个目标（优先选狼人）
+        const alive = getAlive();
+        const wolves = alive.filter(p => p.role === 'wolf');
+        const target = wolves.length > 0 ? pick(wolves) : pick(alive);
+        
+        return [
+          `我是猎人！我死了要带走${target.name}！记住我的话！`,
+          `${self}是猎人，已被投票出局。但我开枪带走${target.name}！`,
+          `猎人${self}在此宣布：我死也要拉${target.name}垫背！`
+        ];
+      }
+      
+      // 情况3：没跳身份 → 可以隐藏或暗示
+      return [
+        `我是猎人！可惜死了，但我会开枪的！`,
+        `${self}是猎人，你们等着瞧……`,
+        `告诉我我是猎人，让你们后悔……我会开枪的。`
+      ];
+    })(),
     guard: [
       `我是守卫，昨晚${game.lastGuardTarget ? '我守了' + game.players[game.lastGuardTarget]?.name : '我在守人'}。你们投错我了！`,
       `${self}身为守卫，一直在保护好人。你们这样对我……寒心。`,
@@ -3517,6 +3869,22 @@ async function votePhase(){
       }
 
       // 3) 预言家查到的狼加大量分（规则③：智谋高的更相信预言家）
+      // ===== 核心修复：所有好人都应该重视预言家的查杀 =====
+      if(game.seerChecks && game.seerChecks.length > 0){
+        const recentCheck = game.seerChecks[game.seerChecks.length - 1];
+        if(recentCheck && recentCheck.isWolf && x.id === recentCheck.targetId){
+          // 公式：智谋≥4 加60分，已跳身份再加20分
+          let bonus = 0;
+          const intel = getAttr(p, '智谋');
+          if(intel >= 4) bonus += 60;  // 智谋≥4 加60分
+          // 如果预言家已经跳身份，加分更多
+          const seer = getAlive().find(s => s.role === "seer");
+          if(seer && game.claimedPlayers.has(seer.id)) bonus += 20;  // 已跳身份再加20分
+          score += bonus;
+        }
+      }
+      
+      // 预言家自己：铁定投查到的狼
       if(p.role==="seer" && game.seerTarget!==null){
         const known=game.players[game.seerTarget];
         if(x.id===known.id && known.role==="wolf" && known.alive){
@@ -3561,20 +3929,19 @@ async function votePhase(){
       suspectScores[x.id] = score;
     }
 
-      // 加权随机选择投票目标（分高概率大）
-    let target;
-    const validTargets=suspectPool.filter(x => suspectScores[x.id]>0);
-    if(validTargets.length>0){
-      const weights=validTargets.map(x => Math.max(1, suspectScores[x.id]));
-      const totalW=weights.reduce((s,w) => s+w, 0);
-      let r=Math.random()*totalW;
-      for(let i=0;i<validTargets.length;i++){
-        r-=weights[i];
-        if(r<=0){target=validTargets[i];break;}
+    // ===== 严格一人一票：选得分最高的目标 =====
+    let target = null;
+    let maxScore = -Infinity;
+    for(const x of suspectPool){
+      const s = suspectScores[x.id] || 0;
+      if(s > maxScore){
+        maxScore = s;
+        target = x;
       }
-      if(!target)target=validTargets[validTargets.length-1];
-    }else{
-      target=pick(suspectPool);
+    }
+    // 如果所有分为0或负数，随机选一个
+    if(!target || maxScore <= 0){
+      target = pick(suspectPool);
     }
 
     if(target){
@@ -3736,6 +4103,8 @@ function continueGame(){
     const data = JSON.parse(savedGame);
     // 恢复游戏状态
     Object.assign(game, data.gameState);
+    // 将 spokenToday 从 Array 转回 Set（JSON 不支持 Set 类型）
+    if(Array.isArray(game.spokenToday)) game.spokenToday = new Set(game.spokenToday);
     // 恢复好感度
     if(data.favors){
       for(const key in data.favors){
