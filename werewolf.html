@@ -246,16 +246,16 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 /* ===== 天意附体选择面板 ===== */
 #destinySelect{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
 #destinySelect.hide{display:none}
-.destiny-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:24px 28px;min-width:420px;text-align:center;max-height:85vh;overflow-y:auto}
-.destiny-card h2{color:#9b59b6;font-size:20px;margin-bottom:4px;letter-spacing:2px}
-.destiny-card .destiny-hint{color:var(--gray);font-size:12px;margin-bottom:14px}
-.destiny-players{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
-.destiny-player-card{padding:6px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:11px;cursor:pointer;transition:all 0.2s;text-align:center}
+.destiny-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:20px 24px;min-width:320px;text-align:center;max-height:80vh;overflow-y:auto}
+.destiny-card h2{color:#9b59b6;font-size:18px;margin-bottom:2px;letter-spacing:2px}
+.destiny-card .destiny-hint{color:var(--gray);font-size:11px;margin-bottom:10px}
+.destiny-players{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.destiny-player-card{padding:4px;border:2px solid rgba(255,255,255,0.15);border-radius:8px;background:transparent;color:var(--white);font-size:10px;cursor:pointer;transition:all 0.2s;text-align:center}
 .destiny-player-card:hover{border-color:#9b59b6;background:rgba(155,89,182,0.1)}
-.destiny-player-card.selected{border-color:#9b59b6;background:rgba(155,89,182,0.2);box-shadow:0 0 12px rgba(155,89,182,0.6)}
-.destiny-player-card img{width:36px;height:36px;border-radius:50%;margin-bottom:4px;object-fit:cover}
-.destiny-player-card div{font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.destiny-confirm{padding:8px 32px;border:none;border-radius:20px;background:#9b59b6;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.destiny-player-card.selected{border-color:#9b59b6;background:rgba(155,89,182,0.2);box-shadow:0 0 10px rgba(155,89,182,0.5)}
+.destiny-player-card img{width:32px;height:32px;border-radius:50%;margin-bottom:2px;object-fit:cover}
+.destiny-player-card div{font-size:10px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.destiny-confirm{padding:6px 24px;border:none;border-radius:16px;background:#9b59b6;color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
 .destiny-confirm:hover{transform:scale(1.05)}
 .destiny-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
 
@@ -334,6 +334,8 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .confirm-no{background:transparent;color:var(--gray);border:2px solid var(--gray)}
 .confirm-no:hover{border-color:var(--white);color:var(--white)}
 
+#hunterShootPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
+#hunterShootPanel.hide{display:none}
 /* ===== 结束画面 ===== */
 #endScreen{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.8)}
 #endScreen.show{display:flex}
@@ -526,6 +528,19 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   </div>
 </div>
 
+<!-- ===== 猎人开枪面板 ===== -->
+<div id="hunterShootPanel" class="hide">
+  <div class="settings-card" style="min-width:340px">
+    <h2 style="color:var(--hunter)">⚔️ 猎人发动技能</h2>
+    <p id="hunterShootDesc" style="color:var(--white);font-size:14px;margin:8px 0 16px">选择要带走的目标</p>
+    <div id="hunterShootTargets" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto"></div>
+    <div class="confirm-btns" style="margin-top:16px">
+      <button class="confirm-yes" id="hunterShootConfirmBtn" onclick="confirmHunterShoot()" disabled>确认带走</button>
+      <button class="confirm-no" onclick="skipHunterShoot()">放弃技能</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 确认弹窗 ===== -->
 <div id="confirmOverlay" class="hide">
   <div class="confirm-card">
@@ -622,6 +637,11 @@ seer_hint:[
   "我手里有料，但暂时不方便全说。只能提示大家一句：盯紧{t}，这个人不对劲。",
   "我有一种强烈的直觉——{t}有问题。具体证据我先不透露，但我建议大家先从{t}身上下手。",
   "有些事点到为止，但我相信{t}的底细早晚会被揭穿。大家注意观察他接下来的反应。"
+],
+seer_hide:[
+  "我觉得{t}的发言有点问题，大家可以多注意一下。",
+  "今天有人发言很可疑，但具体是谁我暂时不说，再观察一天。",
+  "我有些想法，但还不确定，等我再验证一下。"
 ],
 hunter_threat:[
   "我就一句话：谁敢投我，我走的时候绝对拉一个垫背的。你自己掂量掂量。",
@@ -1315,6 +1335,7 @@ async function markDeath(player, day, cause) {
       game.destiny = null; // 转为上帝视角，可见所有人身份
       addLog('<span style="color:#9b59b6">【天意失败】你已转为上帝视角，继续观看游戏但无法干预。</span>');
       renderPlayers();
+      refreshLog();
     } else {
       game.destiny = null;
       game.destinyEnded = true; // 天意游戏结束
@@ -1330,6 +1351,7 @@ async function markDeath(player, day, cause) {
     game.playerDied = true;
     addLog('<span style="color:var(--gold)">【玩家死亡】你的角色已阵亡，现在转为上帝视角。</span>');
     renderPlayers();
+    refreshLog();
   }
 }
 function deathInfoText(p) {
@@ -1788,7 +1810,7 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
   return changes;
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),destiny:null};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),destiny:null};
 
 function openSettings(){
   document.getElementById('settingsOverlay').classList.remove('hide');
@@ -1815,6 +1837,76 @@ function closeSettings(){
     game._pausedBySettings=false;
   }
 }
+
+// ===== 猎人开枪面板 =====
+let hunterShootSelected = null; // 当前选中目标
+let hunterShootCandidates = []; // 可选目标列表
+
+function showHunterShootPanel(player, cause){
+  const panel = document.getElementById('hunterShootPanel');
+  const desc = document.getElementById('hunterShootDesc');
+  const container = document.getElementById('hunterShootTargets');
+  const confirmBtn = document.getElementById('hunterShootConfirmBtn');
+
+  hunterShootSelected = null;
+  confirmBtn.disabled = true;
+
+  if(cause === 'poison'){
+    desc.textContent = `${player.name}被毒杀，无法发动猎人技能`;
+    container.innerHTML = '<div style="color:var(--gray);font-size:13px">女巫毒杀会封印猎人的技能</div>';
+    confirmBtn.textContent = '确定';
+    confirmBtn.onclick = () => {
+      panel.classList.add('hide');
+      if(hunterShootResolver) { hunterShootResolver(null); hunterShootResolver = null; }
+    };
+    confirmBtn.disabled = false;
+    panel.classList.remove('hide');
+    return new Promise(r => { hunterShootResolver = r; });
+  }
+
+  desc.textContent = `${player.name}（${ROLE_CFG[player.role].name}）发动猎人技能，选择要带走的目标`;
+  confirmBtn.textContent = '确认带走';
+  confirmBtn.disabled = true;
+  confirmBtn.onclick = confirmHunterShoot;
+
+  const targets = getAlive().filter(p => p.id !== player.id);
+  hunterShootCandidates = targets.map(p => p.id);
+
+  container.innerHTML = targets.map(p => `
+    <div class="settings-btn" style="text-align:left;cursor:pointer" onclick="selectHunterTarget(this,'${p.id}')" data-hunter-target="${p.id}">
+      ${p.name} <span style="color:var(--gray)">${ROLE_CFG[p.role].name}</span>
+    </div>`).join('');
+
+  panel.classList.remove('hide');
+  return new Promise(r => { hunterShootResolver = r; });
+}
+
+function selectHunterTarget(el, id){
+  if(hunterShootSelected === id) return;
+  // 取消之前选中
+  document.querySelectorAll('[data-hunter-target]').forEach(e => e.style.outline = '');
+  el.style.outline = '2px solid var(--hunter)';
+  hunterShootSelected = id;
+  document.getElementById('hunterShootConfirmBtn').disabled = false;
+}
+
+function confirmHunterShoot(){
+  if(!hunterShootSelected) return;
+  const panel = document.getElementById('hunterShootPanel');
+  panel.classList.add('hide');
+  const target = game.players[hunterShootSelected];
+  if(hunterShootResolver) { hunterShootResolver(target); hunterShootResolver = null; }
+  hunterShootSelected = null;
+}
+
+function skipHunterShoot(){
+  const panel = document.getElementById('hunterShootPanel');
+  panel.classList.add('hide');
+  if(hunterShootResolver) { hunterShootResolver(null); hunterShootResolver = null; }
+  hunterShootSelected = null;
+}
+
+let hunterShootResolver = null;
 
 // ===== 好感度面板 =====
 function openFavorPanel(){
@@ -1970,7 +2062,7 @@ function init(optPlayer){
   // 完整重置游戏状态（用新对象替换，避免旧属性残留）
   const keepSpeed = game.speed;
   const keepMode = game.mode;
-  game={players:[],phase:"start",day:0,mode:keepMode,speed:keepSpeed,generation:(game.generation||0)+1,selectedPlayer:null,wolfTarget:null,seerTarget:null,witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},claimedPlayers:new Set(),destiny:null,destinyEffects:{},_confirmCallback:null,_pausedBySettings:false,_pausedByFavor:false,pendingSpeechResolve:null,pendingVoteResolve:null,pendingNightResolve:null,pendingDestinyResolve:null,player:null,playerId:null,playerDied:false,spokenToday:new Set()};
+  game={players:[],phase:"start",day:0,mode:keepMode,speed:keepSpeed,generation:(game.generation||0)+1,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},claimedPlayers:new Set(),destiny:null,destinyEffects:{},_confirmCallback:null,_pausedBySettings:false,_pausedByFavor:false,pendingSpeechResolve:null,pendingVoteResolve:null,pendingNightResolve:null,pendingDestinyResolve:null,player:null,playerId:null,playerDied:false,spokenToday:new Set()};
   _activeGen=game.generation;
   // 重置暂停按钮外观
   const pauseBtn=document.getElementById("pauseBtn");
@@ -2182,14 +2274,47 @@ function speakerHTML(player, label){
 }
 
 let _activeGen=0;
-function addLog(html){
+function canSeeLog(visibleTo){
+  if(visibleTo==='all') return true;
+  if(game.mode==='god') return true;
+  // 死后上帝视角也能看一切
+  if(game.mode==='player'&&game.playerDied) return true;
+  if(game.mode==='destiny'&&!game.destiny) return true;
+  let role=null;
+  if(game.mode==='player'&&game.playerId) role=game.players[game.playerId]&&game.players[game.playerId].role;
+  else if(game.mode==='destiny'&&game.destiny) role=game.players[game.destiny]&&game.players[game.destiny].role;
+  if(!role)return false;
+  if(visibleTo==='wolf')return role==='wolf';
+  if(visibleTo==='seer')return role==='seer';
+  if(visibleTo==='witch')return role==='witch';
+  if(visibleTo==='guard')return role==='guard';
+  return visibleTo===role;
+}
+function addLog(html, visibleTo='all'){
   if(game.generation!==_activeGen)return;
+  if(!game.logs) game.logs=[];
+  game.logs.push({html, visibleTo, time:Date.now()});
+  if(!canSeeLog(visibleTo))return;
   const area=document.getElementById("logArea");
   if(!area)return;
   const div=document.createElement("div");
   div.className="log-entry";
   div.innerHTML=html;
   area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+}
+function refreshLog(){
+  if(!game.logs)return;
+  const area=document.getElementById('logArea');
+  if(!area)return;
+  area.innerHTML='';
+  for(const entry of game.logs){
+    if(!canSeeLog(entry.visibleTo))continue;
+    const div=document.createElement('div');
+    div.className='log-entry';
+    div.innerHTML=entry.html;
+    area.appendChild(div);
+  }
   area.scrollTop=area.scrollHeight;
 }
 
@@ -2290,7 +2415,7 @@ async function player_guardAction(){
   if(targets.length===0)return;
   const result = await showNightPanel('guard', {targets:targets});
   game.guardTarget=result;
-  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${game.players[result].name}……</span>`);
+  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${game.players[result].name}……</span>`,'guard');
 }
 
 async function ai_guardAction(){
@@ -2310,7 +2435,7 @@ async function ai_guardAction(){
   if(!target) target=pick(targets);
   game.guardTarget=target.id;
   const guardTarget=game.players[game.guardTarget];
-  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${guardTarget.name}……</span>`);
+  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${guardTarget.name}……</span>`,'guard');
 }
 
 async function player_wolfAction(){
@@ -2321,16 +2446,16 @@ async function player_wolfAction(){
   if(targets.length===0)return;
   const playerWolf=wolves.find(w=>w.id===game.playerId);
   if(!playerWolf) return;
-  addLog('<span class="system-text">🐺 狼人密议开始……</span>');
+    addLog('<span class="system-text">🐺 狼人密议开始……</span>','wolf');
   await delay(500);
   const teammates=wolves.filter(w=>w.id!==game.playerId);
   if(teammates.length>0){
-    addLog(`<span style="color:var(--red)">你的同伴：${teammates.map(w=>w.name).join('、')}</span>`);
+    addLog(`<span style="color:var(--red)">你的同伴：${teammates.map(w=>w.name).join('、')}</span>`,'wolf');
     await delay(500);
   }
   const result = await showNightPanel('wolf', {targets:targets});
   game.wolfTarget=result;
-  addLog(`${speakerHTML(playerWolf,'<span style="color:var(--red)">【狼人】'+playerWolf.name+'</span>')}<span class="night-text">决定击杀${game.players[result].name}……</span>`);
+    addLog(`${speakerHTML(playerWolf,'<span style="color:var(--red)">【狼人】'+playerWolf.name+'</span>')}<span class="night-text">决定击杀${game.players[result].name}……</span>`,'wolf');
 }
 
 async function ai_wolfAction(){
@@ -2342,11 +2467,11 @@ async function ai_wolfAction(){
 
   // ===== 识别关键角色 =====
   // 武力最高 = 行动决策者
-  const killMaster=wolves.reduce((b,w)=>getAttr(w,'武力')>getAttr(b,'武力')?w:b);
+  const killMaster=wolves.reduce((b,w) => getAttr(w,'武力') > getAttr(b,'武力') ? w : b);
   // 政治+智谋最高 = 剧本策划者
-  const scriptMaster=wolves.reduce((b,w)=>attrScore(w,'政治','智谋')>attrScore(b,'政治','智谋')?w:b);
+  const scriptMaster=wolves.reduce((b,w) => attrScore(w,'政治','智谋') > attrScore(b,'政治','智谋') ? w : b);
   game.scriptMasterId = scriptMaster.id;
-  addLog('<span class="system-text">🐺 狼人密议开始……</span>');
+    addLog('<span class="system-text">🐺 狼人密议开始……</span>','wolf');
   await delay(800);
 
   // ===== 第一步：军师开场定调（提目标 + 抛出剧本 + 投票建议）=====
@@ -2368,7 +2493,7 @@ async function ai_wolfAction(){
   const voteTargets=targets.filter(t=>t.id!==masterTarget.id);
   const voteTarget=voteTargets.length>0 ? pick(voteTargets) : masterTarget;
   const voteTpl=pick(WOLF_DISCUSS.vote_suggest).replace(/{t}/g,voteTarget.name);
-  addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}${scriptTpl}${voteTpl}`);
+      addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}${scriptTpl}${voteTpl}`,'wolf');
   await delay(1000);
 
   // ===== 第二步：其他狼依次提出目标并附和/反对军师 =====
@@ -2383,16 +2508,16 @@ async function ai_wolfAction(){
       const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,t.name);
       const personalFlavor=generatePersonalSpeech(wolf, t.name);
       const speech=(personalFlavor&&Math.random()<0.3)?personalFlavor:tpl;
-      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${speech}`);
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${speech}`,'wolf');
     } else {
       // 意志高才敢公开反对军师
       if(Math.random()<getAttr(wolf,'意志')/5){
         const tpl=pick(WOLF_DISCUSS.disagree).replace(/{t}/g,t.name).replace(/{t2}/g,masterTarget.name);
-        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
       } else {
         // 表面附和但心里选了别人
         const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,masterTarget.name);
-        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
       }
     }
     await delay(800+Math.random()*500);
@@ -2417,13 +2542,13 @@ async function ai_wolfAction(){
       const agree=myProposal.target.id===otherProposal.target.id;
       if(agree){
         const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,myProposal.target.name);
-        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
       } else {
         // 规则⑦：意志越高越坚持己见
         const insist=Math.random()<getAttr(wolf,'意志')/5;
         if(insist){
           const tpl=pick(WOLF_DISCUSS.disagree).replace(/{t}/g,myProposal.target.name).replace(/{t2}/g,otherProposal.target.name);
-          addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+          addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
         }
       }
       await delay(600+Math.random()*400);
@@ -2434,18 +2559,18 @@ async function ai_wolfAction(){
   for(const wolf of wolves){
     while(game.isPaused) await delay(100);
     if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
-    // 规则⑤：政治越高越服从剧本
-    let compliance=getAttr(wolf,'政治')/5;
+    // 规则⑤：政治越高越服从剧本（适度调整，保留一定内讧增加趣味性）
+    let compliance=0.6 + getAttr(wolf,'政治')*0.05;  // 政治1→0.65, 政治6→0.9
     // 对策划者好感度修正：好感度越高越服从
     const masterFavor = getFavor(wolf, scriptMaster.id);
-    compliance += (masterFavor - 50) * 0.015; // 好感度60 → +0.15
-    // 规则⑦：意志越高越不服从
-    compliance -= (getAttr(wolf, '意志') - 3) * 0.04;
-    compliance = Math.max(0.05, Math.min(0.95, compliance));
+    compliance += (masterFavor - 50) * 0.01; // 好感度60 → +0.1
+    // 规则⑦：意志越高越不服从（适度削弱影响）
+    compliance -= (getAttr(wolf, '意志') - 3) * 0.02;  // 意志6 → -0.06
+    compliance = Math.max(0.3, Math.min(0.95, compliance));  // 最低30%服从，保留一定内讧
     const follows=Math.random()<compliance;
     game.wolfScriptCompliance[wolf.id]=follows;
     const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
-    addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
     await delay(500);
   }
 
@@ -2454,10 +2579,10 @@ async function ai_wolfAction(){
   const finalTarget=killMasterDecide(killMaster, proposals, targets);
   game.wolfTarget=finalTarget.id;
   const killTpl=pick(WOLF_DISCUSS.kill_decide).replace(/{t}/g,finalTarget.name);
-  addLog(`${speakerHTML(killMaster,'<span style="color:var(--red)">【武力裁决】'+killMaster.name+'</span>')}${killTpl}`);
+      addLog(`${speakerHTML(killMaster,'<span style="color:var(--red)">【武力裁决】'+killMaster.name+'</span>')}${killTpl}`,'wolf');
   await delay(600);
 
-  addLog('<span class="system-text">🐺 狼人密议结束，目标已锁定。</span>');
+  addLog('<span class="system-text">🐺 狼人密议结束，目标已锁定。</span>','wolf');
 }
 
 // 狼人提出目标（规则①：好感度驱动，更愿意刀好感度低的人）
@@ -2509,14 +2634,14 @@ function generateWolfScript(scriptMaster, wolves, targets){
   script.assignedWolves={};
   const aliveWolves=[...wolves];
   if(script.id==='fake_seer' && aliveWolves.length>=1){
-    script.assignedWolves.fakeSeer=aliveWolves.reduce((b,w)=>getAttr(w,'智谋')>getAttr(b,'智谋')?w:b);
+    script.assignedWolves.fakeSeer=aliveWolves.reduce((b,w) => getAttr(w,'智谋') > getAttr(b,'智谋') ? w : b);
   } else if(script.id==='wolf_fight' && aliveWolves.length>=2){
     shuffle(aliveWolves);
     script.assignedWolves.fighter1=aliveWolves[0];
     script.assignedWolves.fighter2=aliveWolves[1];
   } else if(script.id==='wolf_sacrifice' && aliveWolves.length>=2){
-    script.assignedWolves.sacrifice=aliveWolves.reduce((b,w)=>getAttr(w,'魅力')<getAttr(b,'魅力')?w:b);
-    script.assignedWolves.accuser=aliveWolves.reduce((b,w)=>getAttr(w,'智谋')>getAttr(b,'智谋')?w:b);
+    script.assignedWolves.sacrifice=aliveWolves.reduce((b,w) => getAttr(w,'魅力') < getAttr(b,'魅力') ? w : b);
+    script.assignedWolves.accuser=aliveWolves.reduce((b,w) => getAttr(w,'智谋') > getAttr(b,'智谋') ? w : b);
     if(script.assignedWolves.sacrifice.id===script.assignedWolves.accuser.id){
       script.assignedWolves.accuser=aliveWolves.find(w=>w.id!==script.assignedWolves.sacrifice.id)||script.assignedWolves.sacrifice;
     }
@@ -2547,13 +2672,14 @@ function killMasterDecide(killMaster, proposals, targets){
   if(myChoice && Math.random()<getAttr(killMaster,'意志')/6){
     return myChoice.target;
   }
-  // 刀人者对军师好感度高时，额外概率采纳军师目标
+  // 刀人者对军师好感度高时，额外概率采纳军师目标（适度增强）
   const masterId = game.scriptMasterId;
   if(masterId){
     const masterProposal = proposals.find(p=>p.wolfId===masterId);
     if(masterProposal){
       const favorToMaster = getFavor(killMaster, masterId);
-      if(favorToMaster > 60 && Math.random() < (favorToMaster - 60) * 0.01){
+      // 好感度55→5%概率采纳，好感度70→20%概率采纳
+      if(favorToMaster > 50 && Math.random() < (favorToMaster - 50) * 0.02){
         return masterProposal.target;
       }
     }
@@ -2569,9 +2695,11 @@ async function player_seerAction(){
   if(targets.length===0)return;
   const result = await showNightPanel('seer', {targets:targets, info:'选择要查验的玩家'});
   game.seerTarget=result;
+  // 记录历史查验
+  game.seerChecks.push({day: game.day, targetId: result, isWolf: game.players[result].role === "wolf"});
   const target=game.players[result];
   const isWolf=target.role==="wolf";
-  addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`);
+  addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`,'seer');
 }
 
 async function ai_seerAction(){
@@ -2585,8 +2713,10 @@ async function ai_seerAction(){
   const unchecked=targets.filter(p=>!game.speeches.find(s=>s.speaker==="seer"&&s.about===p.id));
   if(unchecked.length>0) target=pick(unchecked);
   game.seerTarget=target.id;
+  // 记录历史查验
+  game.seerChecks.push({day: game.day, targetId: target.id, isWolf: target.role === "wolf"});
   const isWolf=target.role==="wolf";
-  addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`);
+  addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`,'seer');
 }
 
 async function player_witchAction(){
@@ -2608,13 +2738,13 @@ async function player_witchAction(){
   });
   if(result=='save'){
     game.witchSave=true; game.witchUsedSaveLastNight=true; game.witchHasSave=false;
-    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`);
+    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`,'witch');
   } else if(result && typeof result==='object' && result.action==='poison'){
     game.witchPoison=result.target; game.witchHasPoison=false;
     game.witchUsedPoisonLastNight=true; game.witchPoisonTarget=result.target;
-    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`);
+    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`,'witch');
   } else {
-    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}<span class="night-text">选择按兵不动。</span>`);
+    addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}<span class="night-text">选择按兵不动。</span>`,'witch');
   }
 }
 
@@ -2636,7 +2766,7 @@ async function ai_witchAction(){
       if(Math.random()<saveProb){
         game.witchSave=true; game.witchUsedSaveLastNight=true;
         game.witchHasSave=false;
-        addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`);
+        addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`,'witch');
         return;
       }
     }
@@ -2662,7 +2792,7 @@ async function ai_witchAction(){
         }
         if(game.witchPoison!==null){
           game.witchHasPoison=false; game.witchUsedPoisonLastNight=true; game.witchPoisonTarget=game.witchPoison;
-          addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`);
+          addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`,'witch');
         }
       }
     }
@@ -2707,7 +2837,17 @@ async function dayPhase(deaths){
       addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${p.name}遗言：${generateLastWords(p)}"</span>`);
       // Hunter shoot
       if(p.role==="hunter"&&d.cause!=="poison"){
-        const target=pickExclude(getAlive(),[p.id]);
+        // 玩家猎人 → 面板选目标；AI猎人 → 智能选择
+        const isPlayerHunter = game.mode==='player' && game.playerId === p.id;
+        let target = null;
+        if(isPlayerHunter){
+          target = await showHunterShootPanel(p, d.cause);
+        } else {
+          const candidates = getAlive().filter(t => t.id !== p.id);
+          // 智谋≥4优先带走狼人
+          target = getAttr(p,'智谋')>=4 && candidates.filter(t=>t.role==="wolf").length>0
+            ? candidates.filter(t=>t.role==="wolf")[0] : pickExclude(candidates, [p.id]);
+        }
         if(target){
           await markDeath(target, game.day, "hunter");
           addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}（${ROLE_CFG[target.role].name}）！</span>`);
@@ -2830,6 +2970,10 @@ async function generateSpeeches(){
       // ===== 女巫发言：分享夜间行动信息 =====
       speech=generateWitchSpeech(p, suspectPool, speechContext, game.spokenToday);
     }
+    else if(p.role==="guard"){
+      // ===== 守卫发言：分享守护信息 =====
+      speech=generateGuardSpeech(p, suspectPool, speechContext, game.spokenToday);
+    }
     else {
       // ===== 好人发言：规则③④⑥⑦全部体现在发言内容 =====
       speech=generateGoodSpeech(p, suspectPool, speechContext, game.spokenToday);
@@ -2869,28 +3013,63 @@ function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
   const charStyle = CHARACTER_SPEECH_STYLE[seer.name];
   const intel=getAttr(seer,'智谋');
 
-  // 已查验到狼人
+  // 情况1：已查验到狼人 → 按规则跳身份
   if(game.seerTarget!==null && game.players[game.seerTarget].role==="wolf"){
     const wt=game.players[game.seerTarget];
-    // 人物专属：使用角色模板
-    if(charStyle && charStyle.accuse && charStyle.accuse.length>0 && Math.random() < Math.max(0.7, 0.3 + intel / 5)){
-      return pick(charStyle.accuse).replace(/\{t\}/g, wt.name);
-    }
-    // 智谋越高越果断亮身份
-    if(Math.random() < Math.max(0.7, 0.3 + intel / 5)){
+    
+    // 计算跳身份概率：智谋1→85%，智谋2-4→100%，智谋5-6→查验到狼则100%
+    let revealProb = 0;
+    if(intel === 1) revealProb = 0.85;
+    else if(intel >= 2 && intel <= 4) revealProb = 1.0;
+    else if(intel >= 5) revealProb = 1.0;  // 查验到狼→100%跳
+    
+    if(Math.random() < revealProb){  
+      // 使用人物专属模板（用good_speech而不是accuse）
+      if(charStyle && charStyle.good_speech && charStyle.good_speech.length>0 && Math.random() < 0.7){
+        const speech = pick(charStyle.good_speech).replace(/\{t\}/g, wt.name);
+        return speech;
+      }
+      // 使用标准跳身份模板
       return pickTemplate("seer_reveal",{t:wt.name,r:"狼人"});
     }
-    // 智谋低的不敢直接跳，先暗示
+    // 不跳身份，暗示
     return pickTemplate("seer_hint",{t:wt.name});
   }
 
-  // 还没查到狼
+  // 情况2：查验到好人 → 暂时不跳身份，继续隐藏
+  if(game.seerTarget!==null && game.players[game.seerTarget].role==="good"){
+    // 智谋5-6：如果有人冒充预言家，则跳身份
+    if(intel >= 5){
+      const someoneClaimedSeer = ctx.some(s => s.speechType === "reveal" && s.speakerId !== seer.id);
+      if(someoneClaimedSeer){
+        return pickTemplate("seer_reveal",{t:game.players[game.seerTarget].name,r:"好人"});
+      }
+    }
+    // 没人冒充，继续隐藏，用隐藏模板
+    const t=pick(suspectPool);
+    return pickTemplate("seer_hide",{t:t.name});
+  }
+
+  // 情况3：还没查验过人
+  // 智谋5-6：如果有人冒充预言家，则跳身份
+  if(intel >= 5){
+    const someoneClaimedSeer = ctx.some(s => s.speechType === "reveal" && s.speakerId !== seer.id);
+    if(someoneClaimedSeer){
+      return "有人自称预言家？我才是真正的预言家！但我还没查验到狼人，大家先别急着信任何人。";
+    }
+  }
+  
+  // 普通暗示或分析发言
   const t=pick(suspectPool);
-  // 智谋高的会分析别人的发言（仅引用今天已发言的人）
   if(intel>=4 && ctx.length>0){
     const recentCtx=ctx.slice(-3);
     const spokeToday=recentCtx.filter(s=>spokenSet.has(s.speakerId));
-    const suspiciousSpeeches = spokeToday.filter(s => s.role === "wolf" || (s.text && s.text.includes("我觉得")));
+    // 修正：预言家不知道谁是狼，只能分析发言内容
+    const suspiciousSpeeches = spokeToday.filter(s => 
+      (s.text && s.text.includes("我觉得")) ||  // 划水或不明确发言
+      (s.speechType === "accuse") ||  // 攻击性发言
+      (s.speechType === "reveal")  // 跳身份发言
+    );
     if (suspiciousSpeeches.length > 0) {
       const s = pick(suspiciousSpeeches);
       return pickTemplate("seer_hint", { t: s.speakerName });
@@ -2907,18 +3086,69 @@ function generateWitchSpeech(witch, suspectPool, ctx, spokenSet){
     if(charStyle && charStyle.defend && charStyle.defend.length>0){
       return pick(charStyle.defend).replace(/\{t\}/g, "一位好人");
     }
-    return pickTemplate("witch_save",{});
+    // 更明确地提示解药使用（但不直接说身份）
+    const hints = [
+      pickTemplate("witch_save",{}),
+      "昨晚有人被杀，但我用解药救了他。好人阵营少损失一人，大家投票要更谨慎。",
+      "我做了一个重要决定，用了解药。被救的人自己心里清楚，我希望你能站出来带领好人。"
+    ];
+    return pick(hints);
   }
   // 昨晚用了毒药
   if(game.witchUsedPoisonLastNight){
     if(charStyle && charStyle.accuse && charStyle.accuse.length>0){
-      const target = pick(suspectPool);
+      const target = game.witchPoisonTarget ? game.players[game.witchPoisonTarget] : pick(suspectPool);
       return pick(charStyle.accuse).replace(/\{t\}/g, target.name);
     }
-    return "我昨晚做了一个重要决定，对好人阵营有帮助。大家自己体会。";
+    // 更明确地提示毒药使用
+    const target = game.witchPoisonTarget ? game.players[game.witchPoisonTarget].name : "一个人";
+    const hints = [
+      `我昨晚做了一个艰难的决定。${target}已经不在了，好人阵营少了一个威胁。`,
+      "我用了一瓶毒药，对好人阵营有利。大家看看今天谁没来发言。",
+      `昨晚的行动很成功，${target}不会再来发言了。各位自己判断吧。`
+    ];
+    return pick(hints);
   }
   // 普通情况：走好人发言逻辑（会触发人物专属检查）
   return generateGoodSpeech(witch, suspectPool, ctx, spokenSet);
+}
+
+// ===== 守卫白天发言：分享守护信息 =====
+function generateGuardSpeech(guard, suspectPool, ctx, spokenSet){
+  const charStyle = CHARACTER_SPEECH_STYLE[guard.name];
+  
+  // 昨晚守护了人
+  if(game.guardTarget!==null){
+    const guarded = game.players[game.guardTarget];
+    
+    // 人物专属：使用角色模板
+    if(charStyle && charStyle.defend && charStyle.defend.length>0){
+      const speech = pick(charStyle.defend).replace(/\{t\}/g, guarded.name);
+      // 70%概率明确说自己是守卫
+      if(Math.random() < 0.7 || speech.includes("守卫") || speech.includes("守护")){
+        return speech;
+      }
+    }
+    
+    // 标准发言：暗示或明确身份
+    const templates = [
+      `我昨晚保护了一个重要人物，${guarded.name}还活着，这就有我的一份功劳。`,
+      `有人昨晚差点被杀，但他活下来了。我自己体会。`,
+      `我是守卫。我守护了${guarded.name}，他是对的。大家信我。`,
+      `我做了我的职责。${guarded.name}今天还站着，不是运气。`
+    ];
+    
+    // 智谋高的守卫更果断亮身份
+    const intel = getAttr(guard, '智谋');
+    if(intel >= 4 && Math.random() < 0.8){
+      // 高智谋直接跳身份
+      return pick(templates.filter(t => t.includes("守卫") || t.includes("我是")));
+    }
+    return pick(templates);
+  }
+  
+  // 还没守护或死亡：走好人发言逻辑
+  return generateGoodSpeech(guard, suspectPool, ctx, spokenSet);
 }
 
 // ===== 好人发言：规则③④⑥⑦通过发言内容体现 =====
@@ -3211,25 +3441,22 @@ function generateLastWords(player) {
   // 好人：根据真实身份生成遗言
   const templates = {
     seer: (() => {
-      // 预言家：说出查验结果
-      if (game.seerTarget !== null) {
-        const checked = game.players[game.seerTarget];
-        if (checked && checked.role === 'wolf') {
-          return [
-            `我是预言家！我查到${checked.name}是狼人！你们不信我，那就等着输吧！`,
-            `${self}以预言家身份告诉你，${checked.name}就是狼人！我死不瞑目！`,
-            `我是预言家，昨晚查的是${checked.name}，是狼人！你们投我，就是帮狼人！`
-          ];
-        } else if (checked) {
-          return [
-            `我是预言家，我查了${checked.name}，是好人。你们投我，好人阵营少了一个预言家……`,
-            `${self}是预言家，${checked.name}是清白的。你们要投就投狼人，别内耗了。`
-          ];
-        }
+      // 预言家：如实说身份 + 报每天查验情况
+      let reports = [];
+      if (game.seerChecks && game.seerChecks.length > 0) {
+        reports = game.seerChecks.map(check => {
+          const target = game.players[check.targetId];
+          const targetName = target ? target.name : "某人";
+          const result = check.isWolf ? "狼人" : "好人";
+          return `第${check.day}天查验${targetName}，是${result}`;
+        });
       }
+      
+      const reportStr = reports.length > 0 ? reports.join("；") : "但我还没查验到狼人";
       return [
-        `我是预言家，虽然没来得及说出所有信息，但你们要相信我……`,
-        `${self}身为预言家，却被投出去了。好人自求多福吧。`
+        `我是预言家！${reportStr}。你们要相信我，投狼人！`,
+        `${self}以预言家身份告诉你：${reportStr}。我死不瞑目！`,
+        `我是预言家，${reportStr}。你们投我，就是帮狼人！`
       ];
     })(),
     witch: [
@@ -3280,7 +3507,7 @@ async function votePhase(){
 
       // 1) 好感度基础分：好感度越低越想投（规则①）
       const f = getFavor(p, x.id);
-      score += Math.max(0, (50 - f) * 0.5); // 好感度30 → +10分，好感度70 → -10分
+      score += (50 - f) * 0.5; // 好感度30 → +10分，好感度70 → -10分（允许负值）
 
       // 2) 发言中被怀疑的次数
       for(const s of game.speeches){
@@ -3334,12 +3561,12 @@ async function votePhase(){
       suspectScores[x.id] = score;
     }
 
-    // 加权随机选择投票目标（分高概率大）
+      // 加权随机选择投票目标（分高概率大）
     let target;
-    const validTargets=suspectPool.filter(x=>suspectScores[x.id]>0);
+    const validTargets=suspectPool.filter(x => suspectScores[x.id]>0);
     if(validTargets.length>0){
-      const weights=validTargets.map(x=>Math.max(1, suspectScores[x.id]));
-      const totalW=weights.reduce((s,w)=>s+w,0);
+      const weights=validTargets.map(x => Math.max(1, suspectScores[x.id]));
+      const totalW=weights.reduce((s,w) => s+w, 0);
       let r=Math.random()*totalW;
       for(let i=0;i<validTargets.length;i++){
         r-=weights[i];
@@ -3376,14 +3603,20 @@ async function votePhase(){
 
     // Hunter
     if(exiled.role==="hunter"){
-      const targets=getAlive().filter(p=>p.id!==exiled.id);
-      if(targets.length>0){
-        // 智谋高的猎人更精准
-        const ht=getAttr(exiled,'智谋')>=4 ? (targets.filter(t=>t.role==="wolf").length>0 ? pick(targets.filter(t=>t.role==="wolf")) : pick(targets)) : pick(targets);
-        if(ht){
-          await markDeath(ht, game.day, "hunter");
-          addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
+      const isPlayerHunter = game.mode==='player' && game.playerId === exiled.id;
+      let ht = null;
+      if(isPlayerHunter){
+        ht = await showHunterShootPanel(exiled, 'vote');
+      } else {
+        const targets=getAlive().filter(p=>p.id!==exiled.id);
+        if(targets.length>0){
+          ht=getAttr(exiled,'智谋')>=4 && targets.filter(t=>t.role==="wolf").length>0
+            ? targets.filter(t=>t.role==="wolf")[0] : pick(targets);
         }
+      }
+      if(ht){
+        await markDeath(ht, game.day, "hunter");
+        addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
       }
     }
   }
