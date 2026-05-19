@@ -2427,8 +2427,8 @@ async function player_guardAction(){
   const targets=getAlive().filter(p=>p.id!==game.lastGuardTarget);
   if(targets.length===0)return;
   const result = await showNightPanel('guard', {targets:targets});
-  game.guardTarget=result;
-  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${game.players[result].name}……</span>`,'guard');
+  game.guardTarget=result.target;
+  addLog(`${speakerHTML(guard,"【守卫】"+guard.name)}<span class="night-text">守护了${game.players[result.target].name}……</span>`,'guard');
 }
 
 async function ai_guardAction(){
@@ -2528,8 +2528,8 @@ async function player_wolfAction(){
     await delay(500);
   }
   const result = await showNightPanel('wolf', {targets:targets});
-  game.wolfTarget=result;
-    addLog(`${speakerHTML(playerWolf,'<span style="color:var(--red)">【狼人】'+playerWolf.name+'</span>')}<span class="night-text">决定击杀${game.players[result].name}……</span>`,'wolf');
+  game.wolfTarget=result.target;
+    addLog(`${speakerHTML(playerWolf,'<span style="color:var(--red)">【狼人】'+playerWolf.name+'</span>')}<span class="night-text">决定击杀${game.players[result.target].name}……</span>`,'wolf');
 }
 
 async function ai_wolfAction(){
@@ -2810,10 +2810,10 @@ async function player_seerAction(){
   const targets=getAlive().filter(p=>p.id!==seer.id&&p.role!=="seer");
   if(targets.length===0)return;
   const result = await showNightPanel('seer', {targets:targets, info:'选择要查验的玩家'});
-  game.seerTarget=result;
+  game.seerTarget=result.target;
   // 记录历史查验
-  game.seerChecks.push({day: game.day, targetId: result, isWolf: game.players[result].role === "wolf"});
-  const target=game.players[result];
+  game.seerChecks.push({day: game.day, targetId: result.target, isWolf: game.players[result.target].role === "wolf"});
+  const target=game.players[result.target];
   const isWolf=target.role==="wolf";
   addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`,'seer');
 }
@@ -2891,11 +2891,11 @@ async function ai_witchAction(){
   const witch=getAlive().find(p=>p.role==="witch");
   if(!witch)return;
   const intel=getAttr(witch,"智谋");
-  const charm=getAttr(witch,"魅力");
   if(game.witchHasSave&&game.wolfTarget!=null){
     const victim=game.players[game.wolfTarget];
-    // 计算救活概率：0% + 魅力×5%
-    let saveProb=0 + charm*0.05;
+    // 被刀的人魅力越高，女巫越想救：30% + 魅力×10%
+    const victimCharm = getAttr(victim, '魅力');
+    let saveProb = 0.3 + victimCharm * 0.1;
     // 自救：100%概率
     if(victim.id===witch.id) saveProb=1.0;
     // 高智谋优先救关键角色
@@ -2910,9 +2910,8 @@ async function ai_witchAction(){
   }
   if(game.witchHasPoison&&game.day>=2){
     if(game.generation!==gen)return;
-    // 毒杀概率随智谋增长
-    let poisonProb=0.2+intel*0.05;
-    if(game.day>=3) poisonProb+=0.1;
+    // 毒药概率：40% + 智谋×10%
+    let poisonProb=0.4+intel*0.1;
     if(Math.random()<poisonProb){
       const wolves=getAliveWolves();
       if(wolves.length>0){
@@ -3089,7 +3088,32 @@ async function generateSpeeches(){
 
   for(const p of speechOrder){
     while(game.isPaused) await delay(100);
+    
+    // ===== 玩家扮演模式：玩家角色手动输入发言 =====
+    if(game.mode === 'player' && p.id === game.playerId){
+      addLog(`<span style="color:var(--gold)">【你的发言】请在弹出的面板中输入发言内容...</span>`);
+      const result = await showSpeechPanel();
+      const speech = result.text || "";
+      const mainType = result.type || 'conservative';
+      const mentionedTarget = result.target ? game.players[result.target] : null;
 
+      addLog(`${speakerHTML(p)}${speech}${speechTypeLabel([{type: mainType}])}`);
+
+      // 好感度影响
+      applySpeechFavorEffect(p, speech, [{type: mainType}], alive, false);
+
+      // 记录发言上下文
+      speechContext.push({
+        speakerId: p.id, speakerName: p.name,
+        targetName: mentionedTarget ? mentionedTarget.name : null,
+        text: speech, role: p.role, speechType: mainType
+      });
+      game.spokenToday.add(p.id);
+      game.speeches.push({speaker: p.role, about: null, text: speech, speakerId: p.id, speechType: mainType, classified: [{type: mainType}]});
+      await delay(800+Math.random()*700);
+      continue;
+    }
+    
     let speech="";
     // 选一个怀疑对象（排除自己）
     const suspectPool=alive.filter(x=>x.id!==p.id);
@@ -3183,8 +3207,8 @@ function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
 
   // 情况2：查验到好人 → 暂时不跳身份，继续隐藏
   if(game.seerTarget!==null && game.players[game.seerTarget].role==="good"){
-    // 智谋5-6：如果有人冒充预言家，则跳身份
-    if(intel >= 5){
+    // 智谋≥2：如果有人冒充预言家，则跳身份
+    if(intel >= 2){
       const someoneClaimedSeer = ctx.some(s => s.speechType === "reveal" && s.speakerId !== seer.id);
       if(someoneClaimedSeer){
         return pickTemplate("seer_reveal",{t:game.players[game.seerTarget].name,r:"好人"});
@@ -3196,8 +3220,8 @@ function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
   }
 
   // 情况3：还没查验过人
-  // 智谋5-6：如果有人冒充预言家，则跳身份
-  if(intel >= 5){
+  // 智谋≥2：如果有人冒充预言家，则跳身份
+  if(intel >= 2){
     const someoneClaimedSeer = ctx.some(s => s.speechType === "reveal" && s.speakerId !== seer.id);
     if(someoneClaimedSeer){
       return "有人自称预言家？我才是真正的预言家！但我还没查验到狼人，大家先别急着信任何人。";
@@ -3873,10 +3897,10 @@ async function votePhase(){
       if(game.seerChecks && game.seerChecks.length > 0){
         const recentCheck = game.seerChecks[game.seerChecks.length - 1];
         if(recentCheck && recentCheck.isWolf && x.id === recentCheck.targetId){
-          // 公式：智谋≥4 加60分，已跳身份再加20分
-          let bonus = 0;
+          // 公式：基础+10，智谋≥2加50分，已跳身份再加20分（最终范围10-80）
+          let bonus = 10;
           const intel = getAttr(p, '智谋');
-          if(intel >= 4) bonus += 60;  // 智谋≥4 加60分
+          if(intel >= 2) bonus += 50;  // 智谋≥2 加50分
           // 如果预言家已经跳身份，加分更多
           const seer = getAlive().find(s => s.role === "seer");
           if(seer && game.claimedPlayers.has(seer.id)) bonus += 20;  // 已跳身份再加20分
