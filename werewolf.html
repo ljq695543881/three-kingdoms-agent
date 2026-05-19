@@ -144,6 +144,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .tag-shield{color:var(--green);font-size:11px;font-weight:700}
 .tag-break{color:var(--red);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(192,57,43,0.4)}
 .tag-claim{color:var(--gold);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(241,196,15,0.4)}
+.tag-info{color:var(--blue);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(41,128,185,0.4)}
 
 /* ===== 标题画面 ===== */
 #titleScreen{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#0d1b2a 0%,#1b2838 40%,#16213e 100%)}
@@ -214,6 +215,28 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .speech-confirm{padding:8px 32px;border:none;border-radius:20px;background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
 .speech-confirm:hover{transform:scale(1.05)}
 .speech-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.speech-preview{margin:12px 0;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:var(--white);font-size:13px;line-height:1.6;min-height:40px;text-align:left}
+.speech-fragments{display:flex;flex-wrap:wrap;gap:6px;min-height:32px;margin-bottom:8px}
+.frag-item{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:12px;font-weight:600;animation:fadeIn 0.2s}
+.frag-item.frag-conservative{background:rgba(127,140,141,0.25);color:var(--gray);border:1px solid rgba(127,140,141,0.4)}
+.frag-item.frag-claim{background:rgba(142,68,173,0.25);color:var(--purple);border:1px solid rgba(142,68,173,0.4)}
+.frag-item.frag-attack{background:rgba(192,57,43,0.25);color:var(--red);border:1px solid rgba(192,57,43,0.4)}
+.frag-item.frag-shield{background:rgba(39,174,96,0.25);color:var(--green);border:1px solid rgba(39,174,96,0.4)}
+.frag-item.frag-info{background:rgba(41,128,185,0.25);color:var(--blue);border:1px solid rgba(41,128,185,0.4)}
+.frag-remove{cursor:pointer;font-size:14px;line-height:1;margin-left:2px;opacity:0.6}
+.frag-remove:hover{opacity:1}
+.speech-claim-row{display:none;flex-direction:column;gap:6px;margin:8px 0}
+.speech-claim-row.show{display:flex}
+.claim-roles{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.claim-role-btn{padding:5px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:14px;background:transparent;color:var(--white);font-size:12px;cursor:pointer;transition:all 0.15s}
+.claim-role-btn:hover{border-color:var(--purple);color:var(--purple)}
+.claim-role-btn.selected{border-color:var(--purple);background:rgba(142,68,173,0.25);color:var(--purple)}
+.speech-info-row{display:none;flex-direction:column;gap:6px;margin:8px 0}
+.speech-info-row.show{display:flex}
+.info-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.info-act-btn{padding:5px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:14px;background:transparent;color:var(--white);font-size:12px;cursor:pointer;transition:all 0.15s}
+.info-act-btn:hover{border-color:var(--blue);color:var(--blue)}
+.info-act-btn.selected{border-color:var(--blue);background:rgba(41,128,185,0.25);color:var(--blue)}
 
 /* ===== 投票选择面板 ===== */
 #votePanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
@@ -235,13 +258,22 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .night-card h2{color:#4a90d9;font-size:18px;margin-bottom:4px}
 .night-card .night-hint{color:var(--gray);font-size:12px;margin-bottom:12px}
 .night-info{color:var(--gray);font-size:12px;margin-bottom:10px;text-align:left;background:var(--card);padding:8px 12px;border-radius:8px}
-.night-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:40vh;overflow-y:auto}
-.night-opt-btn{padding:8px 16px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;background:transparent;color:var(--white);font-size:13px;cursor:pointer;transition:all 0.15s;text-align:left;display:flex;align-items:center;gap:8px}
-.night-opt-btn:hover{border-color:#4a90d9;color:#4a90d9}
-.night-opt-btn.selected{border-color:#4a90d9;background:rgba(74,144,217,0.15);color:#4a90d9}
+.night-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
 .night-confirm{padding:8px 32px;border:none;border-radius:20px;background:#4a90d9;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
 .night-confirm:hover{transform:scale(1.05)}
 .night-confirm:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* Night player grid - matches destiny attachment UI style */
+.night-player-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;max-height:40vh;overflow-y:auto}
+.night-player-card{padding:6px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:11px;cursor:pointer;transition:all 0.2s;text-align:center}
+.night-player-card:hover{border-color:#4a90d9;background:rgba(74,144,217,0.15);transform:scale(1.05)}
+.night-player-card.selected{border-color:#4a90d9;background:rgba(74,144,217,0.2);box-shadow:0 0 10px rgba(74,144,217,0.5)}
+.night-player-card img{width:36px;height:36px;border-radius:50%;margin-bottom:4px;object-fit:cover}
+.night-player-card div{font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.night-action-row{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.night-action-btn{padding:8px 18px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:13px;cursor:pointer;transition:all 0.2s}
+.night-action-btn:hover{border-color:#4a90d9;background:rgba(74,144,217,0.15)}
+.night-action-btn.selected{border-color:#4a90d9;background:rgba(74,144,217,0.2)}
 
 /* ===== 天意附体选择面板 ===== */
 #destinySelect{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
@@ -414,11 +446,16 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <div id="speechPanel" class="hide">
   <div class="speech-card">
     <h2>轮到你发言！</h2>
-    <div class="speech-hint">选择一个发言类型</div>
+    <div class="speech-hint">已选发言片段 (<span id="fragmentCount">0</span>/3)</div>
+    <div class="speech-fragments" id="speechFragments"></div>
     <div class="speech-types" id="speechTypes">
       <button class="speech-type-btn" onclick="selectSpeechType('conservative')" id="st-conservative">
         <span class="st-icon">😶</span>
         <span class="st-label">划水</span>
+      </button>
+      <button class="speech-type-btn" onclick="selectSpeechType('claim')" id="st-claim">
+        <span class="st-icon">📢</span>
+        <span class="st-label">跳身份</span>
       </button>
       <button class="speech-type-btn" onclick="selectSpeechType('attack')" id="st-attack">
         <span class="st-icon">⚔️</span>
@@ -428,14 +465,17 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
         <span class="st-icon">🛡️</span>
         <span class="st-label">袒护某人</span>
       </button>
-      <button class="speech-type-btn" onclick="selectSpeechType('break')" id="st-break">
-        <span class="st-icon">💥</span>
-        <span class="st-label">确信判定</span>
-      </button>
     </div>
     <div class="speech-target-row" id="speechTargetRow">
-      <select id="speechTargetSel"></select>
+      <select id="speechTargetSel" onchange="onSpeechTargetChange()"></select>
     </div>
+    <div class="speech-claim-row" id="speechClaimRow">
+      <div class="claim-roles" id="claimRoles"></div>
+    </div>
+    <div class="speech-info-row" id="speechInfoRow">
+      <div class="info-actions" id="infoActions"></div>
+    </div>
+    <div class="speech-preview" id="speechPreview">请先选择发言类型…</div>
     <button class="speech-confirm" id="speechConfirmBtn" onclick="confirmPlayerSpeech()" disabled>确认发言</button>
   </div>
 </div>
@@ -1633,20 +1673,40 @@ function speechTypeLabel(classified) {
         return '<span class="tag-conservative">（划水）</span>'; // 划水独占，直接返回
       case 'attack':
         if (c.subtype === 'suspect') {
-          const names = c.targets.map(t => t.name).join('、');
+          const names = (c.targets||[]).map(t => t.name).join('、');
           labels.push(names ? `<span class="tag-attack">（怀疑${names}）</span>` : '');
         } else {
-          const names = c.targets.map(t => t.name).join('、');
+          const names = (c.targets||[]).map(t => t.name).join('、');
           labels.push(names ? `<span class="tag-shield">（袒护${names}）</span>` : '');
         }
         break;
       case 'break':
         if (c.subtype === 'accuse') {
-          const names = c.targets.map(t => t.name).join('、');
+          const names = (c.targets||[]).map(t => t.name).join('、');
           labels.push(names ? `<span class="tag-break">（确信${names}是狼）</span>` : '');
         } else {
-          const names = c.targets.map(t => t.name).join('、');
+          const names = (c.targets||[]).map(t => t.name).join('、');
           labels.push(names ? `<span class="tag-break">（确信${names}是好人）</span>` : '');
+        }
+        break;
+      case 'info':
+        {
+          const ROLE_NAME_MAP = { seer: '预言家', witch: '女巫', guard: '守卫' };
+          const roleName = ROLE_NAME_MAP[c.role] || c.role;
+          let infoStr = '';
+          if(c.role === 'seer'){
+            const names = (c.targets||[]).map(t => t.name).join('、');
+            const resultStr = c.infoResult === 'wolf' ? '是狼人' : '是好人';
+            infoStr = names ? `告知·${roleName}·验${names}${resultStr}` : `告知·${roleName}`;
+          } else if(c.role === 'witch'){
+            const names = (c.targets||[]).map(t => t.name).join('、');
+            const actionStr = c.infoAction === 'save' ? '救了' : '毒了';
+            infoStr = names ? `告知·${roleName}·${actionStr}${names}` : `告知·${roleName}`;
+          } else if(c.role === 'guard'){
+            const names = (c.targets||[]).map(t => t.name).join('、');
+            infoStr = names ? `告知·${roleName}·守了${names}` : `告知·${roleName}`;
+          }
+          labels.push(`<span class="tag-info">（${infoStr}）</span>`);
         }
         break;
     }
@@ -2228,6 +2288,12 @@ function renderPlayers(){
   if(game.mode==='player' && !game.playerDied){
     hideRoles = true;
     visibleRoleIds = [game.playerId];
+    // 如果玩家是狼人，显示所有狼人身份
+    if(game.players[game.playerId] && game.players[game.playerId].role === 'wolf'){
+      game.players.filter(p=>p.role==='wolf').forEach(p=>{
+        if(!visibleRoleIds.includes(p.id)) visibleRoleIds.push(p.id);
+      });
+    }
   } else if(game.mode==='destiny' && game.destiny!==null){
     hideRoles = true;
     const destinyChar = game.players[game.destiny];
@@ -2527,6 +2593,114 @@ async function player_wolfAction(){
     addLog(`<span style="color:var(--red)">你的同伴：${teammates.map(w=>w.name).join('、')}</span>`,'wolf');
     await delay(500);
   }
+  // ===== 识别关键角色 =====
+  // 武力最高 = 行动决策者
+  const killMaster=wolves.reduce((b,w) => getAttr(w,'武力') > getAttr(b,'武力') ? w : b);
+  // 政治+智谋最高 = 剧本策划者
+  const scriptMaster=wolves.reduce((b,w) => attrScore(w,'政治','智谋') > attrScore(b,'政治','智谋') ? w : b);
+  game.scriptMasterId = scriptMaster.id;
+  await delay(800);
+
+  // ===== 第一步：军师开场定调（提目标 + 抛出剧本 + 投票建议）=====
+  while(game.isPaused) await delay(100);
+  const proposals=[];
+  // 军师先提目标
+  const masterProposal=wolfProposeTarget(scriptMaster, targets);
+  proposals.push(masterProposal);
+  // 生成剧本（提前到这里）
+  const script=generateWolfScript(scriptMaster, wolves, targets);
+  game.wolfScript=script;
+  game.wolfScriptCompliance={};
+  // 军师发言：提目标 + 剧本 + 投票建议
+  const masterTarget=masterProposal.target;
+  const masterTpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,masterTarget.name).replace(/{faction}/g,masterTarget.faction);
+  const scriptDesc=`【${script.name}】${script.desc}`;
+  const scriptTpl=pick(WOLF_DISCUSS.script_propose).replace(/{script}/g,scriptDesc);
+  // 投票建议目标：优先选非刀人目标的可疑好人，避免刀人和票人完全一致暴露意图
+  const voteTargets=targets.filter(t=>t.id!==masterTarget.id);
+  const voteTarget=voteTargets.length>0 ? pick(voteTargets) : masterTarget;
+  const voteTpl=pick(WOLF_DISCUSS.vote_suggest).replace(/{t}/g,voteTarget.name);
+      addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}${scriptTpl}${voteTpl}`,'wolf');
+  await delay(1000);
+
+  // ===== 第二步：其他狼依次提出目标并附和/反对军师 =====
+  const otherWolves=wolves.filter(w=>w.id!==scriptMaster.id);
+  for(const wolf of otherWolves){
+    while(game.isPaused) await delay(100);
+    const proposal=wolfProposeTarget(wolf, targets);
+    proposals.push(proposal);
+    const t=proposal.target;
+    // 与军师目标一致 → 附和；不一致 → 可能提出异议
+    if(t.id===masterTarget.id){
+      const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,t.name);
+      const personalFlavor=generatePersonalSpeech(wolf, t.name);
+      const speech=(personalFlavor&&Math.random()<0.3)?personalFlavor:tpl;
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${speech}`,'wolf');
+    } else {
+      // 意志高才敢公开反对军师
+      if(Math.random()<getAttr(wolf,'意志')/5){
+        const tpl=pick(WOLF_DISCUSS.disagree).replace(/{t}/g,t.name).replace(/{t2}/g,masterTarget.name);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+      } else {
+        // 表面附和但心里选了别人
+        const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,masterTarget.name);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+      }
+    }
+    await delay(800+Math.random()*500);
+  }
+
+  // ===== 第三步：狼人辩论（规则④统帅影响 + 好感度修正）=====
+  for(const wolf of wolves){
+    while(game.isPaused) await delay(100);
+    if(wolf.id===killMaster.id) continue; // 行动决策者最后说话
+    const myProposal=proposals.find(p=>p.wolfId===wolf.id);
+    const others=proposals.filter(p=>p.wolfId!==wolf.id);
+    if(others.length===0) continue;
+    // 规则④：统帅越高，越能说服他人
+    // 规则⑥：对发言者好感度越高，越容易被说服
+    const leadership = getAttr(wolf, '统帅') / 6;
+    // 用其他狼对当前狼的平均好感度修正说服概率
+    const avgFavor = wolves.filter(w => w.id !== wolf.id)
+      .reduce((s, w) => s + getFavor(w, wolf.id), 0) / (wolves.length - 1);
+    const favorBonus = Math.max(0, (avgFavor - 50) * 0.008); // 好感度60 → +0.08
+    if(Math.random() < leadership + favorBonus){
+      const otherProposal=pick(others);
+      const agree=myProposal.target.id===otherProposal.target.id;
+      if(agree){
+        const tpl=pick(WOLF_DISCUSS.agree).replace(/{t}/g,myProposal.target.name);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+      } else {
+        // 规则⑦：意志越高越坚持己见
+        const insist=Math.random()<getAttr(wolf,'意志')/5;
+        if(insist){
+          const tpl=pick(WOLF_DISCUSS.disagree).replace(/{t}/g,myProposal.target.name).replace(/{t2}/g,otherProposal.target.name);
+          addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+        }
+      }
+      await delay(600+Math.random()*400);
+    }
+  }
+
+  // ===== 第四步：其他狼表态服从/抗命剧本（规则⑤政治 + 好感度 + 规则⑦意志）=====
+  for(const wolf of wolves){
+    while(game.isPaused) await delay(100);
+    if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
+    // 规则⑤：政治越高越服从剧本（适度调整，保留一定内讧增加趣味性）
+    let compliance=0.6 + getAttr(wolf,'政治')*0.05;  // 政治1→0.65, 政治6→0.9
+    // 对策划者好感度修正：好感度越高越服从
+    const masterFavor = getFavor(wolf, scriptMaster.id);
+    compliance += (masterFavor - 50) * 0.01; // 好感度60 → +0.1
+    // 规则⑦：意志越高越不服从（适度削弱影响）
+    compliance -= (getAttr(wolf, '意志') - 3) * 0.02;  // 意志6 → -0.06
+    compliance = Math.max(0.3, Math.min(0.95, compliance));  // 最低30%服从，保留一定内讧
+    const follows=Math.random()<compliance;
+    game.wolfScriptCompliance[wolf.id]=follows;
+    const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+    await delay(500);
+  }
+
   const result = await showNightPanel('wolf', {targets:targets});
   game.wolfTarget=result.target;
     addLog(`${speakerHTML(playerWolf,'<span style="color:var(--red)">【狼人】'+playerWolf.name+'</span>')}<span class="night-text">决定击杀${game.players[result.target].name}……</span>`,'wolf');
@@ -2871,10 +3045,11 @@ async function player_witchAction(){
   else if(!game.witchHasPoison) hintParts.push('毒药已用完');
   const hint = hintParts.join('；');
   const result = await showNightPanel('witch', {
-    canSave:canSave, poisonTargets:poisonTargets,
+    canSave:canSave, victimName:victim?victim.name:'',
+    poisonTargets:poisonTargets,
     info: hint
   });
-  if(result=='save'){
+  if(result && result.action==='save'){
     game.witchSave=true; game.witchUsedSaveLastNight=true; game.witchHasSave=false;
     addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`,'witch');
   } else if(result && typeof result==='object' && result.action==='poison'){
@@ -3094,22 +3269,46 @@ async function generateSpeeches(){
       addLog(`<span style="color:var(--gold)">【你的发言】请在弹出的面板中输入发言内容...</span>`);
       const result = await showSpeechPanel();
       const speech = result.text || "";
-      const mainType = result.type || 'conservative';
-      const mentionedTarget = result.target ? game.players[result.target] : null;
-
-      addLog(`${speakerHTML(p)}${speech}${speechTypeLabel([{type: mainType}])}`);
-
-      // 好感度影响
-      applySpeechFavorEffect(p, speech, [{type: mainType}], alive, false);
-
+      const fragments = result.fragments || [{type:'conservative'}];
+      // 将 fragments 转为 classified 格式供 speechTypeLabel 使用
+      const classified = fragments.map(f => {
+        const item = {type: f.type};
+        if(f.type === 'claim'){
+          item.subtype = 'claim';
+          item.role = f.role;
+          item.targets = [];
+        } else if(f.type === 'attack'){
+          item.subtype = 'suspect';
+          const t = game.players[f.targetId];
+          item.targets = t?[t]:[];
+        } else if(f.type === 'shield'){
+          item.subtype = 'protect';
+          const t = game.players[f.targetId];
+          item.targets = t?[t]:[];
+        } else if(f.type === 'info'){
+          item.subtype = 'info';
+          item.role = f.role;
+          const t = game.players[f.infoTargetId];
+          item.targets = t?[t]:[];
+          item.infoResult = f.infoResult;
+          item.infoAction = f.infoAction;
+        }
+        return item;
+      });
+      addLog(`${speakerHTML(p)}${speech}${speechTypeLabel(classified)}`);
+      // 好感度影响（用主要类型）
+      const mainType = fragments[0].type === 'info' ? 'claim' : fragments[0].type;
+      applySpeechFavorEffect(p, speech, classified, alive, false);
       // 记录发言上下文
+      const tmpFrag = fragments.find(f=>f.targetId);
+      const mentionedTarget = tmpFrag ? game.players[tmpFrag.targetId] : null;
       speechContext.push({
         speakerId: p.id, speakerName: p.name,
         targetName: mentionedTarget ? mentionedTarget.name : null,
         text: speech, role: p.role, speechType: mainType
       });
       game.spokenToday.add(p.id);
-      game.speeches.push({speaker: p.role, about: null, text: speech, speakerId: p.id, speechType: mainType, classified: [{type: mainType}]});
+      game.speeches.push({speaker: p.role, about: null, text: speech, speakerId: p.id, speechType: mainType, classified});
       await delay(800+Math.random()*700);
       continue;
     }
@@ -4127,14 +4326,9 @@ function continueGame(){
     const data = JSON.parse(savedGame);
     // 恢复游戏状态
     Object.assign(game, data.gameState);
-    // 将 spokenToday 从 Array 转回 Set（JSON 不支持 Set 类型）
+    // 将 spokenToday / claimedPlayers 从 Array 转回 Set（JSON 不支持 Set 类型）
     if(Array.isArray(game.spokenToday)) game.spokenToday = new Set(game.spokenToday);
-    // 恢复好感度
-    if(data.favors){
-      for(const key in data.favors){
-        FAVOR[key] = data.favors[key];
-      }
-    }
+    if(Array.isArray(game.claimedPlayers)) game.claimedPlayers = new Set(game.claimedPlayers);
     document.getElementById('playerModeSelect').classList.add('hide');
     renderPlayers();
     showStartModal();
@@ -4170,11 +4364,15 @@ function savePlayerGame(){
       witchHasSave: game.witchHasSave,
       witchHasPoison: game.witchHasPoison,
       hunterCanShoot: game.hunterCanShoot,
+      seerChecks: game.seerChecks,
+      scriptMasterId: game.scriptMasterId,
+      wolfScript: game.wolfScript,
+      wolfScriptCompliance: game.wolfScriptCompliance,
       speeches: game.speeches,
       logs: game.logs,
-      spokenToday: [...game.spokenToday]
+      spokenToday: [...game.spokenToday],
+      claimedPlayers: [...game.claimedPlayers]
     },
-    favors: Object.assign({}, FAVOR),
     timestamp: Date.now()
   };
   localStorage.setItem('playerModeSave', JSON.stringify(saveData));
@@ -4294,44 +4492,299 @@ function confirmDestinySelect(){
   showStartModal();
 }
 
-// ===== 玩家发言面板 =====
-let _selectedSpeechType = null;
-function selectSpeechType(type){
-  _selectedSpeechType = type;
-  document.querySelectorAll('.speech-type-btn').forEach(b=>{
-    b.classList.remove('selected');
-  });
-  document.getElementById('st-'+type).classList.add('selected');
-  // 更新目标选择
-  updateSpeechTarget(type);
-  document.getElementById('speechConfirmBtn').disabled = false;
+// ===== 玩家发言文本生成 =====
+
+// ===== 玩家发言片段系统 =====
+// 每个片段: { type, targetId?, role?, infoAction?, infoTargetId?, infoResult? }
+// type: 'conservative' | 'claim' | 'attack' | 'shield' | 'info'
+let _speechFragments = [];
+let _speechAwaitingTarget = null; // 'attack'|'shield'|'claim'
+let _speechClaimRole = null;      // 当前跳身份已选的角色
+
+function resetSpeechPanel(){
+  _speechFragments = [];
+  _speechAwaitingTarget = null;
+  _speechClaimRole = null;
+  document.querySelectorAll('.speech-type-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('speechTargetRow').classList.remove('show');
+  document.getElementById('speechClaimRow').classList.remove('show');
+  document.getElementById('speechInfoRow').classList.remove('show');
+  document.getElementById('speechFragments').innerHTML = '';
+  document.getElementById('fragmentCount').textContent = '0';
+  document.getElementById('speechPreview').textContent = '请先选择发言类型…';
+  document.getElementById('speechConfirmBtn').disabled = true;
 }
-function updateSpeechTarget(type){
-  const sel = document.getElementById('speechTargetSel');
-  if(type==='conservative'){
-    sel.style.display='none';
+
+function renderFragments(){
+  const container = document.getElementById('speechFragments');
+  const player = game.players[game.playerId];
+  container.innerHTML = _speechFragments.map((frag, i) => {
+    let label = '';
+    let cls = 'frag-' + frag.type;
+    if(frag.type === 'conservative'){
+      label = '划水';
+    } else if(frag.type === 'claim'){
+      const roleNames = {seer:'预言家',witch:'女巫',guard:'守卫',hunter:'猎人',villager:'平民'};
+      label = '跳身份:' + (roleNames[frag.role]||frag.role);
+    } else if(frag.type === 'attack'){
+      const t = game.players[frag.targetId];
+      label = '怀疑:' + (t?t.name:'?');
+    } else if(frag.type === 'shield'){
+      const t = game.players[frag.targetId];
+      label = '袒护:' + (t?t.name:'?');
+    } else if(frag.type === 'info'){
+      const roleNames = {seer:'预言家',witch:'女巫',guard:'守卫'};
+      const t = game.players[frag.infoTargetId];
+      let action = '';
+      if(frag.role==='seer') action = frag.infoResult==='wolf'?'验X是狼':'验X是好人';
+      else if(frag.role==='witch') action = frag.infoAction==='save'?'救了X':'毒了X';
+      else if(frag.role==='guard') action = '守了X';
+      action = action.replace('X', t?t.name:'?');
+      label = '告知(' + (roleNames[frag.role]||'') + '):' + action;
+    }
+    return `<span class="frag-item ${cls}">${label}<span class="frag-remove" onclick="removeSpeechFragment(${i})">✕</span></span>`;
+  }).join('');
+  document.getElementById('fragmentCount').textContent = _speechFragments.length;
+  updateSpeechPreview();
+  // 更新确认按钮状态
+  document.getElementById('speechConfirmBtn').disabled = _speechFragments.length === 0;
+}
+
+function removeSpeechFragment(index){
+  _speechFragments.splice(index, 1);
+  renderFragments();
+  // 如果移除后为空，重置面板状态
+  if(_speechFragments.length === 0){
+    resetSpeechPanel();
+  }
+}
+
+// ===== 选择发言类型 =====
+function selectSpeechType(type){
+  // 划水独占：如果已选过其他片段，不允许选划水；如果已有划水，不允许选其他
+  if(type === 'conservative'){
+    if(_speechFragments.length > 0) return; // 已有片段不能选划水
+    _speechFragments.push({type:'conservative'});
+    renderFragments();
+    // 隐藏所有选择行
+    document.getElementById('speechTargetRow').classList.remove('show');
+    document.getElementById('speechClaimRow').classList.remove('show');
+    document.getElementById('speechInfoRow').classList.remove('show');
     return;
   }
-  sel.style.display='';
-  const alive = getAlive().filter(p=>p.id!==game.playerId);
-  sel.innerHTML = alive.map(p=>`<option value="${p.id}">${p.name}（${p.faction}）</option>`).join('');
+  // 检查是否已有划水
+  if(_speechFragments.some(f=>f.type==='conservative')) return;
+  // 检查是否已满3个
+  if(_speechFragments.length >= 3) return;
+
+  if(type === 'claim'){
+    // 显示角色选择
+    showClaimRoleSelection();
+  } else if(type === 'attack' || type === 'shield'){
+    // 显示目标选择
+    _speechAwaitingTarget = type;
+    showSpeechTargetSelection(type);
+  }
 }
-function confirmPlayerSpeech(){
-  const type = _selectedSpeechType;
+
+function showClaimRoleSelection(){
+  const container = document.getElementById('claimRoles');
+  const roles = [
+    {key:'seer',label:'预言家'},
+    {key:'witch',label:'女巫'},
+    {key:'guard',label:'守卫'},
+    {key:'hunter',label:'猎人'},
+    {key:'villager',label:'平民'}
+  ];
+  container.innerHTML = roles.map(r=>
+    `<button class="claim-role-btn" data-role="${r.key}" onclick="selectClaimRole('${r.key}')">${r.label}</button>`
+  ).join('');
+  document.getElementById('speechClaimRow').classList.add('show');
+  document.getElementById('speechTargetRow').classList.remove('show');
+  document.getElementById('speechInfoRow').classList.remove('show');
+}
+
+function selectClaimRole(role){
+  _speechClaimRole = role;
+  document.querySelectorAll('.claim-role-btn').forEach(b=>{
+    b.classList.toggle('selected', b.dataset.role === role);
+  });
+  // 添加 claim 片段
+  _speechFragments.push({type:'claim', role});
+  // 如果角色是预言家/女巫/守卫，显示"告知信息"按钮
+  if(role === 'seer' || role === 'witch' || role === 'guard'){
+    showInfoActions(role);
+  }
+  renderFragments();
+  // 重置选择状态，允许继续添加片段（如果未满3个）
+  _speechClaimRole = null;
+  document.getElementById('speechClaimRow').classList.remove('show');
+  // 如果未满3个，保持面板可操作
+  if(_speechFragments.length < 3){
+    // 什么都不做，让玩家继续选其他类型
+  }
+}
+
+function showInfoActions(role){
+  const container = document.getElementById('infoActions');
+  let html = '';
+  if(role === 'seer'){
+    const alive = getAlive().filter(p=>p.id!==game.playerId);
+    html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知验人信息：</div>';
+    html += alive.map(p=>
+      `<button class="info-act-btn" onclick="selectInfoAction('seer','result',${p.id},'wolf')">${p.name}是狼人</button>` +
+      `<button class="info-act-btn" onclick="selectInfoAction('seer','result',${p.id},'good')">${p.name}是好人</button>`
+    ).join('');
+  } else if(role === 'witch'){
+    const alive = getAlive().filter(p=>p.id!==game.playerId);
+    html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知用药信息：</div>';
+    html += alive.map(p=>
+      `<button class="info-act-btn" onclick="selectInfoAction('witch','save',${p.id})">救了${p.name}</button>` +
+      `<button class="info-act-btn" onclick="selectInfoAction('witch','poison',${p.id})">毒了${p.name}</button>`
+    ).join('');
+  } else if(role === 'guard'){
+    const alive = getAlive().filter(p=>p.id!==game.playerId);
+    html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知守人信息：</div>';
+    html += alive.map(p=>
+      `<button class="info-act-btn" onclick="selectInfoAction('guard','guard',${p.id})">守了${p.name}</button>`
+    ).join('');
+  }
+  container.innerHTML = html;
+  document.getElementById('speechInfoRow').classList.add('show');
+}
+
+function selectInfoAction(role, action, targetId, result){
+  const frag = {type:'info', role, infoAction:action, infoTargetId:targetId};
+  if(result) frag.infoResult = result;
+  _speechFragments.push(frag);
+  renderFragments();
+  // 隐藏信息选择行
+  document.getElementById('speechInfoRow').classList.remove('show');
+}
+
+function showSpeechTargetSelection(type){
+  const row = document.getElementById('speechTargetRow');
   const sel = document.getElementById('speechTargetSel');
-  let targetId = null;
-  if(type!=='conservative' && sel.value) targetId = parseInt(sel.value);
-  
+  row.classList.add('show');
+  document.getElementById('speechClaimRow').classList.remove('show');
+  document.getElementById('speechInfoRow').classList.remove('show');
+  const alive = getAlive().filter(p=>p.id!==game.playerId);
+  sel.innerHTML = '<option value="">-- 选择目标 --</option>' +
+    alive.map(p=>`<option value="${p.id}">${p.name}（${p.faction}）</option>`).join('');
+  sel.value = '';
+  document.getElementById('speechConfirmBtn').disabled = true;
+}
+
+function onSpeechTargetChange(){
+  const sel = document.getElementById('speechTargetSel');
+  if(!sel.value) {
+    document.getElementById('speechConfirmBtn').disabled = true;
+    return;
+  }
+  const targetId = parseInt(sel.value);
+  const type = _speechAwaitingTarget;
+  _speechFragments.push({type, targetId});
+  _speechAwaitingTarget = null;
+  document.getElementById('speechTargetRow').classList.remove('show');
+  renderFragments();
+}
+
+// ===== 生成发言文本（支持多片段）=====
+function generatePlayerSpeechText(fragments){
+  const player = game.players[game.playerId];
+  return fragments.map(frag => {
+    if(frag.type === 'conservative'){
+      const templates = [
+        '我觉得还是先观察一下吧，现在信息太少了。',
+        '我没什么好说的，跟大家一起分析吧。',
+        '现阶段还是别乱投，多听听别人的发言。',
+        '我没什么信息，先看看大家怎么说。',
+        '别急着下结论，再讨论讨论。',
+        '我觉得局势还不明朗，先听听别人的意见。',
+        '暂时没有明确的判断，再观察一轮吧。',
+        '我觉得现在跳身份还太早了，大家谨慎一点。'
+      ];
+      return templates[Math.floor(Math.random()*templates.length)];
+    }
+    if(frag.type === 'claim'){
+      const roleNames = {seer:'预言家',witch:'女巫',guard:'守卫',hunter:'猎人',villager:'平民'};
+      const roleName = roleNames[frag.role]||frag.role;
+      const templates = [
+        `我${roleName}身份，大家信我。`,
+        `我跳${roleName}，有没有人敢和我对角？`,
+        `我真的是${roleName}，不信你们投我。`,
+        `我${roleName}，昨晚做了关键操作，听我分析。`
+      ];
+      return templates[Math.floor(Math.random()*templates.length)];
+    }
+    if(frag.type === 'attack'){
+      const t = game.players[frag.targetId];
+      const name = t?t.name:'某人';
+      const templates = [
+        `我怀疑${name}，他的发言有点问题，大家多注意一下。`,
+        `${name}的发言我觉得很可疑，建议重点关注。`,
+        `我觉得${name}有可能是狼人，大家分析一下他的发言。`,
+        `我怀疑${name}，他的态度很飘忽，不敢表态。`
+      ];
+      return templates[Math.floor(Math.random()*templates.length)];
+    }
+    if(frag.type === 'shield'){
+      const t = game.players[frag.targetId];
+      const name = t?t.name:'某人';
+      const templates = [
+        `我觉得${name}不像狼人，他的发言还是挺真诚的。`,
+        `我觉得${name}没问题，大家别乱怀疑他。`,
+        `${name}的发言我听了，感觉是好人阵营的。`,
+        `我相信${name}是好人，大家别投他。`
+      ];
+      return templates[Math.floor(Math.random()*templates.length)];
+    }
+    if(frag.type === 'info'){
+      const t = game.players[frag.infoTargetId];
+      const name = t?t.name:'某人';
+      if(frag.role==='seer'){
+        return `我昨晚验了${name}，他是${frag.infoResult==='wolf'?'狼人':'好人'}。`;
+      } else if(frag.role==='witch'){
+        return frag.infoAction==='save'?`我昨晚用解药救了${name}。`:`我昨晚用毒药毒了${name}。`;
+      } else if(frag.role==='guard'){
+        return `我昨晚守了${name}。`;
+      }
+    }
+    return '';
+  }).join('');
+}
+
+// ===== 更新发言预览 =====
+function updateSpeechPreview(){
+  if(_speechFragments.length === 0){
+    document.getElementById('speechPreview').textContent = '请先选择发言类型…';
+    return;
+  }
+  const text = generatePlayerSpeechText(_speechFragments);
+  document.getElementById('speechPreview').textContent = text;
+}
+
+// ===== 确认发言 =====
+function confirmPlayerSpeech(){
+  const text = generatePlayerSpeechText(_speechFragments);
   document.getElementById('speechPanel').classList.add('hide');
-  _selectedSpeechType = null;
-  
+  const fragments = _speechFragments.slice(); // copy
+  resetSpeechPanel();
+
   if(game.pendingSpeechResolve){
-    game.pendingSpeechResolve({type, targetId});
+    game.pendingSpeechResolve({fragments, text});
     game.pendingSpeechResolve = null;
   }
 }
 
-// ===== 玩家投票面板 =====
+// ===== 发言面板显示 =====
+function showSpeechPanel(){
+  return new Promise(resolve => {
+    game.pendingSpeechResolve = resolve;
+    resetSpeechPanel();
+    document.getElementById('speechPanel').classList.remove('hide');
+  });
+}
 function confirmPlayerVote(){
   const sel = document.getElementById('voteOptions');
   const targetId = sel.value ? parseInt(sel.value) : null;
@@ -4438,7 +4891,15 @@ function closeConfirm(){
 function confirmRestart(){
   executeConfirm();
   document.getElementById('settingsOverlay').classList.add('hide');
-  init();
+  // 保存玩家信息，用于重新初始化
+  let keepPlayer = null;
+  if(game.mode==='player' && game.playerId!=null){
+    const p = game.players[game.playerId];
+    if(p){
+      keepPlayer = {name:p.name, faction:p.faction, attr:p.attr, growthPts:p.growthPts};
+    }
+  }
+  init(keepPlayer);
 }
 function confirmBackToTitle(){
   executeConfirm();
@@ -4455,9 +4916,17 @@ function backToTitle(){
   showTitle();
 }
 function retryGame(){
+  // 保存玩家信息，用于重试时重新初始化
+  let keepPlayer = null;
+  if(game.mode==='player' && game.playerId!=null){
+    const p = game.players[game.playerId];
+    if(p){
+      keepPlayer = {name:p.name, faction:p.faction, attr:p.attr, growthPts:p.growthPts};
+    }
+  }
   document.getElementById('modalArea').innerHTML='';
   document.getElementById('endScreen').classList.remove('show');
-  init();
+  init(keepPlayer);
 }
 
 // ===== 初始化角色创建面板 =====
@@ -4478,44 +4947,67 @@ function showNightPanel(type, data){
     _nightResult = null;
     confirmBtn.disabled = true;
 
+    const getImgSrc = (p) => (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
+
     if(type === 'guard'){
       titleEl.textContent = '🛡️ 守卫行动';
       hintEl.textContent = '选择今晚要守护的人（不能连续守护同一人）';
       infoEl.textContent = data.info || '';
-      optEl.innerHTML = data.targets.map(p =>
-        `<div class="night-opt" data-id="${p.id}" onclick="selectNightTarget(${p.id})">${p.name}（${p.faction}）</div>`
-      ).join('');
+      optEl.innerHTML = `<div class="night-player-grid">${
+        (data.targets||[]).map(p =>
+          `<div class="night-player-card" data-id="${p.id}" onclick="selectNightTarget(${p.id})">
+            <img src="${getImgSrc(p)}" onerror="this.style.display='none'">
+            <div>${p.name}</div>
+          </div>`
+        ).join('')
+      }</div>`;
     }
     else if(type === 'wolf'){
       titleEl.textContent = '🐺 狼人行动';
       hintEl.textContent = '选择今晚要击杀的目标';
       infoEl.textContent = data.info || '';
-      optEl.innerHTML = data.targets.map(p =>
-        `<div class="night-opt" data-id="${p.id}" onclick="selectNightTarget(${p.id})">${p.name}（${p.faction}）</div>`
-      ).join('');
+      optEl.innerHTML = `<div class="night-player-grid">${
+        (data.targets||[]).map(p =>
+          `<div class="night-player-card" data-id="${p.id}" onclick="selectNightTarget(${p.id})">
+            <img src="${getImgSrc(p)}" onerror="this.style.display='none'">
+            <div>${p.name}</div>
+          </div>`
+        ).join('')
+      }</div>`;
     }
     else if(type === 'seer'){
       titleEl.textContent = '🔮 预言家行动';
       hintEl.textContent = '选择今晚要查验的人';
       infoEl.textContent = data.info || '';
-      optEl.innerHTML = data.targets.map(p =>
-        `<div class="night-opt" data-id="${p.id}" onclick="selectNightTarget(${p.id})">${p.name}（${p.faction}）</div>`
-      ).join('');
+      optEl.innerHTML = `<div class="night-player-grid">${
+        (data.targets||[]).map(p =>
+          `<div class="night-player-card" data-id="${p.id}" onclick="selectNightTarget(${p.id})">
+            <img src="${getImgSrc(p)}" onerror="this.style.display='none'">
+            <div>${p.name}</div>
+          </div>`
+        ).join('')
+      }</div>`;
     }
     else if(type === 'witch'){
       titleEl.textContent = '🧪 女巫行动';
       hintEl.textContent = '选择要救的人或要毒的人';
       infoEl.textContent = data.info || '';
-      let html = '';
+      let html = '<div class="night-action-row">';
       if(data.canSave){
-        html += `<div class="night-opt" data-action="save" onclick="selectNightTarget('save')">使用解药救下${data.victimName}</div>`;
+        html += `<div class="night-action-btn" data-action="save" onclick="selectNightTarget(\'save\')">💊 使用解药救${(data.victimName||'')}</div>`;
       }
+      html += `<div class="night-action-btn" data-action="skip" onclick="selectNightTarget(\'skip\')">⏭ 按兵不动</div>`;
+      html += '</div>';
       if(data.poisonTargets && data.poisonTargets.length > 0){
-        html += data.poisonTargets.map(p =>
-          `<div class="night-opt" data-id="${p.id}" data-action="poison" onclick="selectNightTarget('poison',${p.id})">对${p.name}使用毒药</div>`
-        ).join('');
+        html += `<div class="night-player-grid">${
+          data.poisonTargets.map(p =>
+            `<div class="night-player-card" data-id="${p.id}" data-action="poison" onclick="selectNightTarget(\'poison\',${p.id})">
+              <img src="${getImgSrc(p)}" onerror="this.style.display='none'">
+              <div>${p.name}</div>
+            </div>`
+          ).join('')
+        }</div>`;
       }
-      html += `<div class="night-opt" data-action="skip" onclick="selectNightTarget('skip')">按兵不动</div>`;
       optEl.innerHTML = html;
     }
 
@@ -4525,16 +5017,15 @@ function showNightPanel(type, data){
 
 function selectNightTarget(id, subId){
   const optEl = document.getElementById('nightOptions');
-  optEl.querySelectorAll('.night-opt').forEach(o => o.classList.remove('selected'));
-  
-  // Find and highlight the clicked option
+  optEl.querySelectorAll('.night-player-card,.night-action-btn').forEach(o => o.classList.remove('selected'));
+
   let targetOpt = null;
   if(id === 'save' || id === 'skip'){
-    targetOpt = optEl.querySelector(`[data-action="${id}"]`);
+    targetOpt = optEl.querySelector(`.night-action-btn[data-action="${id}"]`);
   } else if(id === 'poison'){
-    targetOpt = optEl.querySelector(`[data-id="${subId}"]`);
+    targetOpt = optEl.querySelector(`.night-player-card[data-id="${subId}"][data-action="poison"]`);
   } else {
-    targetOpt = optEl.querySelector(`[data-id="${id}"]`);
+    targetOpt = optEl.querySelector(`.night-player-card[data-id="${id}"]`);
   }
   if(targetOpt) targetOpt.classList.add('selected');
 
@@ -4557,7 +5048,9 @@ function showSpeechPanel(){
     game.pendingSpeechResolve = resolve;
     _selectedSpeechType = null;
     document.querySelectorAll('.speech-type-btn').forEach(b => b.classList.remove('selected'));
-    document.getElementById('speechTargetRow').style.display = 'none';
+    // 用 class 控制显示/隐藏，不要用内联样式
+    document.getElementById('speechTargetRow').classList.remove('show');
+    document.getElementById('speechPreview').textContent = '请先选择发言类型…';
     document.getElementById('speechConfirmBtn').disabled = true;
     document.getElementById('speechPanel').classList.remove('hide');
   });
