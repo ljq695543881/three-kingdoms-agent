@@ -1365,6 +1365,11 @@ function applyCharacterSpeech(player, charStyle, category, target){
 }
 
 // ===== 死亡记录辅助函数 =====
+// 是否以上帝视角显示身份（上帝模式 / 玩家已死亡转上帝视角 / 天意已结束）
+function isGodView(){
+  return game.mode==='god' || game.playerDied || (game.mode==='destiny'&&game.destiny===null);
+}
+
 async function markDeath(player, day, cause) {
   // 首先标记死亡状态
   player.deathDay = day;
@@ -1377,6 +1382,7 @@ async function markDeath(player, day, cause) {
     const option = await showDestinyDeathPanel();
     if(option === 'god'){
       game.destiny = null; // 转为上帝视角，可见所有人身份
+      game.destinyGodView = true; // 标记天意已转上帝视角
       addLog('<span style="color:#9b59b6">【天意失败】你已转为上帝视角，继续观看游戏但无法干预。</span>');
       renderPlayers();
       refreshLog();
@@ -2138,7 +2144,7 @@ function init(optPlayer){
     witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
     scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
     hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
-    wolfScriptCompliance:{}, claimedPlayers:new Set(), playerClaims:{}, destiny:null, destinyEffects:{},
+    wolfScriptCompliance:{}, claimedPlayers:new Set(), playerClaims:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
     _confirmCallback:null, _pausedBySettings:false, _pausedByFavor:false,
     pendingSpeechResolve:null, pendingVoteResolve:null, pendingNightResolve:null,
     pendingDestinyResolve:null, player:null, playerId:null, playerDied:false,
@@ -2183,6 +2189,9 @@ function init(optPlayer){
 
   if(game.mode!=='destiny' || game.destiny!==null){
     renderPlayers();
+  } else {
+    // 天意模式未选附体：清除上一局的旧网格，防止上帝视角残留
+    document.getElementById("playerGrid").innerHTML = '';
   }
   initFavor();
   console.log('[init] done, playerId=' + game.playerId + ' playerClaims=' + JSON.stringify(game.playerClaims));
@@ -2303,16 +2312,28 @@ function renderPlayers(){
         if(!visibleRoleIds.includes(p.id)) visibleRoleIds.push(p.id);
       });
     }
-  } else if(game.mode==='destiny' && game.destiny!==null){
-    hideRoles = true;
-    const destinyChar = game.players[game.destiny];
-    if(destinyChar){
-      visibleRoleIds.push(game.destiny);
-      // 如果附体角色是狼人，显示所有狼人身份
-      if(destinyChar.alive && destinyChar.role==='wolf'){
-        game.players.filter(p=>p.role==='wolf').forEach(p=>{
-          if(!visibleRoleIds.includes(p.id)) visibleRoleIds.push(p.id);
-        });
+  } else if(game.mode==='destiny'){
+    if(game.destinyGodView){
+      // 天意死后转上帝视角：显示所有身份
+      hideRoles = false;
+    } else if(game.destiny === null){
+      // 天意模式未选附体：隐藏所有身份
+      hideRoles = true;
+    } else {
+      hideRoles = true;
+      const destinyChar = game.players[game.destiny];
+      if(destinyChar){
+        visibleRoleIds.push(game.destiny);
+        // 如果附体角色是狼人，显示所有狼人身份
+        if(destinyChar.alive && destinyChar.role==='wolf'){
+          game.players.filter(p=>p.role==='wolf').forEach(p=>{
+            if(!visibleRoleIds.includes(p.id)) visibleRoleIds.push(p.id);
+          });
+        }
+        // 附体角色已死且未转上帝视角：显示所有身份
+        if(!destinyChar.alive){
+          hideRoles = false;
+        }
       }
     }
   }
@@ -3153,7 +3174,8 @@ async function dayPhase(deaths){
       const p=game.players[d.id];
       await markDeath(p, game.day, d.cause);
       const causeText=d.cause==="wolf"?"被狼人杀害":d.cause==="poison"?"被女巫毒杀":"死亡";
-      addLog(`<span class="death-text">${p.name}（${p.faction}·${ROLE_CFG[p.role].name}）昨夜${causeText}了！</span>`);
+      const roleText = isGodView() ? `（${p.faction}·${ROLE_CFG[p.role].name}）` : '';
+      addLog(`<span class="death-text">${p.name}${roleText}昨夜${causeText}了！</span>`);
       addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${p.name}遗言：${generateLastWords(p)}"</span>`);
       // Hunter shoot
       if(p.role==="hunter"&&d.cause!=="poison"){
@@ -3170,7 +3192,8 @@ async function dayPhase(deaths){
         }
         if(target){
           await markDeath(target, game.day, "hunter");
-          addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}（${ROLE_CFG[target.role].name}）！</span>`);
+          const targetRoleText = isGodView() ? `（${ROLE_CFG[target.role].name}）` : '';
+          addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}${targetRoleText}！</span>`);
           if(target.role==="hunter"&&getAlive().find(pp=>pp.role==="hunter"&&pp.id!==p.id)){/* chain handled */}
         }
       }
@@ -4195,7 +4218,7 @@ async function votePhase(){
   if(maxId!==null){
     const exiled=game.players[maxId];
     await markDeath(exiled, game.day, "vote");
-    addLog(`<span class="death-text" style="font-size:15px">${exiled.name}（${ROLE_CFG[exiled.role].name}）以${maxVotes}票被放逐！</span>`);
+    addLog(`<span class="death-text" style="font-size:15px">${exiled.name}以${maxVotes}票被放逐！</span>`);
     await delay(500);
     addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled)}"</span>`);
     await delay(500);
@@ -4215,7 +4238,8 @@ async function votePhase(){
       }
       if(ht){
         await markDeath(ht, game.day, "hunter");
-        addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}（${ROLE_CFG[ht.role].name}）！</span>`);
+        const htRoleText = isGodView() ? `（${ROLE_CFG[ht.role].name}）` : '';
+        addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}${htRoleText}！</span>`);
       }
     }
   }
@@ -4364,6 +4388,7 @@ function savePlayerGame(){
       playerDied: game.playerDied,
       destiny: game.destiny,
       destinyEnded: game.destinyEnded,
+      destinyGodView: game.destinyGodView,
       destinyEffects: game.destinyEffects,
       wolfTarget: game.wolfTarget,
       seerTarget: game.seerTarget,
@@ -5022,7 +5047,7 @@ function showNightPanel(type, data){
     if(type === 'guard'){
       titleEl.textContent = '🛡️ 守卫行动';
       hintEl.textContent = '选择今晚要守护的人（不能连续守护同一人）';
-      infoEl.textContent = data.info || '';
+      infoEl.innerHTML = data.info || '';
       optEl.innerHTML = `<div class="night-player-grid">${
         (data.targets||[]).map(p =>
           `<div class="night-player-card" data-id="${p.id}" onclick="selectNightTarget(${p.id})">
@@ -5035,7 +5060,7 @@ function showNightPanel(type, data){
     else if(type === 'wolf'){
       titleEl.textContent = '🐺 狼人行动';
       hintEl.textContent = '选择今晚要击杀的目标';
-      infoEl.textContent = data.info || '';
+      infoEl.innerHTML = data.info || '';
       optEl.innerHTML = `<div class="night-player-grid">${
         (data.targets||[]).map(p =>
           `<div class="night-player-card" data-id="${p.id}" onclick="selectNightTarget(${p.id})">
@@ -5048,7 +5073,7 @@ function showNightPanel(type, data){
     else if(type === 'seer'){
       titleEl.textContent = '🔮 预言家行动';
       hintEl.textContent = '选择今晚要查验的人';
-      infoEl.textContent = data.info || '';
+      infoEl.innerHTML = data.info || '';
       optEl.innerHTML = `<div class="night-player-grid">${
         (data.targets||[]).map(p =>
           `<div class="night-player-card" data-id="${p.id}" onclick="selectNightTarget(${p.id})">
@@ -5060,24 +5085,37 @@ function showNightPanel(type, data){
     }
     else if(type === 'witch'){
       titleEl.textContent = '🧪 女巫行动';
-      hintEl.textContent = '选择要救的人或要毒的人';
-      infoEl.textContent = data.info || '';
-      let html = '<div class="night-action-row">';
+      hintEl.textContent = '可以选择使用解药、使用毒药，或按兵不动';
+      infoEl.innerHTML = data.info || '';
+      let html = '';
+      // 解药区域（独立）
       if(data.canSave){
-        html += `<div class="night-action-btn" data-action="save" onclick="selectNightTarget(\'save\')">💊 使用解药救${(data.victimName||'')}</div>`;
+        html += `<div class="night-action-row" style="margin-bottom:10px">
+          <div style="color:var(--gray);font-size:12px;margin-bottom:4px">解药（救今夜被杀的人）</div>
+          <div class="night-action-btn" data-action="save" onclick="selectNightTarget('save')">💊 使用解药救${data.victimName||'受害者'}</div>
+        </div>`;
+      } else {
+        html += `<div style="color:var(--gray);font-size:12px;margin-bottom:8px">解药已用完</div>`;
       }
-      html += `<div class="night-action-btn" data-action="skip" onclick="selectNightTarget(\'skip\')">⏭ 按兵不动</div>`;
-      html += '</div>';
+      // 毒药区域（独立，不受解药状态影响）
       if(data.poisonTargets && data.poisonTargets.length > 0){
-        html += `<div class="night-player-grid">${
-          data.poisonTargets.map(p =>
-            `<div class="night-player-card" data-id="${p.id}" data-action="poison" onclick="selectNightTarget(\'poison\',${p.id})">
-              <img src="${getImgSrc(p)}" onerror="this.style.display='none'">
-              <div>${p.name}</div>
-            </div>`
-          ).join('')
-        }</div>`;
+        html += `<div class="night-action-row">
+          <div style="color:var(--gray);font-size:12px;margin-bottom:4px">毒药（第2晚起可用）</div>
+          <div class="night-player-grid">${
+            data.poisonTargets.map(p =>
+              `<div class="night-player-card" data-id="${p.id}" data-action="poison" onclick="selectNightTarget('poison',${p.id})">
+                <img src="${getImgSrc(p)}" onerror="this.style.display='none'">
+                <div>${p.name}</div>
+              </div>`
+            ).join('')
+          }</div>
+        </div>`;
+      } else {
+        html += `<div style="color:var(--gray);font-size:12px;">毒药已用完</div>`;
       }
+      html += `<div class="night-action-row" style="margin-top:10px">
+        <div class="night-action-btn" data-action="skip" onclick="selectNightTarget('skip')">⏭ 按兵不动</div>
+      </div>`;
       optEl.innerHTML = html;
     }
 
