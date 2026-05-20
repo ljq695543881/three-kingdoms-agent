@@ -4717,23 +4717,41 @@ function showInfoActions(role){
   const container = document.getElementById('infoActions');
   let html = '';
   if(role === 'seer'){
-    const alive = getAlive().filter(p=>p.id!==game.playerId);
+    // 预言家：显示所有存活玩家（含自己），以及昨晚验的人（可能已死）
+    let targets = getAlive().filter(p=>p.id!==game.playerId);
+    const lastCheck = game.seerChecks && game.seerChecks.length > 0 ? game.seerChecks[game.seerChecks.length-1] : null;
+    if(lastCheck){
+      const lastTarget = game.players[lastCheck.targetId];
+      if(lastTarget && !lastTarget.alive && !targets.find(p=>p.id===lastCheck.targetId)){
+        targets = [...targets, lastTarget];
+      }
+    }
+    targets = [game.players[game.playerId], ...targets];
     html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知验人信息：</div>';
-    html += alive.map(p=>
+    html += targets.map(p=>
       `<button class="info-act-btn" onclick="selectInfoAction('seer','result',${p.id},'wolf')">${p.name}是狼人</button>` +
       `<button class="info-act-btn" onclick="selectInfoAction('seer','result',${p.id},'good')">${p.name}是好人</button>`
     ).join('');
   } else if(role === 'witch'){
-    const alive = getAlive().filter(p=>p.id!==game.playerId);
+    // 女巫：显示所有存活玩家（含自己），以及昨晚毒的人（可能已死）
+    let targets = getAlive().filter(p=>p.id!==game.playerId);
+    if(game.witchPoisonTarget){
+      const poisonTarget = game.players[game.witchPoisonTarget];
+      if(poisonTarget && !poisonTarget.alive && !targets.find(p=>p.id===game.witchPoisonTarget)){
+        targets = [...targets, poisonTarget];
+      }
+    }
+    targets = [game.players[game.playerId], ...targets];
     html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知用药信息：</div>';
-    html += alive.map(p=>
+    html += targets.map(p=>
       `<button class="info-act-btn" onclick="selectInfoAction('witch','save',${p.id})">救了${p.name}</button>` +
       `<button class="info-act-btn" onclick="selectInfoAction('witch','poison',${p.id})">毒了${p.name}</button>`
     ).join('');
   } else if(role === 'guard'){
-    const alive = getAlive().filter(p=>p.id!==game.playerId);
+    // 守卫：显示所有存活玩家（含自己）
+    const targets = [game.players[game.playerId], ...getAlive().filter(p=>p.id!==game.playerId)];
     html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知守人信息：</div>';
-    html += alive.map(p=>
+    html += targets.map(p=>
       `<button class="info-act-btn" onclick="selectInfoAction('guard','guard',${p.id})">守了${p.name}</button>`
     ).join('');
   }
