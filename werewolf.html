@@ -465,6 +465,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
         <span class="st-icon">🛡️</span>
         <span class="st-label">袒护某人</span>
       </button>
+      <button class="speech-type-btn" onclick="selectSpeechType('info')" id="st-info" style="display:none">
+        <span class="st-icon">📊</span>
+        <span class="st-label">告知信息</span>
+      </button>
     </div>
     <div class="speech-target-row" id="speechTargetRow">
       <select id="speechTargetSel" onchange="onSpeechTargetChange()"></select>
@@ -1564,7 +1568,7 @@ function classifySpeech(speech, speaker, alive) {
     }
   }
   // 跳身份后记入 claimedPlayers（永久，之后不可划水）
-  if (claimedRole && game.claimedPlayers) game.claimedPlayers.add(speaker.id);
+  if (claimedRole && game.claimedPlayers) { game.claimedPlayers.add(speaker.id); game.playerClaims[speaker.id] = claimedRole; }
 
   // ===== 规则②：已跳身份的玩家不允许划水，此检查仅在最终 fallback 时生效 =====
 
@@ -1870,7 +1874,7 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
   return changes;
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),destiny:null};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),playerClaims:{},destiny:null};
 
 function openSettings(){
   document.getElementById('settingsOverlay').classList.remove('hide');
@@ -2103,6 +2107,10 @@ function delay(ms){
 }
 
 function init(optPlayer){
+  // 防御性清空：防止任何形式的旧数据残留
+  if(game && game.playerClaims) { game.playerClaims = {}; console.log('[init] cleared old playerClaims'); }
+  if(game && game.claimedPlayers && game.claimedPlayers.clear) { game.claimedPlayers.clear(); }
+  console.log('[init] start, game.playerId=', game ? game.playerId : '?');
   document.getElementById('logArea').innerHTML='';
   // 清理所有覆盖层和面板，防止旧局残留
   document.getElementById('endScreen').classList.remove('show');
@@ -2130,7 +2138,7 @@ function init(optPlayer){
     witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
     scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
     hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
-    wolfScriptCompliance:{}, claimedPlayers:new Set(), destiny:null, destinyEffects:{},
+    wolfScriptCompliance:{}, claimedPlayers:new Set(), playerClaims:{}, destiny:null, destinyEffects:{},
     _confirmCallback:null, _pausedBySettings:false, _pausedByFavor:false,
     pendingSpeechResolve:null, pendingVoteResolve:null, pendingNightResolve:null,
     pendingDestinyResolve:null, player:null, playerId:null, playerDied:false,
@@ -2177,6 +2185,7 @@ function init(optPlayer){
     renderPlayers();
   }
   initFavor();
+  console.log('[init] done, playerId=' + game.playerId + ' playerClaims=' + JSON.stringify(game.playerClaims));
   showStartModal();
 }
 
@@ -4329,6 +4338,7 @@ function continueGame(){
     // 将 spokenToday / claimedPlayers 从 Array 转回 Set（JSON 不支持 Set 类型）
     if(Array.isArray(game.spokenToday)) game.spokenToday = new Set(game.spokenToday);
     if(Array.isArray(game.claimedPlayers)) game.claimedPlayers = new Set(game.claimedPlayers);
+    if(data.playerClaims) game.playerClaims = data.playerClaims;
     document.getElementById('playerModeSelect').classList.add('hide');
     renderPlayers();
     showStartModal();
@@ -4371,7 +4381,8 @@ function savePlayerGame(){
       speeches: game.speeches,
       logs: game.logs,
       spokenToday: [...game.spokenToday],
-      claimedPlayers: [...game.claimedPlayers]
+      claimedPlayers: [...game.claimedPlayers],
+      playerClaims: {...game.playerClaims}
     },
     timestamp: Date.now()
   };
@@ -4513,6 +4524,24 @@ function resetSpeechPanel(){
   document.getElementById('fragmentCount').textContent = '0';
   document.getElementById('speechPreview').textContent = '请先选择发言类型…';
   document.getElementById('speechConfirmBtn').disabled = true;
+  // 根据是否已跳身份设置"跳身份"和"告知信息"按钮的可见性
+  const _myClaim = game.playerClaims[game.playerId];
+  console.log('[resetSpeechPanel] playerId=' + game.playerId + ' playerClaims=' + JSON.stringify(game.playerClaims) + ' _myClaim=' + _myClaim);
+  // "跳身份"按钮：未跳时显示
+  if(_myClaim){
+    const stClaimBtn = document.getElementById('st-claim');
+    if(stClaimBtn) stClaimBtn.style.display = 'none';
+  } else {
+    const stClaimBtn = document.getElementById('st-claim');
+    if(stClaimBtn) stClaimBtn.style.display = '';
+  }
+  // "告知信息"按钮：已跳且角色可告知时显示
+  const infoBtn = document.getElementById('st-info');
+  if(_myClaim && (_myClaim === 'seer' || _myClaim === 'witch' || _myClaim === 'guard')){
+    if(infoBtn) infoBtn.style.display = '';
+  } else {
+    if(infoBtn) infoBtn.style.display = 'none';
+  }
 }
 
 function renderFragments(){
@@ -4577,6 +4606,14 @@ function selectSpeechType(type){
   // 检查是否已满3个
   if(_speechFragments.length >= 3) return;
 
+  if(type === 'info'){
+    const myClaim = game.playerClaims[game.playerId];
+    if(myClaim){
+      showInfoActions(myClaim);
+    }
+    return;
+  }
+
   if(type === 'claim'){
     // 显示角色选择
     showClaimRoleSelection();
@@ -4611,6 +4648,11 @@ function selectClaimRole(role){
   });
   // 添加 claim 片段
   _speechFragments.push({type:'claim', role});
+  // 记录玩家跳的身份（全局只跳一次）
+  game.claimedPlayers.add(game.playerId);
+  game.playerClaims[game.playerId] = role;
+  // 隐藏"跳身份"按钮（已跳过）
+  document.getElementById('st-claim').style.display = 'none';
   // 如果角色是预言家/女巫/守卫，显示"告知信息"按钮
   if(role === 'seer' || role === 'witch' || role === 'guard'){
     showInfoActions(role);
@@ -4649,6 +4691,7 @@ function showInfoActions(role){
       `<button class="info-act-btn" onclick="selectInfoAction('guard','guard',${p.id})">守了${p.name}</button>`
     ).join('');
   }
+  console.log('[showInfoActions] role=' + role + ' container.innerHTML set, speechInfoRow shown');
   container.innerHTML = html;
   document.getElementById('speechInfoRow').classList.add('show');
 }
@@ -4658,8 +4701,12 @@ function selectInfoAction(role, action, targetId, result){
   if(result) frag.infoResult = result;
   _speechFragments.push(frag);
   renderFragments();
-  // 隐藏信息选择行
-  document.getElementById('speechInfoRow').classList.remove('show');
+  // 如果未满3个片段，保持"告知信息"按钮可用；否则隐藏
+  if(_speechFragments.length < 3){
+    showInfoActions(role);
+  } else {
+    document.getElementById('speechInfoRow').classList.remove('show');
+  }
 }
 
 function showSpeechTargetSelection(type){
@@ -4673,6 +4720,13 @@ function showSpeechTargetSelection(type){
     alive.map(p=>`<option value="${p.id}">${p.name}（${p.faction}）</option>`).join('');
   sel.value = '';
   document.getElementById('speechConfirmBtn').disabled = true;
+  // 根据是否已跳身份设置"跳身份"按钮的可见性
+  const _myClaim = game.playerClaims[game.playerId];
+  if(_myClaim){
+    document.getElementById('st-claim').style.display = 'none';
+  } else {
+    document.getElementById('st-claim').style.display = '';
+  }
 }
 
 function onSpeechTargetChange(){
@@ -4781,7 +4835,9 @@ function confirmPlayerSpeech(){
 function showSpeechPanel(){
   return new Promise(resolve => {
     game.pendingSpeechResolve = resolve;
+    console.log('[showSpeechPanel] entry, playerId=' + game.playerId);
     resetSpeechPanel();
+    // "跳身份"和"告知信息"按钮的可见性由 resetSpeechPanel 统一处理
     document.getElementById('speechPanel').classList.remove('hide');
   });
 }
@@ -4889,6 +4945,7 @@ function closeConfirm(){
 
 // ===== 设置面板操作 =====
 function confirmRestart(){
+  game.playerClaims = {};  // 清空跳身份记录（防止再来一局时残留）
   executeConfirm();
   document.getElementById('settingsOverlay').classList.add('hide');
   // 保存玩家信息，用于重新初始化
@@ -4916,6 +4973,10 @@ function backToTitle(){
   showTitle();
 }
 function retryGame(){
+  console.log('[retryGame] ENTRY, playerClaims before clear=', JSON.stringify(game?game.playerClaims:'?'));
+  if(game) game.playerClaims = {};
+  // 强制同步清空（防止引用残留）
+  try { game.playerClaims = {}; } catch(e){}
   // 保存玩家信息，用于重试时重新初始化
   let keepPlayer = null;
   if(game.mode==='player' && game.playerId!=null){
@@ -4927,6 +4988,15 @@ function retryGame(){
   document.getElementById('modalArea').innerHTML='';
   document.getElementById('endScreen').classList.remove('show');
   init(keepPlayer);
+  // 强制修复按钮状态（绕过 playerClaims 残留问题）
+  setTimeout(()=>{
+    const stClaim = document.getElementById('st-claim');
+    const stInfo = document.getElementById('st-info');
+    if(stClaim) stClaim.style.display = '';
+    if(stInfo) stInfo.style.display = 'none';
+    console.log('[retryGame] forceResetButtons: st-claim display=', stClaim?stClaim.style.display:'null', ', st-info display=', stInfo?stInfo.style.display:'null');
+  }, 200);
+  console.log('[retryGame] AFTER init, playerClaims=', JSON.stringify(game.playerClaims), 'playerId=', game.playerId);
 }
 
 // ===== 初始化角色创建面板 =====
