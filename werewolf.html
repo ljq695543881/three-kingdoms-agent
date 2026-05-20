@@ -31,6 +31,13 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .p-card .faction{font-size:10px;color:var(--gray)}
 .p-card .role-badge{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
 .p-card .status-icon{position:absolute;top:4px;left:4px;font-size:10px}
+.p-card .player-tag{position:absolute;top:-2px;right:-2px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:6px;line-height:1.4;pointer-events:auto;cursor:pointer;z-index:10}
+.p-card .player-tag.tag-wolf{background:var(--wolf);color:#fff}
+.p-card .player-tag.tag-seer{background:var(--seer);color:#fff}
+.p-card .player-tag.tag-witch{background:var(--witch);color:#fff}
+.p-card .player-tag.tag-hunter{background:var(--hunter);color:#fff}
+.p-card .player-tag.tag-guard{background:var(--guard);color:#fff}
+.p-card .player-tag.tag-villager{background:var(--villager);color:#fff}
 .faction-wei .avatar{background:linear-gradient(135deg,#1a5276,#2980b9)}
 .faction-shu .avatar{background:linear-gradient(135deg,#145a32,#27ae60)}
 .faction-wu .avatar{background:linear-gradient(135deg,#7d3c98,#a569bd)}
@@ -1880,7 +1887,7 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
   return changes;
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),playerClaims:{},destiny:null};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),playerClaims:{},playerTags:{},destiny:null};
 
 function openSettings(){
   document.getElementById('settingsOverlay').classList.remove('hide');
@@ -2144,7 +2151,7 @@ function init(optPlayer){
     witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
     scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
     hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
-    wolfScriptCompliance:{}, claimedPlayers:new Set(), playerClaims:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
+    wolfScriptCompliance:{}, claimedPlayers:new Set(), playerClaims:{}, playerTags:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
     _confirmCallback:null, _pausedBySettings:false, _pausedByFavor:false,
     pendingSpeechResolve:null, pendingVoteResolve:null, pendingNightResolve:null,
     pendingDestinyResolve:null, player:null, playerId:null, playerDied:false,
@@ -2348,9 +2355,15 @@ function renderPlayers(){
     const meBadge = isMe ? '<div style="font-size:9px;color:var(--gold);font-weight:700">★ 你</div>' : '';
     const isDestinyMe = game.mode==='destiny' && p.id===game.destiny;
     const destinyBadge = isDestinyMe ? '<div style="font-size:9px;color:#9b59b6;font-weight:700">★ 附体</div>' : '';
+    // 玩家标签
+    const tagMap = {'wolf':'狼人','seer':'预言家','witch':'女巫','hunter':'猎人','guard':'守卫','villager':'平民'};
+    const tagClassMap = {'wolf':'tag-wolf','seer':'tag-seer','witch':'tag-witch','hunter':'tag-hunter','guard':'tag-guard','villager':'tag-villager'};
+    const myTag = game.playerTags && game.playerTags[p.id];
+    const tagHtml = myTag && myTag!=='none' ? `<div class="player-tag ${tagClassMap[myTag]||''}">${tagMap[myTag]||''}</div>` : '';
     return `<div class="p-card ${fc} ${p.alive?"":"dead"}" id="pc${p.id}" onclick="onPlayerClick(${p.id})">
       ${!p.alive?'<div class="status-icon" style="color:var(--red)">X</div>':''}
       <div class="avatar"><img src="${imgSrc}" onerror="this.parentElement.innerHTML='${p.name[0]}'" alt="${p.name}"></div>
+      ${tagHtml}
       <div class="name">${p.name}</div>
       <div class="faction">${p.faction}</div>
       ${roleDiv}
@@ -4302,6 +4315,12 @@ function onPlayerClick(id){
   if(game.isProcessing)return;
   const p=game.players[id];
   if(!p.alive)return;
+  // 玩家模式：点击角色卡片弹出标签选择面板
+  if(game.mode==='player' && !game.playerDied){
+    showTagPanel(id);
+    return;
+  }
+  // 其他模式：原选中逻辑
   document.querySelectorAll(".p-card").forEach(c=>c.classList.remove("selected"));
   document.getElementById("pc"+id).classList.add("selected");
   game.selectedPlayer=id;
@@ -4363,6 +4382,7 @@ function continueGame(){
     if(Array.isArray(game.spokenToday)) game.spokenToday = new Set(game.spokenToday);
     if(Array.isArray(game.claimedPlayers)) game.claimedPlayers = new Set(game.claimedPlayers);
     if(data.playerClaims) game.playerClaims = data.playerClaims;
+    if(data.playerTags) game.playerTags = data.playerTags;
     document.getElementById('playerModeSelect').classList.add('hide');
     renderPlayers();
     showStartModal();
@@ -4407,7 +4427,8 @@ function savePlayerGame(){
       logs: game.logs,
       spokenToday: [...game.spokenToday],
       claimedPlayers: [...game.claimedPlayers],
-      playerClaims: {...game.playerClaims}
+      playerClaims: {...game.playerClaims},
+      playerTags: {...game.playerTags}
     },
     timestamp: Date.now()
   };
@@ -5000,6 +5021,7 @@ function backToTitle(){
 function retryGame(){
   console.log('[retryGame] ENTRY, playerClaims before clear=', JSON.stringify(game?game.playerClaims:'?'));
   if(game) game.playerClaims = {};
+  if(game) game.playerTags = {};
   // 强制同步清空（防止引用残留）
   try { game.playerClaims = {}; } catch(e){}
   // 保存玩家信息，用于重试时重新初始化
@@ -5195,6 +5217,47 @@ function showEndScreen(){
 
 // 页面加载时显示标题画面，由用户选择模式
 showTitle();
+
+// ===== 玩家标签选择面板 =====
+let _tagTargetId = null;
+function showTagPanel(playerId){
+  const p = game.players[playerId];
+  if(!p) return;
+  _tagTargetId = playerId;
+  const tagMap = {'wolf':'狼人','seer':'预言家','witch':'女巫','hunter':'猎人','guard':'守卫','villager':'平民','none':'无'};
+  const tagColors = {'wolf':'var(--wolf)','seer':'var(--seer)','witch':'var(--witch)','hunter':'var(--hunter)','guard':'var(--guard)','villager':'var(--villager)','none':'rgba(255,255,255,0.2)'};
+  const currentTag = game.playerTags && game.playerTags[playerId] ? game.playerTags[playerId] : 'none';
+  let html = `<div class="modal-overlay" onclick="closeTagPanel(event)"><div class="modal tag-modal">
+    <h3 style="margin:0 0 10px 0;font-size:15px">给 ${p.name} 打标签</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+      ${Object.keys(tagMap).map(k=>
+        `<button class="tag-option-btn ${k===currentTag?'tag-selected':''}" data-tag="${k}" onclick="selectPlayerTag('${k}')"
+          style="padding:8px 16px;border-radius:8px;border:2px solid ${k===currentTag?tagColors[k]:'rgba(255,255,255,0.2)'};background:${tagColors[k]};color:#fff;font-weight:700;cursor:pointer;font-size:13px">
+          ${tagMap[k]}
+        </button>`
+      ).join('')}
+    </div>
+    <button style="margin-top:14px;padding:6px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:var(--gray);cursor:pointer;font-size:12px" onclick="closeTagPanel()">取消</button>
+  </div></div>`;
+  document.getElementById('modalArea').innerHTML = html;
+}
+function closeTagPanel(event){
+  if(event && event.target !== event.currentTarget) return;
+  document.getElementById('modalArea').innerHTML = '';
+  _tagTargetId = null;
+}
+function selectPlayerTag(tag){
+  if(_tagTargetId === null) return;
+  if(!game.playerTags) game.playerTags = {};
+  if(tag === 'none'){
+    delete game.playerTags[_tagTargetId];
+  } else {
+    game.playerTags[_tagTargetId] = tag;
+  }
+  renderPlayers();
+  document.getElementById('modalArea').innerHTML = '';
+  _tagTargetId = null;
+}
 </script>
 </body>
 </html>
