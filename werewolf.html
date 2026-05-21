@@ -1785,7 +1785,7 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
   return changes;
 }
 
-let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},speed:1,claimedPlayers:new Set(),playerClaims:{},playerTags:{},destiny:null};
+let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},wolfRoles:{},speed:1,claimedPlayers:new Set(),playerClaims:{},playerTags:{},destiny:null};
 
 function openSettings(){
   document.getElementById('settingsOverlay').classList.remove('hide');
@@ -2049,7 +2049,7 @@ function init(optPlayer){
     witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
     scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
     hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
-    wolfScriptCompliance:{}, claimedPlayers:new Set(), playerClaims:{}, playerTags:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
+    wolfScriptCompliance:{}, wolfRoles:{}, claimedPlayers:new Set(), playerClaims:{}, playerTags:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
     _confirmCallback:null, _pausedBySettings:false, _pausedByFavor:false,
     pendingSpeechResolve:null, pendingVoteResolve:null, pendingNightResolve:null,
     pendingDestinyResolve:null, player:null, playerId:null, playerDied:false,
@@ -2540,6 +2540,10 @@ async function player_wolfAction(){
   // 政治+智谋最高 = 剧本策划者
   const scriptMaster=wolves.reduce((b,w) => attrScore(w,'政治','智谋') > attrScore(b,'政治','智谋') ? w : b);
   game.scriptMasterId = scriptMaster.id;
+  // 第一天晚上分配狼角色（只在还没分配过时执行一次）
+  if (Object.keys(game.wolfRoles).length === 0) {
+    assignWolfRoles(scriptMaster, wolves);
+  }
   await delay(800);
 
   // ===== 第一步：军师开场定调（提目标 + 抛出剧本 + 投票建议）=====
@@ -2637,6 +2641,17 @@ async function player_wolfAction(){
     compliance = Math.max(0.3, Math.min(0.95, compliance));  // 最低30%服从，保留一定内讧
     const follows=Math.random()<compliance;
     game.wolfScriptCompliance[wolf.id]=follows;
+    // 不服从剧本的狼：自己选一个角色（覆盖分配）
+    if(!follows){
+      const roleKeys=['chantJump','charge','deepWater','hook'];
+      const roleNames={chantJump:'悍跳狼',charge:'冲锋狼',deepWater:'深水狼',hook:'倒钩狼'};
+      // 不选自己已分配的角色（增加变化）
+      const assigned=game.wolfRoles[wolf.id]||'';
+      const candidates=roleKeys.filter(r=>r!=assigned);
+      const chosen=candidates.length>0?pick(candidates):pick(roleKeys);
+      game.wolfRoles[wolf.id]=chosen;
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}俺要当${roleNames[chosen]}！`,'wolf');
+    }
     const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
         addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
     await delay(500);
@@ -2660,6 +2675,10 @@ async function ai_wolfAction(){
   // 政治+智谋最高 = 剧本策划者
   const scriptMaster=wolves.reduce((b,w) => attrScore(w,'政治','智谋') > attrScore(b,'政治','智谋') ? w : b);
   game.scriptMasterId = scriptMaster.id;
+  // 第一天晚上分配狼角色（只在还没分配过时执行一次）
+  if (Object.keys(game.wolfRoles).length === 0) {
+    assignWolfRoles(scriptMaster, wolves);
+  }
     addLog('<span class="system-text">🐺 狼人密议开始……</span>','wolf');
   await delay(800);
 
@@ -2758,6 +2777,17 @@ async function ai_wolfAction(){
     compliance = Math.max(0.3, Math.min(0.95, compliance));  // 最低30%服从，保留一定内讧
     const follows=Math.random()<compliance;
     game.wolfScriptCompliance[wolf.id]=follows;
+    // 不服从剧本的狼：自己选一个角色（覆盖分配）
+    if(!follows){
+      const roleKeys=['chantJump','charge','deepWater','hook'];
+      const roleNames={chantJump:'悍跳狼',charge:'冲锋狼',deepWater:'深水狼',hook:'倒钩狼'};
+      // 不选自己已分配的角色（增加变化）
+      const assigned=game.wolfRoles[wolf.id]||'';
+      const candidates=roleKeys.filter(r=>r!=assigned);
+      const chosen=candidates.length>0?pick(candidates):pick(roleKeys);
+      game.wolfRoles[wolf.id]=chosen;
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}俺要当${roleNames[chosen]}！`,'wolf');
+    }
     const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
         addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
     await delay(500);
@@ -2818,6 +2848,47 @@ function wolfProposeTarget(wolf, targets) {
   }
   
   return { wolfId: wolf.id, target };
+}
+
+// 狼军师第一天晚上分配狼角色（悍跳狼/冲锋狼/深水狼/倒钩狼）
+function assignWolfRoles(scriptMaster, wolves) {
+  const aliveWolves = [...wolves];
+  const roleNames = { chantJump: '悍跳狼', charge: '冲锋狼', deepWater: '深水狼', hook: '倒钩狼' };
+
+  // 1. 悍跳狼：智谋最高的狼（负责第一天跳预言家）
+  aliveWolves.sort((a, b) => getAttr(b, '智谋') - getAttr(a, '智谋'));
+  const chantJump = aliveWolves.shift();
+  game.wolfRoles[chantJump.id] = 'chantJump';
+
+  // 2. 倒钩狼：魅力最高的剩余狼（负责站边真预言家）
+  if (aliveWolves.length > 0) {
+    let bestHookIdx = 0;
+    for (let i = 1; i < aliveWolves.length; i++) {
+      if (getAttr(aliveWolves[i], '魅力') > getAttr(aliveWolves[bestHookIdx], '魅力')) {
+        bestHookIdx = i;
+      }
+    }
+    const hook = aliveWolves.splice(bestHookIdx, 1)[0];
+    game.wolfRoles[hook.id] = 'hook';
+  }
+
+  // 3. 深水狼：剩余狼中随机选一个（负责伪装成平民）
+  if (aliveWolves.length > 0) {
+    const idx = Math.floor(Math.random() * aliveWolves.length);
+    const deepWater = aliveWolves.splice(idx, 1)[0];
+    game.wolfRoles[deepWater.id] = 'deepWater';
+  }
+
+  // 4. 冲锋狼：剩余所有狼（负责跟随悍跳狼）
+  for (const w of aliveWolves) {
+    game.wolfRoles[w.id] = 'charge';
+  }
+
+  // 记录日志（狼人密议中可见）
+  for (const [wolfId, role] of Object.entries(game.wolfRoles)) {
+    const wolf = game.players[wolfId];
+    addLog(`${speakerHTML(wolf, '<span style="color:var(--red)">【狼人角色分配】' + wolf.name + '</span>')} → ${roleNames[role]}`, 'wolf');
+  }
 }
 
 // 剧本策划者生成明日剧本
@@ -4298,6 +4369,7 @@ function continueGame(){
     if(Array.isArray(game.claimedPlayers)) game.claimedPlayers = new Set(game.claimedPlayers);
     if(data.playerClaims) game.playerClaims = data.playerClaims;
     if(data.playerTags) game.playerTags = data.playerTags;
+    if(data.wolfRoles) game.wolfRoles = data.wolfRoles;
     document.getElementById('playerModeSelect').classList.add('hide');
     renderPlayers();
     showStartModal();
@@ -4343,7 +4415,8 @@ function savePlayerGame(){
       spokenToday: [...game.spokenToday],
       claimedPlayers: [...game.claimedPlayers],
       playerClaims: {...game.playerClaims},
-      playerTags: {...game.playerTags}
+      playerTags: {...game.playerTags},
+      wolfRoles: {...game.wolfRoles}
     },
     timestamp: Date.now()
   };
@@ -4818,14 +4891,167 @@ function fragmentsToClassified(fragments) {
 
 // ===== NPC 多片段发言构建 =====
 function buildWolfFragments(wolf, alive, wolves, script, followsScript, ctx, spokenSet) {
+  // 根据狼人角色分发到专属函数
+  const role = game.wolfRoles[wolf.id] || 'charge';
+  if (role === 'chantJump') return buildChantJumpFragments(wolf, alive, ctx, spokenSet);
+  if (role === 'charge')     return buildChargeFragments(wolf, alive, wolves, ctx, spokenSet);
+  if (role === 'deepWater')  return buildDeepWaterFragments(wolf, alive, ctx, spokenSet);
+  if (role === 'hook')       return buildHookFragments(wolf, alive, ctx, spokenSet);
+  // 兜底：默认攻击行为
   const fragments = [];
   const innocents = alive.filter(x => x.role !== "wolf" && x.id !== wolf.id);
   if (innocents.length === 0) return [{ type: 'conservative' }];
-  // 目标选择：优先不同阵营
-  const diffFaction = innocents.filter(t => t.faction !== wolf.faction);
-  const target = diffFaction.length > 0 && Math.random() < 0.6 ? pick(diffFaction) : pick(innocents);
-  // 狼人：直接 attack
-  fragments.push({ type: 'attack', targetId: target.id });
+  fragments.push({ type: 'attack', targetId: pick(innocents).id });
+  return fragments;
+}
+
+// ===== 悍跳狼发言：第一天跳预言家，报查验（无要求，可真可假）=====
+function buildChantJumpFragments(wolf, alive, ctx, spokenSet) {
+  const fragments = [];
+  const goodAlive = alive.filter(p => p.role !== 'wolf' && p.id !== wolf.id);
+  if (goodAlive.length === 0) return [{ type: 'conservative' }];
+
+  // 已跳过多局：继续报查验 + 攻击质疑者
+  if (game.claimedPlayers.has(wolf.id)) {
+    // 继续声称预言家
+    if (!fragments.some(f => f.type === 'claim')) fragments.push({ type: 'claim', role: 'seer' });
+    // 报查验（无要求：随机真假）
+    const numChecks = Math.min(2, goodAlive.length);
+    const usedTargets = new Set();
+    for (let i = 0; i < numChecks; i++) {
+      const candidates = goodAlive.filter(p => !usedTargets.has(p.id));
+      if (candidates.length === 0) break;
+      const target = pick(candidates);
+      usedTargets.add(target.id);
+      // 无要求：完全随机报结果
+      const fakeResult = Math.random() < 0.5 ? 'wolf' : 'good';
+      fragments.push({ type: 'info', role: 'seer', infoTargetId: target.id, infoResult: fakeResult });
+    }
+    // 攻击质疑者
+    const questioners = ctx.filter(s => s.text && s.text.includes(wolf.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼")));
+    if (questioners.length > 0 && Math.random() < 0.8) {
+      const q = pick(questioners);
+      const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
+      if (qId) fragments.push({ type: 'attack', targetId: qId });
+    } else if (Math.random() < 0.5 && goodAlive.length > 0) {
+      fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
+    }
+    if (fragments.length <= 1) fragments.push({ type: 'conservative' });
+    return fragments;
+  }
+
+  // 第一天必须跳预言家
+  const shouldReveal = game.day <= 2 || ctx.some(s => s.text && s.text.includes("预言家")) || goodAlive.length <= 5;
+  if (!shouldReveal && Math.random() < 0.3) {
+    // 偶尔也划水（伪装）
+    fragments.push({ type: 'conservative' });
+    return fragments;
+  }
+
+  // 跳预言家
+  fragments.push({ type: 'claim', role: 'seer' });
+  // 报查验（无要求）
+  const numChecks = Math.min(2, goodAlive.length);
+  const usedTargets = new Set();
+  for (let i = 0; i < numChecks; i++) {
+    const candidates = goodAlive.filter(p => !usedTargets.has(p.id));
+    if (candidates.length === 0) break;
+    const target = pick(candidates);
+    usedTargets.add(target.id);
+    const fakeResult = Math.random() < 0.5 ? 'wolf' : 'good';
+    fragments.push({ type: 'info', role: 'seer', infoTargetId: target.id, infoResult: fakeResult });
+  }
+  // 顺带攻击一个可疑目标
+  if (Math.random() < 0.6 && goodAlive.length > 0) {
+    fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
+  }
+  return fragments;
+}
+
+// ===== 冲锋狼发言：跟随悍跳狼 =====
+function buildChargeFragments(wolf, alive, wolves, ctx, spokenSet) {
+  const fragments = [];
+  const goodAlive = alive.filter(p => p.role !== 'wolf' && p.id !== wolf.id);
+  if (goodAlive.length === 0) return [{ type: 'conservative' }];
+
+  // 找到悍跳狼
+  const chantJumpId = Object.keys(game.wolfRoles).find(id => game.wolfRoles[id] === 'chantJump');
+  const chantJumpWolf = chantJumpId != null ? game.players[chantJumpId] : null;
+
+  // 有人对跳悍跳狼？
+  const questionedChantJump = chantJumpWolf && ctx.some(s =>
+    s.text && s.text.includes(chantJumpWolf.name) &&
+    (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))
+  );
+
+  if (questionedChantJump && Math.random() < 0.8) {
+    // 保护悍跳狼：攻击质疑者
+    const questioners = ctx.filter(s => s.text && s.text.includes(chantJumpWolf.name) && (s.text.includes("可疑") || s.text.includes("投")));
+    const q = pick(questioners);
+    const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
+    if (qId) fragments.push({ type: 'attack', targetId: qId });
+  } else if (chantJumpWolf && Math.random() < 0.6) {
+    // 附和悍跳狼
+    fragments.push({ type: 'shield', targetId: chantJumpWolf.id });
+  }
+
+  // 自己也划水/攻击一个好人
+  if (fragments.length === 0 || Math.random() < 0.5) {
+    if (goodAlive.length > 0 && Math.random() < 0.6) {
+      fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
+    } else {
+      fragments.push({ type: 'conservative' });
+    }
+  }
+  if (fragments.length === 0) fragments.push({ type: 'conservative' });
+  return fragments;
+}
+
+// ===== 深水狼发言：让自己跟平民一样 =====
+function buildDeepWaterFragments(wolf, alive, ctx, spokenSet) {
+  // 完全伪装成平民：复用平民发言逻辑
+  return buildVillagerFragments(wolf, alive, ctx, spokenSet);
+}
+
+// ===== 倒钩狼发言：站边真预言家 =====
+function buildHookFragments(wolf, alive, ctx, spokenSet) {
+  const fragments = [];
+  const goodAlive = alive.filter(p => p.role !== 'wolf' && p.id !== wolf.id);
+  if (goodAlive.length === 0) return [{ type: 'conservative' }];
+
+  // 找真预言家
+  const realSeer = getAlive().find(p => p.role === 'seer');
+
+  if (realSeer) {
+    // 真预言家已跳：站边他
+    const realSeerClaimed = game.claimedPlayers.has(realSeer.id) ||
+      ctx.some(s => s.speechType && s.speechType.includes("claim_seer") && s.speakerId === realSeer.id);
+    if (realSeerClaimed) {
+      // 支持真预言家
+      if (Math.random() < 0.7) {
+        fragments.push({ type: 'shield', targetId: realSeer.id });
+      }
+      // 攻击质疑真预言家的人
+      const questioners = ctx.filter(s => s.text && s.text.includes(realSeer.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼")));
+      if (questioners.length > 0 && Math.random() < 0.7) {
+        const q = pick(questioners);
+        const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
+        if (qId) fragments.push({ type: 'attack', targetId: qId });
+      }
+    } else {
+      // 真预言家还没跳：暗示支持
+      if (Math.random() < 0.5) {
+        fragments.push({ type: 'conservative' });
+      } else if (goodAlive.length > 0) {
+        fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
+      }
+    }
+  } else {
+    // 真预言家已死：倒钩狼继续假装好人，划水
+    fragments.push({ type: 'conservative' });
+  }
+
+  if (fragments.length === 0) fragments.push({ type: 'conservative' });
   return fragments;
 }
 
