@@ -2049,7 +2049,7 @@ function init(optPlayer){
     witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
     scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
     hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
-    wolfScriptCompliance:{}, wolfRoles:{}, claimedPlayers:new Set(), playerClaims:{}, playerTags:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
+    wolfScriptCompliance:{}, wolfRoles:{}, wolfRolesAnnounced:false, claimedPlayers:new Set(), playerClaims:{}, playerTags:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
     _confirmCallback:null, _pausedBySettings:false, _pausedByFavor:false,
     pendingSpeechResolve:null, pendingVoteResolve:null, pendingNightResolve:null,
     pendingDestinyResolve:null, player:null, playerId:null, playerDied:false,
@@ -2568,6 +2568,20 @@ async function player_wolfAction(){
       addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}${scriptTpl}${voteTpl}`,'wolf');
   await delay(1000);
 
+  // 军师宣布角色分配（只在第一次分配时）
+  if (!game.wolfRolesAnnounced) {
+  const roleNames = { chantJump: '悍跳狼', charge: '冲锋狼', deepWater: '深水狼', hook: '倒钩狼' };
+  let roleText = '角色分配：';
+  for (const [wolfId, role] of Object.entries(game.wolfRoles)) {
+    const wolf = game.players[wolfId];
+    roleText += `${wolf.name}→${roleNames[role]}、`;
+  }
+  roleText = roleText.slice(0, -1);
+  addLog(`${speakerHTML(scriptMaster, '<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${roleText}`,'wolf');
+  await delay(800);
+  game.wolfRolesAnnounced = true;
+  }
+
   // ===== 第二步：其他狼依次提出目标并附和/反对军师 =====
   const otherWolves=wolves.filter(w=>w.id!==scriptMaster.id);
   for(const wolf of otherWolves){
@@ -2703,6 +2717,20 @@ async function ai_wolfAction(){
   const voteTpl=pick(WOLF_DISCUSS.vote_suggest).replace(/{t}/g,voteTarget.name);
       addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}${scriptTpl}${voteTpl}`,'wolf');
   await delay(1000);
+
+  // 军师宣布角色分配（只在第一次分配时）
+  if (!game.wolfRolesAnnounced) {
+  const roleNames = { chantJump: '悍跳狼', charge: '冲锋狼', deepWater: '深水狼', hook: '倒钩狼' };
+  let roleText = '角色分配：';
+  for (const [wolfId, role] of Object.entries(game.wolfRoles)) {
+    const wolf = game.players[wolfId];
+    roleText += `${wolf.name}→${roleNames[role]}、`;
+  }
+  roleText = roleText.slice(0, -1);
+  addLog(`${speakerHTML(scriptMaster, '<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${roleText}`,'wolf');
+  await delay(800);
+  game.wolfRolesAnnounced = true;
+  }
 
   // ===== 第二步：其他狼依次提出目标并附和/反对军师 =====
   const otherWolves=wolves.filter(w=>w.id!==scriptMaster.id);
@@ -2884,11 +2912,7 @@ function assignWolfRoles(scriptMaster, wolves) {
     game.wolfRoles[w.id] = 'charge';
   }
 
-  // 记录日志（狼人密议中可见）
-  for (const [wolfId, role] of Object.entries(game.wolfRoles)) {
-    const wolf = game.players[wolfId];
-    addLog(`${speakerHTML(wolf, '<span style="color:var(--red)">【狼人角色分配】' + wolf.name + '</span>')} → ${roleNames[role]}`, 'wolf');
-  }
+  // 角色分配完成，由军师在发言中宣布（不在本函数里打日志）
 }
 
 // 剧本策划者生成明日剧本
