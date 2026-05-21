@@ -4832,11 +4832,69 @@ function buildWolfFragments(wolf, alive, wolves, script, followsScript, ctx, spo
 // ===== 预言家多片段发言构建 =====
 function buildSeerFragments(seer, suspectPool, ctx, spokenSet) {
   const fragments = [];
-  // 简单版本：总是 attack
-  const target = pick(suspectPool);
-  if (target) {
-    fragments.push({ type: 'attack', targetId: target.id });
+  const intel = getAttr(seer, '智谋');
+  const alive = getAlive();
+  const goodCount = alive.filter(p => p.role !== "wolf").length;
+
+  // 查验结果
+  const checks = game.seerChecks || [];
+  const foundWolf = checks.some(c => c.isWolf);
+
+  // 被质疑？
+  const isQuestioned = ctx.some(s =>
+    s.text && s.text.includes(seer.name) &&
+    (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))
+  );
+
+  // 有人对跳预言家？
+  const someoneClaimedSeer = ctx.some(s =>
+    s.speechType && s.speechType.includes("claim_seer")
+  );
+
+  // 应该跳身份？
+  const shouldReveal = isQuestioned || foundWolf || someoneClaimedSeer || goodCount <= 5;
+
+  // ① 已跳过身份 → 必须报所有查验结果
+  if (game.claimedPlayers.has(seer.id)) {
+    fragments.push({ type: 'claim', role: 'seer' });
+    // 报所有查验结果（狼和好人都报）
+    for (const check of checks) {
+      const target = game.players[check.targetId];
+      if (target) {
+        fragments.push({ type: 'info', role: 'seer', infoTargetId: check.targetId, infoResult: check.isWolf ? 'wolf' : 'good' });
+      }
+    }
+    // 查验到狼人 → 攻击
+    if (foundWolf) {
+      const wolfCheck = checks.find(c => c.isWolf);
+      if (wolfCheck) fragments.push({ type: 'attack', targetId: wolfCheck.targetId });
+    } else if (suspectPool.length > 0 && Math.random() < 0.5) {
+      fragments.push({ type: 'attack', targetId: pick(suspectPool).id });
+    }
+    if (fragments.length <= 1) fragments.push({ type: 'conservative' });
+    return fragments;
   }
+
+  // ② 应该跳身份
+  if (shouldReveal) {
+    fragments.push({ type: 'claim', role: 'seer' });
+    // 报所有查验结果
+    for (const check of checks) {
+      const target = game.players[check.targetId];
+      if (target) {
+        fragments.push({ type: 'info', role: 'seer', infoTargetId: check.targetId, infoResult: check.isWolf ? 'wolf' : 'good' });
+      }
+    }
+    // 查验到狼人 → 攻击
+    if (foundWolf) {
+      const wolfCheck = checks.find(c => c.isWolf);
+      if (wolfCheck) fragments.push({ type: 'attack', targetId: wolfCheck.targetId });
+    }
+    return fragments;
+  }
+
+  // ③ 不跳：划水（预言家不跳时要低调）
+  fragments.push({ type: 'conservative' });
   return fragments;
 }
 
