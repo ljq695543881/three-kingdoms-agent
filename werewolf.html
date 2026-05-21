@@ -154,18 +154,106 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .tag-info{color:var(--blue);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(41,128,185,0.4)}
 
 /* ===== 标题画面 ===== */
-#titleScreen{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#0d1b2a 0%,#1b2838 40%,#16213e 100%)}
+#titleScreen{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 30% 20%,rgba(226,183,20,0.06) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 80%,rgba(200,60,20,0.05) 0%,transparent 60%),
+             linear-gradient(160deg,#0a0f1a 0%,#111927 40%,#0d1422 100%);
+  overflow:hidden;
+}
 #titleScreen.hide{display:none}
-.title-logo{font-size:52px;color:var(--gold);text-shadow:0 0 30px rgba(226,183,20,0.5);letter-spacing:12px;margin-bottom:6px}
-.title-sub{color:var(--gray);font-size:15px;margin-bottom:40px;letter-spacing:2px}
-.title-btns{display:flex;flex-direction:column;gap:12px;align-items:center}
-.title-btn{padding:12px 48px;border:2px solid var(--gold);border-radius:30px;background:transparent;color:var(--gold);font-size:16px;font-weight:700;cursor:pointer;transition:all 0.25s;letter-spacing:4px;min-width:200px}
-.title-btn:hover{background:var(--gold);color:var(--bg);transform:scale(1.05)}
-.title-btn.danger{border-color:var(--red);color:var(--red)}
-.title-btn.danger:hover{background:var(--red);color:#fff}
-.title-btn.sub{border-color:rgba(255,255,255,0.25);color:var(--gray);min-width:160px;padding:8px 32px;font-size:13px}
-.title-btn.sub:hover{background:rgba(255,255,255,0.1);color:var(--white);border-color:rgba(255,255,255,0.5)}
-.title-footer{position:absolute;bottom:24px;color:rgba(255,255,255,0.2);font-size:12px;letter-spacing:1px}
+
+/* 暗角 vignette */
+#titleScreen::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.7) 100%);
+  z-index:0;
+}
+
+/* 粒子层 */
+#titleScreen::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%,rgba(226,183,20,0.6) 0%,transparent 100%),
+    radial-gradient(1px 1px at 25% 60%,rgba(226,183,20,0.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 40% 10%,rgba(226,183,20,0.5) 0%,transparent 100%),
+    radial-gradient(1px 1px at 55% 80%,rgba(226,183,20,0.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 70% 30%,rgba(226,183,20,0.5) 0%,transparent 100%),
+    radial-gradient(1px 1px at 85% 70%,rgba(226,183,20,0.4) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 15% 45%,rgba(226,183,20,0.7) 0%,transparent 100%),
+    radial-gradient(1px 1px at 60% 50%,rgba(226,183,20,0.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 90% 15%,rgba(226,183,20,0.5) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 35% 75%,rgba(226,183,20,0.6) 0%,transparent 100%);
+  animation:particleDrift 20s ease-in-out infinite alternate;
+}
+@keyframes particleDrift{
+  0%{background-position:0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0}
+  100%{background-position:20px -30px, -15px 20px, 30px 10px, -20px -15px, 15px -25px, -30px 20px, 25px -10px, -10px 30px, 20px 15px, -25px -20px}
+}
+
+/* 内容层 */
+#titleScreen > *{position:relative;z-index:1}
+
+/* Logo */
+.title-logo{
+  font-size:56px;color:var(--gold);
+  text-shadow:0 0 20px rgba(226,183,20,0.4), 0 0 60px rgba(226,183,20,0.15);
+  letter-spacing:14px;margin-bottom:8px;
+  animation:logoBreath 3s ease-in-out infinite;
+}
+@keyframes logoBreath{
+  0%,100%{text-shadow:0 0 20px rgba(226,183,20,0.4), 0 0 60px rgba(226,183,20,0.15)}
+  50%{text-shadow:0 0 30px rgba(226,183,20,0.7), 0 0 80px rgba(226,183,20,0.25)}
+}
+
+.title-btns{display:flex;flex-direction:column;gap:14px;align-items:center;margin-top:36px}
+
+/* 按钮基础 */
+.title-btn{
+  position:relative;overflow:hidden;
+  padding:13px 52px;border:1.5px solid rgba(226,183,20,0.5);border-radius:30px;
+  background:rgba(226,183,20,0.04);color:var(--gold);
+  font-size:15px;font-weight:700;cursor:pointer;
+  transition:all 0.3s;letter-spacing:3px;
+  min-width:220px;text-align:center;
+}
+.title-btn:hover{
+  background:rgba(226,183,20,0.12);border-color:var(--gold);
+  transform:scale(1.04);box-shadow:0 0 20px rgba(226,183,20,0.15);
+}
+
+/* 扫光效果 */
+.title-btn::after{
+  content:'';position:absolute;top:0;left:-120%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);
+  transform:skewX(-20deg);transition:none;
+}
+.title-btn:hover::after{left:140%;transition:left 0.5s ease}
+
+/* 图标 + 文字 */
+.title-btn .btn-icon{margin-right:10px;font-size:17px;vertical-align:middle}
+
+/* 主按钮（玩家扮演）高亮 */
+.title-btn.primary{
+  background:linear-gradient(135deg,rgba(226,183,20,0.15),rgba(226,183,20,0.06));
+  border-color:var(--gold);color:var(--gold);
+  box-shadow:0 0 15px rgba(226,183,20,0.1);
+}
+.title-btn.primary:hover{
+  background:linear-gradient(135deg,rgba(226,183,20,0.25),rgba(226,183,20,0.12));
+  box-shadow:0 0 30px rgba(226,183,20,0.2);
+}
+
+/* 危险按钮 */
+.title-btn.danger{border-color:rgba(255,60,60,0.5);color:var(--red);background:rgba(255,60,60,0.04)}
+.title-btn.danger:hover{background:rgba(255,60,60,0.15);border-color:var(--red);box-shadow:0 0 20px rgba(255,60,60,0.15)}
+
+/* 次要按钮 */
+.title-btn.sub{border-color:rgba(255,255,255,0.15);color:var(--gray);background:transparent;min-width:180px;padding:9px 36px;font-size:12.5px}
+.title-btn.sub:hover{background:rgba(255,255,255,0.06);color:var(--white);border-color:rgba(255,255,255,0.35)}
+
+.title-footer{position:absolute;bottom:24px;color:rgba(255,255,255,0.15);font-size:11px;letter-spacing:1px;z-index:1}
 
 /* ===== 玩家扮演模式选择面板 ===== */
 #playerModeSelect{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8)}
@@ -419,13 +507,11 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 标题画面 ===== -->
 <div id="titleScreen">
   <div class="title-logo">三国·狼人杀</div>
-  <div class="title-sub">智谋对决·好感为刃</div>
   <div class="title-btns">
-    <button class="title-btn" onclick="startPlayerMode()">玩 家 扮 演</button>
-    <button class="title-btn" onclick="startDestinyMode()">天 意 扮 演</button>
-    <button class="title-btn" onclick="startGodMode()">上 帝 视 角</button>
-    <button class="title-btn sub" onclick="openSettingsFromTitle()">游 戏 设 置</button>
-    <button class="title-btn danger" onclick="confirmQuitGame()">退 出 游 戏</button>
+    <button class="title-btn primary" onclick="startPlayerMode()"><span class="btn-icon">🎮</span>玩 家 扮 演</button>
+    <button class="title-btn" onclick="startDestinyMode()"><span class="btn-icon">🎲</span>天 意 模 式</button>
+    <button class="title-btn" onclick="startGodMode()"><span class="btn-icon">👁️</span>上 帝 视 角</button>
+    <button class="title-btn danger" onclick="confirmQuitGame()"><span class="btn-icon">🚪</span>退 出 游 戏</button>
   </div>
   <div class="title-footer">v1.0 · 三国狼人杀</div>
 </div>
@@ -4280,10 +4366,7 @@ function startDestinyMode(){
   init();
 }
 
-// ===== 标题画面设置/退出 =====
-function openSettingsFromTitle(){
-  document.getElementById('settingsOverlay').classList.remove('hide');
-}
+// ===== 退出确认 =====
 function confirmQuitGame(){
   if(confirm('确定要退出游戏吗？')){
     location.reload();
