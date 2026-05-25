@@ -1452,7 +1452,7 @@ function pickCategory(ctx, player){
   if(questioned.length > 0){
     return getAttr(player,'意志') >= 4 ? 'accuse' : 'idle';
   }
-  if(getAttr(player,'智谋') >= 4 && ctx.filter(s=>s.role==="wolf" && s.speakerId!==player.id).length > 0){
+  if(getAttr(player,'智谋') >= 4 && ctx.some(s=> s && s.text && (s.text.includes("狼")||s.text.includes("可疑")||s.text.includes("攻击")||s.text.includes("质疑")) && s.speakerId!==player.id)){
     return Math.random() < 0.7 ? 'accuse' : 'idle';
   }
   if(getAttr(player,'武力') >= 4 && questioned.length > 0){
@@ -1748,7 +1748,7 @@ function detectSeerContradiction() {
   
   // 检查是否有"A说B是好人，B后对跳"的矛盾
   for(const s of game.speeches){
-    if(!s.classified || !Array.isArray(s.classified)) continue;
+    if(!s || !s.classified || !Array.isArray(s.classified)) continue;
     
     const infoItem = s.classified.find(c =>
       c.type === 'info' &&
@@ -1812,22 +1812,15 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
           break;
 
         case 'claim': {
-          // 跳身份好感度规则
-          const isSpeakerWolf = speaker.role === 'wolf';
-          const isListenerWolf = listener.role === 'wolf';
-
-          if (isSpeakerWolf && !isListenerWolf) {
-            // 好人听狼人跳身份 → 反感
-            change = calcFavorChange(-(5 + Math.floor(Math.random() * 4)), speaker, listener);
-          } else if (!isSpeakerWolf && !isListenerWolf) {
-            // 好人听好人跳身份 → 信任
+          // 跳身份好感度规则（不使用隐藏信息）
+          // 基于听众对发言者的好感度决定反应
+          const favor = getFavor(listener, speaker.id);
+          if (favor >= 50) {
+            // 好感度高 → 相信
             change = calcFavorChange(2 + Math.floor(Math.random() * 3), speaker, listener);
-          } else if (!isSpeakerWolf && isListenerWolf) {
-            // 狼人听好人跳身份 → 想刀
-            change = calcFavorChange(-(3 + Math.floor(Math.random() * 3)), speaker, listener);
-          } else if (isSpeakerWolf && isListenerWolf) {
-            // 狼人听狼队友跳身份 → 配合
-            change = calcFavorChange(1 + Math.floor(Math.random() * 2), speaker, listener);
+          } else {
+            // 好感度低 → 怀疑
+            change = calcFavorChange(-(2 + Math.floor(Math.random() * 3)), speaker, listener);
           }
           break;
         }
@@ -2396,12 +2389,10 @@ function renderPlayers(){
 
 function renderInfoBar(){
   const alive=game.players.filter(p=>p.alive);
-  const wolvesAlive=alive.filter(p=>p.role==="wolf").length;
-  const goodAlive=alive.length-wolvesAlive;
   document.getElementById("infoBar").innerHTML=`
     <span>存活：<span class="num">${alive.length}</span>/15</span>
-    <span>好人：<span class="num" style="color:var(--green)">${goodAlive}</span></span>
-    <span>狼人：<span class="num" style="color:var(--red)">${wolvesAlive}</span>(隐藏)</span>
+    ${game.mode==='god'?`<span>好人：<span class="num" style="color:var(--green)">${alive.filter(p=>p.role!=='wolf').length}</span></span>
+    <span>狼人：<span class="num" style="color:var(--red)">${alive.filter(p=>p.role==='wolf').length}</span>(隐藏)</span>`:''}
     <span>第 <span class="num">${game.day}</span> 天</span>`;
 }
 
@@ -2574,12 +2565,12 @@ async function ai_guardAction(){
   // ===== 只基于已跳身份判断（不使用隐藏信息 p.role）=====
   const exposedSeer = getAlive().find(p => 
     (game.claimedPlayers.has(p.id)) || 
-     game.speeches.some(s => s.speakerId === p.id && s.speechType && s.speechType.includes("claim_seer"))
+     game.speeches.some(s => s && s.speakerId === p.id && s.speechType && s.speechType.includes("claim_seer"))
   );
   
   const exposedWitch = getAlive().find(p => 
     (game.claimedPlayers.has(p.id)) || 
-     game.speeches.some(s => s.speakerId === p.id && s.speechType && s.speechType.includes("claim_witch"))
+     game.speeches.some(s => s && s.speakerId === p.id && s.speechType && s.speechType.includes("claim_witch"))
   );
   
   // 如果有已跳身份的预言家，高智谋/高政治的守卫会优先守他
@@ -2606,7 +2597,7 @@ async function ai_guardAction(){
       
       // 策略3：分析发言，找狼人针对的人
       const recentCtx = game.speeches.slice(-10);
-      const wolfSpeeches = recentCtx.filter(s => s.speakerId && wolves.some(w => w.id === s.speakerId));
+      const wolfSpeeches = recentCtx.filter(s => s && s.speakerId && wolves.some(w => w.id === s.speakerId));
       if(wolfSpeeches.length > 0){
         const mentionedTargets = wolfSpeeches.map(s => s.targetName).filter(n => n);
         const mentionedCount = {};
@@ -2822,11 +2813,10 @@ async function ai_wolfAction(){
 
 // 狼人提出目标（规则①：好感度驱动，更愿意刀好感度低的人）
 function wolfProposeTarget(wolf, targets) {
-  // ===== 核心修复：优先刀已跳身份的预言家 =====
+  // ===== 优先刀已跳身份的预言家（不使用隐藏信息 p.role）=====
   const exposedSeer = getAlive().find(p => 
-    p.role === "seer" && 
-    (game.claimedPlayers.has(p.id) || 
-     game.speeches.some(s => s.speakerId === p.id && s.speechType === "claim_seer"))
+    (game.claimedPlayers.has(p.id)) || 
+     game.speeches.some(s => s && s.speakerId === p.id && s.speechType && s.speechType.includes("claim_seer"))
   );
   
   // 如果有已跳身份的预言家，高智谋/高政治的狼人会优先提议刀他
@@ -2905,25 +2895,15 @@ function assignWolfRoles(scriptMaster, wolves) {
 
 // 武力最高者决定最终目标
 function killMasterDecide(killMaster, proposals, targets){
-  // ===== 核心修复：优先刀已跳身份的预言家 =====
+  // ===== 优先刀已跳身份的预言家（不使用隐藏信息 p.role）=====
   const exposedSeer = getAlive().find(p => 
-    p.role === "seer" && 
-    (game.claimedPlayers.has(p.id) || 
-     game.speeches.some(s => s.speakerId === p.id && s.speechType === "claim_seer"))
+    (game.claimedPlayers.has(p.id)) || 
+     game.speeches.some(s => s && s.speakerId === p.id && s.speechType && s.speechType.includes("claim_seer"))
   );
   
-  // 如果有已跳身份的预言家，决策者有概率优先刀他
+  // 如果有已跳身份的预言家，决策者100%优先刀他（平衡性修复）
   if(exposedSeer) {
-    const intel = getAttr(killMaster, '智谋');
-    const politic = getAttr(killMaster, '政治');
-    // 智谋≥3 或 政治≥3 的决策者能识别预言家威胁
-    if(intel >= 3 || politic >= 3) {
-      return exposedSeer;
-    }
-    // 低智谋/低政治的决策者30%概率也能识别
-    if(Math.random() < 0.3) {
-      return exposedSeer;
-    }
+    return exposedSeer;
   }
   
   // 原逻辑：先看多数意见
@@ -2992,7 +2972,7 @@ async function ai_seerAction(){
     // 如果有可疑目标（被发言指控的），优先查验
     const suspects = unchecked.filter(p => {
       return game.speeches.some(s => 
-        s.text && s.text.includes(p.name) && 
+        s && s.text && s.text.includes(p.name) && 
         (s.text.includes("可疑") || s.text.includes("狼"))
       );
     });
@@ -3053,8 +3033,11 @@ async function ai_witchAction(){
     let saveProb = 0.3 + victimCharm * 0.1;
     // 自救：100%概率
     if(victim.id===witch.id) saveProb=1.0;
-    // 高智谋优先救关键角色
-    if(intel>=4 && ["seer","hunter"].includes(victim.role)) saveProb+=0.2;
+    // 高智谋优先救已跳特殊身份的玩家
+    if(intel>=4){
+      const victimClaim = game.playerClaims[victim.id];
+      if(victimClaim && ['seer','hunter'].includes(victimClaim)) saveProb+=0.2;
+    }
     if(game.generation!==gen)return;
     if(Math.random()<saveProb){
       game.witchSave=true; game.witchUsedSaveLastNight=true;
@@ -3070,12 +3053,12 @@ async function ai_witchAction(){
     if(Math.random()<poisonProb){
       const wolves=getAliveWolves();
       if(wolves.length>0){
-        const knownWolves=wolves.filter(w=>game.speeches.find(s=>s.speaker==="seer"&&s.about===w.id&&s.isWolf));
+        const knownWolves=wolves.filter(w=>game.speeches.find(s=>s && s.speechType && s.speechType.includes("claim_seer")&&s.isWolf));
         if(knownWolves.length>0){
           game.witchPoison=pick(knownWolves).id;
         } else if(intel>=4){
           // 高智谋分析嫌疑发言
-          const wolfSpeakers=wolves.filter(w=>game.speeches.some(s=>s.speakerId===w.id));
+          const wolfSpeakers=wolves.filter(w=>game.speeches.some(s=>s && s.speakerId===w.id));
           if(wolfSpeakers.length>0) game.witchPoison=pick(wolfSpeakers).id;
         } else {
           const suspects=getAlive().filter(p=>p.role!=="witch"&&p.id!==witch.id);
@@ -3384,11 +3367,13 @@ function generateSeerSpeech(seer, suspectPool, ctx, spokenSet){
   if(game.seerTarget!==null && game.players[game.seerTarget].role==="wolf"){
     const wt=game.players[game.seerTarget];
     
-    // 计算跳身份概率：智谋1→85%，智谋2-4→100%，智谋5-6→查验到狼则100%
+    // ===== 平衡性修复：降低预言家跳身份概率 =====
+    // 原概率：智谋1→85%，智谋2-4→100%，智谋5-6→100%
+    // 新概率：让预言家更谨慎，避免过早暴露
     let revealProb = 0;
-    if(intel === 1) revealProb = 0.85;
-    else if(intel >= 2 && intel <= 4) revealProb = 1.0;
-    else if(intel >= 5) revealProb = 1.0;  // 查验到狼→100%跳
+    if(intel === 1) revealProb = 0.5;  // 50%概率跳（从85%降低）
+    else if(intel >= 2 && intel <= 4) revealProb = 0.7;  // 70%概率跳（从100%降低）
+    else if(intel >= 5) revealProb = 0.8;  // 80%概率跳（从100%降低）
     
     if(Math.random() < revealProb){  
       // 使用人物专属模板（用good_speech而不是accuse）
@@ -3613,7 +3598,7 @@ function generateHunterSpeech(hunter, suspectPool, ctx, spokenSet){
     // 高智谋猎人：分析发言，找出可疑目标
     const analyzed = ctx.slice(-3);
     for(const s of analyzed){
-      if(s.speakerId && s.text){
+      if(s && s.speakerId && s.text){
         const speaker = game.players[s.speakerId];
         if(speaker && speaker.alive && speaker.id !== hunter.id){
           return `我观察了一下${speaker.name}的发言，感觉有点问题。大家多注意一下，别被忽悠了。`;
@@ -3672,7 +3657,7 @@ function generateVillagerSpeech(villager, suspectPool, ctx, spokenSet){
     // 平民智谋高，可以尝试分析发言
     const analyzed = ctx.slice(-3);
     for(const s of analyzed){
-      if(s.text && s.speakerId){
+      if(s && s.text && s.speakerId){
         const speaker = game.players[s.speakerId];
         if(speaker && speaker.alive && speaker.id !== villager.id){
           return `我听了半天，觉得${speaker.name}的发言有点意思……虽然我是平民没信息，但感觉可以关注一下。`;
@@ -3720,6 +3705,7 @@ function generateGoodSpeech(player, suspectPool, ctx, spokenSet){
   if(intel>=4 && ctx.length>0){
     const analyzed=ctx.slice(-5);
     for(const s of analyzed){
+      if(!s) continue;
       const speaker=game.players[s.speakerId];
       if(!speaker || !speaker.alive || speaker.id===player.id) continue;
       if(!spokenSet.has(speaker.id)) continue;
@@ -3728,11 +3714,15 @@ function generateGoodSpeech(player, suspectPool, ctx, spokenSet){
         return applyStyleModifiers(speech, style);
       }
     }
-    const wolfSpeeches=ctx.filter(s=>s.role==="wolf" && spokenSet.has(s.speakerId));
-    if(wolfSpeeches.length>0 && Math.random()<intel/5){
-      const s=pick(wolfSpeeches);
-      speech = `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。感觉太完美了反而可疑。各位注意${s.speakerName}。`;
-      return applyStyleModifiers(speech, style);
+    // ===== 规则③ 智谋：分析可疑发言（不使用隐藏信息）=====
+    if(getAttr(player,'智谋') >= 4){
+      // 找到已发言的玩家，随机评论一个
+      const spokenSpeeches = ctx.filter(s => s && s.speakerId && spokenSet.has(s.speakerId) && s.speakerName);
+      if(spokenSpeeches.length>0 && Math.random()<intel/5){
+        const s = pick(spokenSpeeches);
+        speech = `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。感觉太完美了反而可疑。各位注意${s.speakerName}。`;
+        return applyStyleModifiers(speech, style);
+      }
     }
   }
 
@@ -3957,9 +3947,11 @@ function buildLastWordsFragments(player) {
       // 白天已跳了某个好人身份，遗言继续装
       fragments.push({ type: 'claim', role: claimedRole });
     } else {
-      // 没跳，编一个好人身份，避免和场上真人冲突
-      const aliveRoles = new Set(alive.map(p => p.role));
-      const fakeRoles = ['villager', 'guard', 'hunter'].filter(r => !aliveRoles.has(r));
+      // 没跳，编一个好人身份，避免和场上已跳身份冲突
+      const claimedRoles = new Set(
+        Object.values(game.playerClaims).filter(r => r)
+      );
+      const fakeRoles = ['villager', 'guard', 'hunter'].filter(r => !claimedRoles.has(r));
       const fakeRole = fakeRoles.length > 0 ? pick(fakeRoles) : pick(['villager', 'guard', 'hunter']);
       fragments.push({ type: 'claim', role: fakeRole });
     }
@@ -3995,9 +3987,10 @@ function buildLastWordsFragments(player) {
     }
     // 如果两瓶药都用完了，加一句警告
     if (!game.witchHasSave && !game.witchHasPoison) {
-      const wolves = alive.filter(p => p.role === 'wolf');
-      if (wolves.length > 0 && Math.random() < 0.5) {
-        fragments.push({ type: 'attack', targetId: pick(wolves).id });
+      // 遗言：随机攻击一个存活玩家（不基于身份）
+      const aliveForAttack = getAlive();
+      if (aliveForAttack.length > 0 && Math.random() < 0.5) {
+        fragments.push({ type: 'attack', targetId: pick(aliveForAttack).id });
       }
     }
   } else if (role === 'hunter') {
@@ -4005,11 +3998,10 @@ function buildLastWordsFragments(player) {
     // 区分死亡原因：被毒杀不能开枪
     const deathCause = player.deathCause || '';
     if (deathCause !== 'poison') {
-      // 可以开枪，威胁带走一个狼人
-      const wolves = alive.filter(p => p.role === 'wolf');
-      if (wolves.length > 0) {
-        fragments.push({ type: 'attack', targetId: pick(wolves).id });
-      }
+    // 可以开枪，随机带走一个存活玩家（不基于身份）
+    if(alive.length > 0) {
+      fragments.push({ type: 'attack', targetId: pick(alive).id });
+    }
     }
     // 如果被毒杀，加一句"被阴了"
     if (deathCause === 'poison') {
@@ -4070,14 +4062,15 @@ async function votePhase(){
 
       // 2) 发言中被怀疑的次数
       for(const s of game.speeches){
+        if(!s) continue;
         if(s.text && s.text.includes(x.name) && (s.text.includes("可疑")||s.text.includes("投")||s.text.includes("狼")||s.text.includes("质疑")||s.text.includes("矛盾")||s.text.includes("有问题"))){
           score += 3;
         }
       }
 
       // 3) 预言家查到的狼加大量分（规则③：智谋高的更相信预言家）
-      // ===== 核心修复：所有好人都应该重视预言家的查杀 =====
-      if(game.seerChecks && game.seerChecks.length > 0){
+      // ===== 平衡性修复：只有非狼玩家才相信预言家 =====
+      if(p.role!="wolf" && game.seerChecks && game.seerChecks.length > 0){
         const recentCheck = game.seerChecks[game.seerChecks.length - 1];
         if(recentCheck && recentCheck.isWolf && x.id === recentCheck.targetId){
           // 公式：基础+10，智谋≥2加50分，已跳身份再加20分（最终范围10-80）
@@ -4092,13 +4085,13 @@ async function votePhase(){
       }
       
       // 预言家自己：铁定投查到的狼
-      if(p.role==="seer" && game.seerTarget!==null){
-        const known=game.players[game.seerTarget];
-        if(x.id===known.id && known.role==="wolf" && known.alive){
+      if(p.role==="seer" && game.seerChecks && game.seerChecks.length > 0){
+        const lastCheck = game.seerChecks[game.seerChecks.length - 1];
+        if(x.id===lastCheck.targetId && lastCheck.isWolf && game.players[lastCheck.targetId].alive){
           score += 50; // 预言家铁定投查到的狼
         }
       }
-
+      
       // 4) 狼人倾向投好人（规则① + 剧本）
       if(p.role==="wolf" && x.role!=="wolf"){
         score += 8;
@@ -4119,7 +4112,7 @@ async function votePhase(){
       const politic=getAttr(p,'政治');
       if(politic>=4){
         // 政治高：如果此人是多人怀疑的目标，额外加分
-        const accuseCount=game.speeches.filter(s=>s.text&&s.text.includes(x.name)&&(s.text.includes("可疑")||s.text.includes("狼")||s.text.includes("有问题"))).length;
+        const accuseCount=game.speeches.filter(s=>s&&s.text&&s.text.includes(x.name)&&(s.text.includes("可疑")||s.text.includes("狼")||s.text.includes("有问题"))).length;
         if(accuseCount>=2) score += accuseCount*3;
       }
 
@@ -4886,9 +4879,9 @@ function buildChantJumpFragments(wolf, alive, ctx, spokenSet) {
     if (!game.wolfFakeChecks[wolf.id]) game.wolfFakeChecks[wolf.id] = [];
     const reported = game.wolfFakeChecks[wolf.id];
     const candidates = goodAlive.filter(p => !reported.includes(p.id));
-    // 最多报2个假查验（不推 claim，所以最多3个片段全给 info/attack）
+    // 最多报1个假查验（模拟真预言家每天只能查验1人）
     let available = [...candidates];
-    const numToReport = Math.min(2, available.length);
+    const numToReport = Math.min(1, available.length);
     for (let i = 0; i < numToReport; i++) {
       const target = pick(available);
       available = available.filter(p => p.id !== target.id);
@@ -4956,7 +4949,7 @@ function buildChargeFragments(wolf, alive, wolves, ctx, spokenSet) {
 
   // 有人对跳悍跳狼？
   const questionedChantJump = chantJumpWolf && ctx.some(s =>
-    s.text && s.text.includes(chantJumpWolf.name) &&
+     s && s.text && s.text.includes(chantJumpWolf.name) &&
     (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))
   );
 
