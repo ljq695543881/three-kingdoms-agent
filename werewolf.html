@@ -1736,6 +1736,42 @@ function calcMissChance(listenerFavor, speaker, listener, speechType) {
   return Math.max(0, Math.min(0.6, missChance));
 }
 
+// 检测"A说B是好人，B后对跳"的矛盾（A肯定是狼）
+function detectSeerContradiction() {
+  if(!game.playerClaims || !game.speeches || game.speeches.length === 0) return null;
+  
+  const seerClaimers = Object.keys(game.playerClaims)
+    .filter(id => game.playerClaims[id] === 'seer')
+    .map(id => parseInt(id));
+  
+  if(seerClaimers.length < 2) return null; // 至少需要2个人跳预言家
+  
+  // 检查是否有"A说B是好人，B后对跳"的矛盾
+  for(const s of game.speeches){
+    if(!s.classified || !Array.isArray(s.classified)) continue;
+    
+    const infoItem = s.classified.find(c =>
+      c.type === 'info' &&
+      c.infoResult === 'good' &&
+      c.targets &&
+      c.targets.length > 0
+    );
+    
+    if(infoItem && infoItem.targets[0]){
+      const aId = s.speakerId;
+      const bId = infoItem.targets[0].id;
+      
+      // 检查A和B是否都跳了预言家
+      if(seerClaimers.includes(aId) && seerClaimers.includes(bId)){
+        // A说B是好人，B后对跳 → A肯定是狼
+        return { wolfId: aId, goodId: bId };
+      }
+    }
+  }
+  
+  return null;
+}
+
 // 规则⑥ 魅力修正反效果阈值
 function getAntiEffectThresholds(speaker) {
   const charm = getAttr(speaker, '魅力');
@@ -2535,11 +2571,15 @@ async function ai_guardAction(){
   const intel=getAttr(guard,'智谋');
   const politic=getAttr(guard,'政治');
   
-  // ===== 核心修复：优先守已跳身份的预言家 =====
+  // ===== 只基于已跳身份判断（不使用隐藏信息 p.role）=====
   const exposedSeer = getAlive().find(p => 
-    p.role === "seer" && 
-    (game.claimedPlayers.has(p.id) || 
-     game.speeches.some(s => s.speakerId === p.id && s.speechType === "claim_seer"))
+    (game.claimedPlayers.has(p.id)) || 
+     game.speeches.some(s => s.speakerId === p.id && s.speechType && s.speechType.includes("claim_seer"))
+  );
+  
+  const exposedWitch = getAlive().find(p => 
+    (game.claimedPlayers.has(p.id)) || 
+     game.speeches.some(s => s.speakerId === p.id && s.speechType && s.speechType.includes("claim_witch"))
   );
   
   // 如果有已跳身份的预言家，高智谋/高政治的守卫会优先守他
@@ -2551,20 +2591,18 @@ async function ai_guardAction(){
     }
   }
   
-  // 智谋≥4：预判狼刀逻辑
-  if(!target && intel >= 4){
+  // 智谋≥4 且 第2晚及以后：预判狼刀逻辑
+  if(!target && intel >= 4 && game.day >= 2){
     const wolves=getAliveWolves();
     if(wolves.length > 0){
       // 分析狼人可能的目标
       let predictedTargets = [];
       
-      // 策略1：狼人可能刀预言家（最大威胁）
-      const seer = targets.find(p => p.role === "seer");
-      if(seer && !exposedSeer) predictedTargets.push({target: seer, weight: 3});
+      // 策略1：狼人可能刀已跳身份的预言家（最大威胁）
+      if(exposedSeer) predictedTargets.push({target: exposedSeer, weight: 3});
       
-      // 策略2：狼人可能刀女巫（第二威胁）
-      const witch = targets.find(p => p.role === "witch");
-      if(witch && !game.witchHasSave) predictedTargets.push({target: witch, weight: 2});
+      // 策略2：狼人可能刀已跳身份的女巫（第二威胁）
+      if(exposedWitch && !game.witchHasSave) predictedTargets.push({target: exposedWitch, weight: 2});
       
       // 策略3：分析发言，找狼人针对的人
       const recentCtx = game.speeches.slice(-10);
@@ -2591,10 +2629,10 @@ async function ai_guardAction(){
     }
   }
   
-  // 政治高：优先保护关键角色（兜底）
+  // 政治高：优先保护已跳身份的关键角色（兜底）
   if(!target && politic >= 4){
-    const specials=targets.filter(p=>["seer","witch"].includes(p.role));
-    if(specials.length>0 && Math.random()<0.6) target=pick(specials);
+    const exposed = [exposedSeer, exposedWitch].filter(Boolean);
+    if(exposed.length>0 && Math.random()<0.6) target=pick(exposed);
   }
   
   // 随机守护
@@ -5000,6 +5038,13 @@ function buildSeerFragments(seer, suspectPool, ctx, spokenSet) {
   const alive = getAlive();
   const goodCount = alive.filter(p => p.role !== "wolf").length;
 
+  // 检测"A说B是好人，B后对跳"的矛盾（A肯定是狼）
+  const contradiction = detectSeerContradiction();
+  if(contradiction && fragments.length < 3){
+    // 攻击那个狼人（A）
+    fragments.push({ type: 'attack', targetId: contradiction.wolfId });
+  }
+
   // 查验结果
   const checks = game.seerChecks || [];
   const foundWolf = checks.some(c => c.isWolf);
@@ -5090,6 +5135,13 @@ function buildWitchFragments(witch, suspectPool, ctx, spokenSet) {
   const goodCount = alive.filter(p => p.role !== "wolf").length;
   const bothPotionsUsed = !game.witchHasSave && !game.witchHasPoison;
 
+  // 检测"A说B是好人，B后对跳"的矛盾（A肯定是狼）
+  const contradiction = detectSeerContradiction();
+  if(contradiction && fragments.length < 3){
+    // 攻击那个狼人（A）
+    fragments.push({ type: 'attack', targetId: contradiction.wolfId });
+  }
+
   const isQuestioned = ctx.some(s =>
     s.text && s.text.includes(witch.name) &&
     (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))
@@ -5142,6 +5194,13 @@ function buildGuardFragments(guard, suspectPool, ctx, spokenSet) {
   const alive = getAlive();
   const goodCount = alive.filter(p => p.role !== "wolf").length;
 
+  // 检测"A说B是好人，B后对跳"的矛盾（A肯定是狼）
+  const contradiction = detectSeerContradiction();
+  if(contradiction && fragments.length < 3){
+    // 攻击那个狼人（A）
+    fragments.push({ type: 'attack', targetId: contradiction.wolfId });
+  }
+
   const isQuestioned = ctx.some(s =>
     s.text && s.text.includes(guard.name) &&
     (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))
@@ -5185,6 +5244,13 @@ function buildHunterFragments(hunter, suspectPool, ctx, spokenSet) {
   const alive = getAlive();
   const goodCount = alive.filter(p => p.role !== "wolf").length;
 
+  // 检测"A说B是好人，B后对跳"的矛盾（A肯定是狼）
+  const contradiction = detectSeerContradiction();
+  if(contradiction && fragments.length < 3){
+    // 攻击那个狼人（A）
+    fragments.push({ type: 'attack', targetId: contradiction.wolfId });
+  }
+
   const isQuestioned = ctx.some(s =>
     s.text && s.text.includes(hunter.name) &&
     (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼") || s.text.includes("抗推"))
@@ -5224,6 +5290,13 @@ function buildHunterFragments(hunter, suspectPool, ctx, spokenSet) {
 function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
   const fragments = [];
   const intel = getAttr(villager, '智谋');
+
+  // 检测"A说B是好人，B后对跳"的矛盾（A肯定是狼）
+  const contradiction = detectSeerContradiction();
+  if(contradiction && fragments.length < 3){
+    // 攻击那个狼人（A）
+    fragments.push({ type: 'attack', targetId: contradiction.wolfId });
+  }
 
   const isQuestioned = ctx.some(s =>
     s.text && s.text.includes(villager.name) &&
