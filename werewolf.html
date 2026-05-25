@@ -4203,27 +4203,95 @@ async function votePhase(){
         }
       }
 
-      // 3) 预言家查到的狼加大量分（规则③：智谋高的更相信预言家）
-      // ===== 平衡性修复：只有非狼玩家才相信预言家 =====
-      if(p.role!="wolf" && game.seerChecks && game.seerChecks.length > 0){
-        const recentCheck = game.seerChecks[game.seerChecks.length - 1];
-        if(recentCheck && recentCheck.isWolf && x.id === recentCheck.targetId){
-          // 公式：基础+10，智谋≥2加50分，已跳身份再加20分（最终范围10-80）
+      // 3) 处理预言家查验结果（规则③：智谋高的更相信预言家）
+      // ===== 修复：同时处理真预言家和狼人跳预言家的查验 =====
+      
+      // 收集所有跳预言家的玩家及其查验声明
+      const seerClaims = [];
+      
+      // 真预言家的查验（如果已跳身份）
+      const realSeer = getAlive().find(s => s.role === "seer");
+      if(realSeer && game.claimedPlayers.has(realSeer.id) && game.seerChecks && game.seerChecks.length > 0){
+        const lastCheck = game.seerChecks[game.seerChecks.length - 1];
+        seerClaims.push({
+          claimerId: realSeer.id,
+          targetId: lastCheck.targetId,
+          isWolf: lastCheck.isWolf,
+          isRealSeer: true
+        });
+      }
+      
+      // 狼人跳预言家的假查验
+      if(game.wolfFakeChecks){
+        for(const wolfId in game.wolfFakeChecks){
+          const wolf = game.players[wolfId];
+          if(wolf && wolf.alive && game.claimedPlayers.has(wolf.id)){
+            const fakeChecks = game.wolfFakeChecks[wolf.id];
+            if(fakeChecks && fakeChecks.length > 0){
+              // 取最后一次假查验
+              const lastFake = fakeChecks[fakeChecks.length - 1];
+              seerClaims.push({
+                claimerId: wolf.id,
+                targetId: lastFake,
+                isWolf: true, // 狼人跳预言家总是报"查杀"（70%概率）
+                isRealSeer: false
+              });
+            }
+          }
+        }
+      }
+      
+      // 如果只有一个预言家声明，直接相信
+      // 如果有多个预言家对跳，根据智谋、好感度判断相信谁
+      if(seerClaims.length === 1){
+        const claim = seerClaims[0];
+        if(claim.isWolf && x.id === claim.targetId){
           let bonus = 10;
           const intel = getAttr(p, '智谋');
-          if(intel >= 2) bonus += 50;  // 智谋≥2 加50分
-          // 如果预言家已经跳身份，加分更多
-          const seer = getAlive().find(s => s.role === "seer");
-          if(seer && game.claimedPlayers.has(seer.id)) bonus += 20;  // 已跳身份再加20分
+          if(intel >= 2) bonus += 50;
+          if(game.claimedPlayers.has(claim.claimerId)) bonus += 20;
           score += bonus;
+        }
+      } else if(seerClaims.length > 1){
+        // 多个预言家对跳：判断相信谁
+        // 简化逻辑：智谋≥4的玩家会分析发言，否则随机相信一个
+        const intel = getAttr(p, '智谋');
+        if(intel >= 4){
+          // 高智谋：分析哪个预言家更可信（简化：看发言中被质疑的次数）
+          let trustedClaim = null;
+          let min质疑 = Infinity;
+          for(const claim of seerClaims){
+            const 质疑次数 = game.speeches.filter(s => s && s.text && s.text.includes(game.players[claim.claimerId].name) && (s.text.includes("可疑") || s.text.includes("狼") || s.text.includes("矛盾"))).length;
+            if(质疑次数 < min质疑){
+              min质疑 = 质疑次数;
+              trustedClaim = claim;
+            }
+          }
+          if(trustedClaim && trustedClaim.isWolf && x.id === trustedClaim.targetId){
+            score += 60; // 高智谋玩家相信某个预言家
+          }
+        } else {
+          // 低智谋：随机相信一个预言家
+          const randomClaim = pick(seerClaims);
+          if(randomClaim.isWolf && x.id === randomClaim.targetId){
+            score += 30; // 低智谋玩家随机相信
+          }
         }
       }
       
       // 预言家自己：铁定投查到的狼
+      // 真预言家
       if(p.role==="seer" && game.seerChecks && game.seerChecks.length > 0){
         const lastCheck = game.seerChecks[game.seerChecks.length - 1];
         if(x.id===lastCheck.targetId && lastCheck.isWolf && game.players[lastCheck.targetId].alive){
-          score += 50; // 预言家铁定投查到的狼
+          score += 50; // 真预言家铁定投查到的狼
+        }
+      }
+      // 狼人跳预言家
+      if(game.wolfRoles[p.id] === 'chantJump' && game.wolfFakeChecks && game.wolfFakeChecks[p.id] && game.wolfFakeChecks[p.id].length > 0){
+        const lastFake = game.wolfFakeChecks[p.id][game.wolfFakeChecks[p.id].length - 1];
+        if(x.id === lastFake && game.players[lastFake] && game.players[lastFake].alive){
+          score += 50; // 狼人跳预言家铁定投假查到的狼
         }
       }
       
