@@ -153,6 +153,115 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .tag-claim{color:var(--gold);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(241,196,15,0.4)}
 .tag-info{color:var(--blue);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(41,128,185,0.4)}
 
+/* ===== 成就系统样式 ===== */
+#achievementPanel{
+  position:fixed;inset:0;z-index:10000;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.8);backdrop-filter:blur(4px);
+}
+#achievementPanel.hide{display:none}
+.achievement-card{
+  background:linear-gradient(135deg,#1a1a2e,#16213e);
+  border:2px solid var(--gold);border-radius:16px;
+  padding:32px;max-width:500px;width:90%;text-align:center;
+  box-shadow:0 0 40px rgba(226,183,20,0.2);
+}
+.achievement-card h2{
+  color:var(--gold);font-size:24px;margin-bottom:24px;
+  text-shadow:0 0 10px rgba(226,183,20,0.3);
+}
+.achievement-info{
+  display:flex;justify-content:center;gap:40px;
+  margin-bottom:24px;
+}
+.achievement-prestige,.achievement-rank{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.ap-label,.ar-label{
+  color:var(--gray);font-size:13px;
+}
+.ap-value{
+  color:var(--gold);font-size:36px;font-weight:700;
+  text-shadow:0 0 10px rgba(226,183,20,0.4);
+}
+.ar-value{
+  color:var(--white);font-size:28px;font-weight:700;
+  padding:4px 16px;background:rgba(226,183,20,0.15);
+  border-radius:8px;border:1px solid rgba(226,183,20,0.3);
+}
+.achievement-progress{
+  margin-bottom:24px;
+}
+.ap-bar{
+  width:100%;height:12px;background:rgba(255,255,255,0.1);
+  border-radius:6px;overflow:hidden;margin-bottom:8px;
+}
+.ap-bar-fill{
+  height:100%;background:linear-gradient(90deg,var(--gold),#f39c12);
+  border-radius:6px;transition:width 0.5s ease;width:0%;
+}
+.ap-text{
+  color:var(--gray);font-size:12px;
+}
+.achievement-ranks{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+  margin-bottom:24px;
+}
+.achievement-rank-item{
+  padding:8px 4px;background:rgba(255,255,255,0.05);
+  border-radius:8px;border:1px solid rgba(255,255,255,0.1);
+  font-size:11px;transition:all 0.3s;
+}
+.achievement-rank-item.achieved{
+  background:rgba(226,183,20,0.15);border-color:var(--gold);
+  box-shadow:0 0 8px rgba(226,183,20,0.3);
+}
+.achievement-rank-item.current{
+  background:rgba(46,204,113,0.15);border-color:var(--green);
+  box-shadow:0 0 8px rgba(46,204,113,0.3);
+}
+.achievement-rank-item .rank-name{
+  color:var(--gold);font-weight:700;margin-bottom:4px;
+}
+.achievement-rank-item .rank-prestige{
+  color:var(--gray);font-size:10px;
+}
+.achievement-close{
+  padding:10px 32px;border:2px solid var(--gold);border-radius:20px;
+  background:transparent;color:var(--gold);font-size:14px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;
+}
+.achievement-close:hover{
+  background:var(--gold);color:var(--bg);transform:scale(1.05);
+}
+
+/* 官职晋升提示 */
+.rank-up-toast{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:linear-gradient(135deg,rgba(226,183,20,0.95),rgba(22,33,62,0.95));
+  border:2px solid var(--gold);border-radius:16px;
+  padding:24px 40px;text-align:center;z-index:20000;
+  animation:rankUpAnim 2s ease-out forwards;
+  box-shadow:0 0 60px rgba(226,183,20,0.5);
+}
+.rank-up-toast .rut-icon{font-size:48px;margin-bottom:12px}
+.rank-up-toast .rut-title{color:var(--gold);font-size:20px;font-weight:700;margin-bottom:8px}
+.rank-up-toast .rut-rank{color:#fff;font-size:28px;font-weight:700}
+@keyframes rankUpAnim{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  40%{transform:translate(-50%,-50%) scale(1)}
+  80%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) translateY(-20px)}
+}
+
+@media(max-width:768px){
+  .achievement-ranks{grid-template-columns:repeat(3,1fr)}
+  .achievement-card{padding:20px}
+  .ap-value{font-size:28px}
+  .ar-value{font-size:22px}
+}
+
 /* ===== 标题画面 ===== */
 #titleScreen{
   position:fixed;inset:0;z-index:9999;
@@ -511,6 +620,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
     <button class="title-btn primary" onclick="startPlayerMode()"><span class="btn-icon">🎮</span>玩 家 扮 演</button>
     <button class="title-btn" onclick="startDestinyMode()"><span class="btn-icon">🎲</span>天 意 模 式</button>
     <button class="title-btn" onclick="startGodMode()"><span class="btn-icon">👁️</span>上 帝 视 角</button>
+    <button class="title-btn" onclick="openAchievement()"><span class="btn-icon">🏆</span>成 就 系 统</button>
     <button class="title-btn danger" onclick="confirmQuitGame()"><span class="btn-icon">🚪</span>退 出 游 戏</button>
   </div>
   <div class="title-footer">v1.0 · 三国狼人杀</div>
@@ -716,6 +826,31 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
       <button class="es-retry" onclick="retryGame()">🔄 再来一局</button>
       <button class="es-title" onclick="backToTitle()">🏠 返回标题</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== 成就系统面板 ===== -->
+<div id="achievementPanel" class="hide">
+  <div class="achievement-card">
+    <h2>🏆 成就系统</h2>
+    <div class="achievement-info">
+      <div class="achievement-prestige">
+        <span class="ap-label">当前声望</span>
+        <span class="ap-value" id="prestigeValue">0</span>
+      </div>
+      <div class="achievement-rank">
+        <span class="ar-label">当前官职</span>
+        <span class="ar-value" id="rankValue">平民</span>
+      </div>
+    </div>
+    <div class="achievement-progress">
+      <div class="ap-bar">
+        <div class="ap-bar-fill" id="prestigeBar"></div>
+      </div>
+      <div class="ap-text" id="prestigeText">距离下一级：还需 30 声望</div>
+    </div>
+    <div class="achievement-ranks" id="achievementRanks"></div>
+    <button class="achievement-close" onclick="closeAchievement()">关闭</button>
   </div>
 </div>
 
@@ -4256,6 +4391,9 @@ function endGame(winner){
   if(game.mode === 'player'){
     clearSavePlayerGame();
   }
+  
+  // 更新声望（成就系统）
+  updatePrestigeOnGameEnd(winner);
 }
 
 function onPlayerClick(id){
@@ -5791,6 +5929,138 @@ function selectPlayerTag(tag){
   renderPlayers();
   document.getElementById('modalArea').innerHTML = '';
   _tagTargetId = null;
+}
+
+// ===== 成就系统 =====
+const RANK_SYSTEM = [
+  {name:'平民', prestige:0},
+  {name:'里正', prestige:30},
+  {name:'亭长', prestige:80},
+  {name:'县令', prestige:150},
+  {name:'太守', prestige:250},
+  {name:'刺史', prestige:400},
+  {name:'州牧', prestige:600},
+  {name:'大都督', prestige:900},
+  {name:'丞相', prestige:1500},
+  {name:'皇帝(群雄)', prestige:5000}
+];
+
+function getPrestige(){
+  return parseInt(localStorage.getItem('threeKingdomsPrestige') || '0');
+}
+
+function savePrestige(val){
+  localStorage.setItem('threeKingdomsPrestige', String(val));
+}
+
+function getCurrentRank(prestige){
+  let current = RANK_SYSTEM[0];
+  for(const rank of RANK_SYSTEM){
+    if(prestige >= rank.prestige) current = rank;
+    else break;
+  }
+  return current;
+}
+
+function getNextRank(prestige){
+  for(const rank of RANK_SYSTEM){
+    if(prestige < rank.prestige) return rank;
+  }
+  return null; // 已达最高级
+}
+
+function openAchievement(){
+  document.getElementById('achievementPanel').classList.remove('hide');
+  updateAchievementDisplay();
+}
+
+function closeAchievement(){
+  document.getElementById('achievementPanel').classList.add('hide');
+}
+
+function updateAchievementDisplay(){
+  const prestige = getPrestige();
+  const currentRank = getCurrentRank(prestige);
+  const nextRank = getNextRank(prestige);
+  
+  // 更新声望值
+  document.getElementById('prestigeValue').textContent = prestige;
+  
+  // 更新当前官职
+  document.getElementById('rankValue').textContent = currentRank.name;
+  
+  // 更新进度条
+  if(nextRank){
+    const needed = nextRank.prestige - currentRank.prestige;
+    const have = prestige - currentRank.prestige;
+    const pct = Math.min(100, (have / needed) * 100);
+    document.getElementById('prestigeBar').style.width = pct + '%';
+    document.getElementById('prestigeText').textContent = `距离下一级【${nextRank.name}】：还需 ${nextRank.prestige - prestige} 声望`;
+  } else {
+    document.getElementById('prestigeBar').style.width = '100%';
+    document.getElementById('prestigeText').textContent = '已达最高官职！';
+  }
+  
+  // 更新官职列表
+  const ranksDiv = document.getElementById('achievementRanks');
+  ranksDiv.innerHTML = '';
+  for(const rank of RANK_SYSTEM){
+    const item = document.createElement('div');
+    item.className = 'achievement-rank-item';
+    if(prestige >= rank.prestige) item.classList.add('achieved');
+    if(rank.name === currentRank.name && prestige < (nextRank?nextRank.prestige:Infinity)) item.classList.add('current');
+    item.innerHTML = `<div class="rank-name">${rank.name}</div><div class="rank-prestige">${rank.prestige}声望</div>`;
+    ranksDiv.appendChild(item);
+  }
+}
+
+function addPrestige(amount, mode){
+  const oldPrestige = getPrestige();
+  const oldRank = getCurrentRank(oldPrestige);
+  const newPrestige = oldPrestige + amount;
+  savePrestige(newPrestige);
+  const newRank = getCurrentRank(newPrestige);
+  
+  // 检查是否晋升
+  if(newRank.name !== oldRank.name){
+    showRankUpToast(newRank.name);
+  }
+  
+  return newPrestige;
+}
+
+function showRankUpToast(rankName){
+  const toast = document.createElement('div');
+  toast.className = 'rank-up-toast';
+  toast.innerHTML = `
+    <div class="rut-icon">🎉</div>
+    <div class="rut-title">官职晋升！</div>
+    <div class="rut-rank">${rankName}</div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+
+// 在游戏结束时调用此函数更新声望
+function updatePrestigeOnGameEnd(winner){
+  let amount = 0;
+  const isWin = (winner === 'good' && game.mode !== 'wolf') || (winner === 'wolf' && game.mode === 'wolf');
+  
+  switch(game.mode){
+    case 'player':
+      amount = isWin ? 30 : 15;
+      break;
+    case 'destiny':
+      amount = isWin ? 15 : 5;
+      break;
+    case 'god':
+      amount = isWin ? 15 : 5;
+      break;
+  }
+  
+  if(amount > 0){
+    addPrestige(amount, game.mode);
+  }
 }
 </script>
 </body>
