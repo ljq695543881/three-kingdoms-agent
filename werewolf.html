@@ -2822,6 +2822,23 @@ async function player_wolfAction(){
 
 
 
+  // ===== 第二天及之后：只讨论刀人目标，不再讨论角色分配 =====
+  if(game.day > 1){
+    // 简单讨论：其他狼表态是否同意军师的目标
+    for(const wolf of wolves){
+      while(game.isPaused) await delay(100);
+      if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
+      let compliance=0.6 + getAttr(wolf,'政治')*0.05;
+      const masterFavor = getFavor(wolf, scriptMaster.id);
+      compliance += (masterFavor - 50) * 0.01;
+      compliance = Math.max(0.3, Math.min(0.95, compliance));
+      const follows=Math.random()<compliance;
+      game.wolfScriptCompliance[wolf.id]=follows;
+      const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+      await delay(500);
+    }
+  } else {
   // ===== 第三步：其他狼表态是否服从角色分配 =====
   for(const wolf of wolves){
     while(game.isPaused) await delay(100);
@@ -2857,6 +2874,7 @@ async function player_wolfAction(){
     addLog(`${speakerHTML(playerWolf,'<span style="color:var(--red)">【狼人】'+playerWolf.name+'</span>')}<span class="night-text">决定击杀${game.players[result.target].name}……</span>`,'wolf');
 }
 
+  }
 async function ai_wolfAction(){
   const gen=game.generation;
   const wolves=getAliveWolves();
@@ -2865,82 +2883,95 @@ async function ai_wolfAction(){
   if(targets.length===0)return;
 
   // ===== 识别关键角色 =====
-  // 武力最高 = 行动决策者
   const killMaster=wolves.reduce((b,w) => getAttr(w,'武力') > getAttr(b,'武力') ? w : b);
-  // 政治+智谋最高 = 剧本策划者
   const scriptMaster=wolves.reduce((b,w) => attrScore(w,'政治','智谋') > attrScore(b,'政治','智谋') ? w : b);
   game.scriptMasterId = scriptMaster.id;
+  
   // 第一天晚上分配狼角色（只在还没分配过时执行一次）
   if (Object.keys(game.wolfRoles).length === 0) {
     assignWolfRoles(scriptMaster, wolves);
   }
-    addLog('<span class="system-text">🐺 狼人密议开始……</span>','wolf');
+  
+  addLog('<span class="system-text">🐺 狼人密议开始……</span>','wolf');
   await delay(800);
 
   const proposals = [];
-  // 军师先提目标（狼人投票时可参考此目标）
+  // 军师先提目标
   const masterProposal=wolfProposeTarget(scriptMaster, targets);
   proposals.push(masterProposal);
   game.wolfScript = { target: masterProposal.target.id };
   game.wolfScriptCompliance={};
+  
   // 军师发言：提刀人目标
   const masterTarget=masterProposal.target;
   const masterTpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,masterTarget.name).replace(/{faction}/g,masterTarget.faction);
-      addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}`,'wolf');
+  addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}`,'wolf');
   await delay(1000);
 
   // 军师宣布角色分配（只在第一次分配时）
   if (!game.wolfRolesAnnounced) {
-  const roleNames = { chantJump: '悍跳狼', charge: '冲锋狼', deepWater: '深水狼', hook: '倒钩狼' };
-  let roleText = '角色分配：';
-  for (const [wolfId, role] of Object.entries(game.wolfRoles)) {
-    const wolf = game.players[wolfId];
-    roleText += `${wolf.name}→${roleNames[role]}、`;
-  }
-  roleText = roleText.slice(0, -1);
-  addLog(`${speakerHTML(scriptMaster, '<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${roleText}`,'wolf');
-  await delay(800);
-  game.wolfRolesAnnounced = true;
-  }
-
-
-
-  // ===== 第三步：其他狼表态是否服从角色分配 =====
-  for(const wolf of wolves){
-    while(game.isPaused) await delay(100);
-    if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
-    // 规则⑤：政治越高越服从剧本（适度调整，保留一定内讧增加趣味性）
-    let compliance=0.6 + getAttr(wolf,'政治')*0.05;  // 政治1→0.65, 政治6→0.9
-    // 对策划者好感度修正：好感度越高越服从
-    const masterFavor = getFavor(wolf, scriptMaster.id);
-    compliance += (masterFavor - 50) * 0.01; // 好感度60 → +0.1
-    // 规则⑦：意志越高越不服从（适度削弱影响）
-    compliance -= (getAttr(wolf, '意志') - 3) * 0.02;  // 意志6 → -0.06
-    compliance = Math.max(0.3, Math.min(0.95, compliance));  // 最低30%服从，保留一定内讧
-    const follows=Math.random()<compliance;
-    game.wolfScriptCompliance[wolf.id]=follows;
-    // 不服从剧本的狼：自己选一个角色（覆盖分配）
-    if(!follows){
-      const roleKeys=['chantJump','charge','deepWater','hook'];
-      const roleNames={chantJump:'悍跳狼',charge:'冲锋狼',deepWater:'深水狼',hook:'倒钩狼'};
-      // 不选自己已分配的角色（增加变化）
-      const assigned=game.wolfRoles[wolf.id]||'';
-      const candidates=roleKeys.filter(r=>r!=assigned);
-      const chosen=candidates.length>0?pick(candidates):pick(roleKeys);
-      game.wolfRoles[wolf.id]=chosen;
-      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}俺要当${roleNames[chosen]}！`,'wolf');
+    const roleNames = { chantJump: '悍跳狼', charge: '冲锋狼', deepWater: '深水狼', hook: '倒钩狼' };
+    let roleText = '角色分配：';
+    for (const [wolfId, role] of Object.entries(game.wolfRoles)) {
+      const wolf = game.players[wolfId];
+      roleText += `${wolf.name}→${roleNames[role]}、`;
     }
-    const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
-        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
-    await delay(500);
+    roleText = roleText.slice(0, -1);
+    addLog(`${speakerHTML(scriptMaster, '<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${roleText}`,'wolf');
+    await delay(800);
+    game.wolfRolesAnnounced = true;
   }
+
+  // ===== 第二天及之后：只讨论刀人目标 =====
+  if(game.day > 1){
+    // 简单讨论：其他狼表态是否同意军师的目标
+    for(const wolf of wolves){
+      while(game.isPaused) await delay(100);
+      if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
+      let compliance=0.6 + getAttr(wolf,'政治')*0.05;
+      const masterFavor = getFavor(wolf, scriptMaster.id);
+      compliance += (masterFavor - 50) * 0.01;
+      compliance = Math.max(0.3, Math.min(0.95, compliance));
+      const follows=Math.random()<compliance;
+      game.wolfScriptCompliance[wolf.id]=follows;
+      const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+      await delay(500);
+    }
+  } else {
+    // ===== 第一天：完整讨论（角色分配 + 服从性）=====
+    for(const wolf of wolves){
+      while(game.isPaused) await delay(100);
+      if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
+      let compliance=0.6 + getAttr(wolf,'政治')*0.05;
+      const masterFavor = getFavor(wolf, scriptMaster.id);
+      compliance += (masterFavor - 50) * 0.01;
+      compliance -= (getAttr(wolf, '意志') - 3) * 0.02;
+      compliance = Math.max(0.3, Math.min(0.95, compliance));
+      const follows=Math.random()<compliance;
+      game.wolfScriptCompliance[wolf.id]=follows;
+      // 不服从剧本的狼：自己选一个角色
+      if(!follows){
+        const roleKeys=['chantJump','charge','deepWater','hook'];
+        const roleNames={chantJump:'悍跳狼',charge:'冲锋狼',deepWater:'深水狼',hook:'倒钩狼'};
+        const assigned=game.wolfRoles[wolf.id]||'';
+        const candidates=roleKeys.filter(r=>r!=assigned);
+        const chosen=candidates.length>0?pick(candidates):pick(roleKeys);
+        game.wolfRoles[wolf.id]=chosen;
+        addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}俺要当${roleNames[chosen]}！`,'wolf');
+      }
+      const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
+      addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
+      await delay(500);
+    }
+  } // 第一天完整讨论结束
 
   // ===== 武力最高者决定最终行动 =====
   while(game.isPaused) await delay(100);
   const finalTarget=killMasterDecide(killMaster, proposals, targets);
   game.wolfTarget=finalTarget.id;
   const killTpl=pick(WOLF_DISCUSS.kill_decide).replace(/{t}/g,finalTarget.name);
-      addLog(`${speakerHTML(killMaster,'<span style="color:var(--red)">【武力裁决】'+killMaster.name+'</span>')}${killTpl}`,'wolf');
+  addLog(`${speakerHTML(killMaster,'<span style="color:var(--red)">【武力裁决】'+killMaster.name+'</span>')}${killTpl}`,'wolf');
   await delay(600);
 
   addLog('<span class="system-text">🐺 狼人密议结束，目标已锁定。</span>','wolf');
@@ -3099,13 +3130,20 @@ async function ai_seerAction(){
   const checkedIds = game.seerChecks.map(check => check.targetId);
   const unchecked = targets.filter(p => !checkedIds.includes(p.id));
   
+  // ===== 新增：排除对跳狼（他们肯定是狼，不用验）=====
+  const counterClaimers = getAlive()
+    .filter(p => p.id !== seer.id && game.playerClaims[p.id] === 'seer')
+    .map(p => p.id);
+  
+  const uncheckedFiltered = unchecked.filter(p => !counterClaimers.includes(p.id));
+  
   let target;
-  if(unchecked.length > 0){
-    // 优先验未查验过的人
-    target = pick(unchecked);
+  if(uncheckedFiltered.length > 0){
+    // 优先验未查验过的人（排除对跳狼）
+    target = pick(uncheckedFiltered);
     
     // 如果有可疑目标（被发言指控的），优先查验
-    const suspects = unchecked.filter(p => {
+    const suspects = uncheckedFiltered.filter(p => {
       return game.speeches.some(s => 
         s && s.text && s.text.includes(p.name) && 
         (s.text.includes("可疑") || s.text.includes("狼"))
@@ -3114,6 +3152,9 @@ async function ai_seerAction(){
     if(suspects.length > 0){
       target = pick(suspects);
     }
+  } else if(unchecked.length > 0) {
+    // 所有非对跳狼都验过了，只能验对跳狼
+    target = pick(unchecked);
   } else {
     // 所有人都验过了，只能重复验（通常不会发生）
     target = pick(targets);
@@ -4193,7 +4234,7 @@ async function votePhase(){
 
       // 1) 好感度基础分：好感度越低越想投（规则①）
       const f = getFavor(p, x.id);
-      score += (50 - f) * 0.5; // 好感度30 → +10分，好感度70 → -10分（允许负值）
+      score += (50 - f) * 0.2; // 降低好感度影响，让票型更多变
 
       // 2) 发言中被怀疑的次数
       for(const s of game.speeches){
@@ -4248,8 +4289,8 @@ async function votePhase(){
         if(claim.isWolf && x.id === claim.targetId){
           let bonus = 10;
           const intel = getAttr(p, '智谋');
-          if(intel >= 2) bonus += 50;
-          if(game.claimedPlayers.has(claim.claimerId)) bonus += 20;
+          if(intel >= 2) bonus += 30;  // 降低预言家查验影响，让票型更多变
+          if(game.claimedPlayers.has(claim.claimerId)) bonus += 10;  // 降低已跳身份的影响
           score += bonus;
         }
       } else if(seerClaims.length > 1){
@@ -4329,7 +4370,7 @@ async function votePhase(){
         }
       }
 
-      suspectScores[x.id] = score;
+      suspectScores[x.id] = score + (Math.random() - 0.5) * 20; // 添加随机扰动，让票型更多变
     }
 
     // ===== 玩家扮演模式：手动投票 =====
@@ -4350,15 +4391,25 @@ async function votePhase(){
     // ===== 严格一人一票：选得分最高的目标 =====
     let target = null;
     let maxScore = -Infinity;
-    for(const x of suspectPool){
-      const s = suspectScores[x.id] || 0;
-      if(s > maxScore){
-        maxScore = s;
-        target = x;
+    
+    // 添加"跟风/犹豫"机制：低智谋玩家有概率随机投票
+    const intel = getAttr(p, '智谋');
+    if(intel < 3 && Math.random() < 0.3){
+      // 30%概率随机投票（模拟跟风/犹豫不决）
+      target = pick(suspectPool);
+    } else {
+      // 按分数投票
+      for(const x of suspectPool){
+        const s = suspectScores[x.id] || 0;
+        if(s > maxScore){
+          maxScore = s;
+          target = x;
+        }
       }
     }
+    
     // 如果所有分为0或负数，随机选一个
-    if(!target || maxScore <= 0){
+    if(!target || (maxScore <= 0 && intel >= 3)){
       target = pick(suspectPool);
     }
 
@@ -5098,11 +5149,13 @@ function buildChantJumpFragments(wolf, alive, ctx, spokenSet) {
     }
     // 攻击质疑者（只剩片段槽才加）
     if (fragments.length < 3) {
-      const questioners = ctx.filter(s => s.text && s.text.includes(wolf.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼")));
+      const questioners = ctx.filter(s => s && s.text && s.text.includes(wolf.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼")));
       if (questioners.length > 0 && Math.random() < 0.8) {
         const q = pick(questioners);
-        const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
-        if (qId) fragments.push({ type: 'attack', targetId: qId });
+        if (q) {
+          const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
+          if (qId) fragments.push({ type: 'attack', targetId: qId });
+        }
       } else if (Math.random() < 0.5 && goodAlive.length > 0 && fragments.length < 3) {
         fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
       }
@@ -5161,10 +5214,14 @@ function buildChargeFragments(wolf, alive, wolves, ctx, spokenSet) {
 
   if (questionedChantJump && Math.random() < 0.8) {
     // 保护悍跳狼：攻击质疑者
-    const questioners = ctx.filter(s => s.text && s.text.includes(chantJumpWolf.name) && (s.text.includes("可疑") || s.text.includes("投")));
-    const q = pick(questioners);
-    const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
-    if (qId) fragments.push({ type: 'attack', targetId: qId });
+    const questioners = ctx.filter(s => s && s.text && s.text.includes(chantJumpWolf.name) && (s.text.includes("可疑") || s.text.includes("投")));
+    if (questioners.length > 0) {
+      const q = pick(questioners);
+      if (q) {
+        const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
+        if (qId) fragments.push({ type: 'attack', targetId: qId });
+      }
+    }
   } else if (chantJumpWolf && Math.random() < 0.6) {
     // 附和悍跳狼
     fragments.push({ type: 'shield', targetId: chantJumpWolf.id });
