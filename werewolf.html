@@ -401,6 +401,16 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 .char-start:disabled{opacity:0.4;cursor:not-allowed;transform:none}
 .char-attr-tip{color:var(--gray);font-size:11px;margin-top:8px}
 
+/* ===== 头像选择 ===== */
+.avatar-select{margin:16px 0;text-align:center}
+.avatar-select .as-label{font-size:13px;color:var(--gray);margin-bottom:8px}
+.avatar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;justify-items:center}
+.avatar-opt{width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,0.2);background:var(--card);cursor:pointer;transition:all 0.2s;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative}
+.avatar-opt img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatar-opt:hover{border-color:var(--gold);transform:scale(1.08)}
+.avatar-opt.selected{border-color:var(--gold);box-shadow:0 0 12px rgba(226,183,20,0.5);transform:scale(1.08)}
+.avatar-opt .avatar-name{font-size:9px;color:var(--white);text-align:center;position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);white-space:nowrap}
+
 /* ===== 发言选择面板 ===== */
 #speechPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
 #speechPanel.hide{display:none}
@@ -644,6 +654,27 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   <div class="char-card">
     <h2>创建角色</h2>
     <input type="text" id="charNameInput" placeholder="请输入角色名" maxlength="6">
+    <div class="avatar-select">
+      <div class="as-label">选择头像</div>
+      <div class="avatar-grid" id="avatarGrid">
+        <div class="avatar-opt" data-avatar="A" onclick="selectAvatar('A')">
+          <img src="avatars/player/A.png" onerror="this.style.display='none'">
+          <div class="avatar-name">A</div>
+        </div>
+        <div class="avatar-opt" data-avatar="B" onclick="selectAvatar('B')">
+          <img src="avatars/player/B.png" onerror="this.style.display='none'">
+          <div class="avatar-name">B</div>
+        </div>
+        <div class="avatar-opt" data-avatar="C" onclick="selectAvatar('C')">
+          <img src="avatars/player/C.png" onerror="this.style.display='none'">
+          <div class="avatar-name">C</div>
+        </div>
+        <div class="avatar-opt" data-avatar="D" onclick="selectAvatar('D')">
+          <img src="avatars/player/D.png" onerror="this.style.display='none'">
+          <div class="avatar-name">D</div>
+        </div>
+      </div>
+    </div>
     <div class="faction-select">
       <div class="fs-label">选择阵营</div>
       <div class="fs-btns">
@@ -2321,7 +2352,8 @@ function init(optPlayer){
       name: optPlayer.name,
       faction: optPlayer.faction || '群',
       attr: optPlayer.attr || {},
-      growthPts: optPlayer.growthPts || 0
+      growthPts: optPlayer.growthPts || 0,
+      avatar: optPlayer.avatar || ''
     };
   }
 
@@ -2372,6 +2404,9 @@ function showStartModal(){
     <div style="margin:16px 0;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:center;border:2px solid ${myRole.color}">
       <div style="font-size:13px;color:var(--gray);margin-bottom:6px">你的身份</div>
       <div style="font-size:22px;font-weight:700;color:${myRole.color}">${myRole.name}</div>
+      <div style="margin:8px auto;width:60px;height:60px;border-radius:50%;overflow:hidden;border:2px solid ${myRole.color}">
+        <img src="${me.avatar || 'avatars/qun/default.png'}" onerror="this.style.display='none';this.parentNode.innerHTML='${me.name[0]}'" style="width:100%;height:100%;object-fit:cover;">
+      </div>
       <div style="font-size:14px;margin-top:4px">${me.name}（${me.faction}）</div>
       <div style="font-size:12px;color:var(--gray);margin-top:8px">${roleTip[me.role]||'祝你好运！'}</div>
     </div>
@@ -2496,7 +2531,7 @@ function renderPlayers(){
   grid.innerHTML=game.players.map(p=>{
     const fc={"魏":"faction-wei","蜀":"faction-shu","吴":"faction-wu","群雄":"faction-qun","群":"faction-qun"}[p.faction];
     const rc=ROLE_CFG[p.role].color;
-    const imgSrc = (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
+    const imgSrc = p.avatar ? p.avatar : (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
     const showRole = !hideRoles || visibleRoleIds.includes(p.id);
     const roleDiv = showRole ? `<div style="font-size:10px;color:${rc};font-weight:700">${ROLE_CFG[p.role].name}</div>` : '';
     const isMe = game.mode==='player' && p.id===game.playerId;
@@ -3062,9 +3097,11 @@ function assignWolfRoles(scriptMaster, wolves) {
 // 武力最高者决定最终目标
 function killMasterDecide(killMaster, proposals, targets){
   // ===== 优先刀已跳身份的预言家（不使用隐藏信息 p.role）=====
+  // ===== 修复：排除狼人队友，避免互刀 =====
   const exposedSeer = getAlive().find(p => 
-    (game.claimedPlayers.has(p.id)) || 
-     game.speeches.some(s => s && s.speakerId === p.id && s.speechType && s.speechType.includes("claim_seer"))
+    p.role !== "wolf" &&  // 排除狼人队友
+    ((game.claimedPlayers.has(p.id)) || 
+     game.speeches.some(s => s && s.speakerId === p.id && s.speechType && s.speechType.includes("claim_seer")))
   );
   
   // 如果有已跳身份的预言家，决策者100%优先刀他（平衡性修复）
@@ -3227,8 +3264,32 @@ async function ai_witchAction(){
     // 毒药概率：40% + 智谋×10%
     let poisonProb=0.4+intel*0.1;
     if(Math.random()<poisonProb){
+      // ===== 新增：保护自己（被悍跳狼查杀时，优先毒他）=====
+      let poisonTarget = null;
+      const witchId = witch.id;
+      
+      // 从 wolfFakeChecks 中查找查杀女巫的狼人
+      for (const wid in game.wolfFakeChecks) {
+        const fakeChecks = game.wolfFakeChecks[wid];
+        if (fakeChecks && Array.isArray(fakeChecks) && fakeChecks.includes(witchId)) {
+          const w = game.players[wid];
+          if (w && w.alive) { poisonTarget = w.id; break; }
+        }
+      }
+      
+      // 从发言中查找查杀女巫的人
+      if (!poisonTarget) {
+        const attacker = game.speeches.find(s => s && s.text && s.text.includes(witch.name) && (s.text.includes("查杀") || s.text.includes("狼人")));
+        if (attacker) {
+          const aid = attacker.speakerId || getAlive().find(p => p.name === attacker.speakerName)?.id;
+          if (aid && game.players[aid] && game.players[aid].alive) poisonTarget = aid;
+        }
+      }
+      
       const wolves=getAliveWolves();
-      if(wolves.length>0){
+      if(poisonTarget) {
+        game.witchPoison = poisonTarget;
+      } else if(wolves.length>0){
         const knownWolves=wolves.filter(w=>game.speeches.find(s=>s && s.speechType && s.speechType.includes("claim_seer")&&s.isWolf));
         if(knownWolves.length>0){
           game.witchPoison=pick(knownWolves).id;
@@ -4492,7 +4553,7 @@ function endGame(winner){
   summary+=`<div style="text-align:left;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:13px">`;
   summary+=`<div style="margin-bottom:10px;color:var(--gold);font-weight:700">身份揭晓：</div>`;
   for(const p of game.players){
-    const imgSrc = (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
+    const imgSrc = p.avatar ? p.avatar : (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
     const statusLabel=p.alive?"存活":"阵亡";
     const statusColor=p.alive?"var(--green)":"var(--red)";
     const deathDetail=p.alive?"":deathInfoText(p);
@@ -4663,6 +4724,7 @@ function confirmQuitGame(){
 
 // ===== 角色创建 =====
 let _selectedFaction = '群';
+let _selectedAvatar = '';
 function renderCharAttrGrid(){
   const attrs = ['武力','智谋','统帅','政治','魅力','意志'];
   let html = '';
@@ -4707,13 +4769,22 @@ function selectFaction(fac){
   });
 }
 
+function selectAvatar(avatarName){
+  _selectedAvatar = avatarName;
+  document.querySelectorAll('.avatar-opt').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.avatar===avatarName);
+  });
+  checkCharReady();
+}
+
 function confirmCharCreate(){
   const name = document.getElementById('charNameInput').value.trim();
   if(!name) return;
   const attrs = ['武力','智谋','统帅','政治','魅力','意志'];
   let attr = {};
   for(const a of attrs) attr[a] = parseInt(document.getElementById('attr-val-'+a).textContent);
-  const optPlayer = { name, faction: _selectedFaction, attr, growthPts: 0 };
+  const avatarSrc = _selectedAvatar ? `avatars/player/${_selectedAvatar}.png` : '';
+  const optPlayer = { name, faction: _selectedFaction, attr, growthPts: 0, avatar: avatarSrc };
   document.getElementById('charCreate').classList.add('hide');
   // 开始新游戏前清除存档
   clearSavePlayerGame();
@@ -5741,7 +5812,7 @@ function selectDestinyAction(action){
   const container = document.getElementById('destinyTargetList');
   const alive = getAlive();
   container.innerHTML = alive.map(p=>{
-    const imgSrc = (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
+    const imgSrc = p.avatar ? p.avatar : (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
     return `<div class="destiny-target-card" data-id="${p.id}" onclick="selectDestinyTarget(${p.id})">
       <img src="${imgSrc}" onerror="this.style.display='none'">
       <div>${p.name}</div>
@@ -5855,7 +5926,7 @@ function showNightPanel(type, data){
     _nightResult = null;
     confirmBtn.disabled = true;
 
-    const getImgSrc = (p) => (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
+    const getImgSrc = (p) => p.avatar ? p.avatar : (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
 
     if(type === 'guard'){
       titleEl.textContent = '🛡️ 守卫行动';
@@ -5983,7 +6054,7 @@ function showVotePanel(){
     game.pendingVoteResolve = resolve;
     const container = document.getElementById('voteOptions');
     const alive = getAlive().filter(p => p.id !== game.playerId);
-    const getImgSrc = (p) => (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
+    const getImgSrc = (p) => p.avatar ? p.avatar : (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
     container.innerHTML = `<div class="vote-players">` + alive.map(p =>
       `<div class="vote-player-card" data-id="${p.id}" onclick="selectVoteTarget(${p.id})">
         <div class="vote-avatar-wrap">
