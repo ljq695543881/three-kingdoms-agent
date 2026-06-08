@@ -1689,7 +1689,9 @@ function deathInfoText(p) {
 
 // ===== 属性辅助函数 =====
 function getAttr(p, name) {
-  return (p.attrs && p.attrs[name]) || 3;
+  const attrs = p.attr || p.attrs || {};
+  const val = attrs[name];
+  return (val !== undefined && val !== null) ? Number(val) : 3;
 }
 function attrScore(p) {
   let s = 0; for (let i = 1; i < arguments.length; i++) s += getAttr(p, arguments[i]); return s;
@@ -4580,15 +4582,14 @@ function onPlayerClick(id){
   if(game.isProcessing)return;
   const p=game.players[id];
   if(!p.alive)return;
-  // 玩家模式：点击角色卡片弹出标签选择面板
-  if(game.mode==='player' && !game.playerDied){
-    showTagPanel(id);
-    return;
+  // 所有模式：点击角色卡片弹出详情窗（含六维属性 + 打标签）
+  showTagPanel(id);
+  // 非玩家模式额外保留选中高亮
+  if(game.mode!=='player' || game.playerDied){
+    document.querySelectorAll(".p-card").forEach(c=>c.classList.remove("selected"));
+    document.getElementById("pc"+id).classList.add("selected");
+    game.selectedPlayer=id;
   }
-  // 其他模式：原选中逻辑
-  document.querySelectorAll(".p-card").forEach(c=>c.classList.remove("selected"));
-  document.getElementById("pc"+id).classList.add("selected");
-  game.selectedPlayer=id;
 }
 
 function clearSelection(){
@@ -6092,20 +6093,37 @@ function showTagPanel(playerId){
   const p = game.players[playerId];
   if(!p) return;
   _tagTargetId = playerId;
+
+  // 六维属性
+  const at = p.attr || p.attrs || {};
+  const attrsHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;margin:8px 0 12px 0;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08)">
+    <span style="color:#c0392b;font-weight:700;font-size:12px">武力 ${getAttr(p,'武力')}</span>
+    <span style="color:#2980b9;font-weight:700;font-size:12px">智谋 ${getAttr(p,'智谋')}</span>
+    <span style="color:#27ae60;font-weight:700;font-size:12px">统帅 ${getAttr(p,'统帅')}</span>
+    <span style="color:#8e44ad;font-weight:700;font-size:12px">魅力 ${getAttr(p,'魅力')}</span>
+    <span style="color:#f39c12;font-weight:700;font-size:12px">意志 ${getAttr(p,'意志')}</span>
+  </div>`;
+
   const tagMap = {'wolf':'狼人','seer':'预言家','witch':'女巫','hunter':'猎人','guard':'守卫','villager':'平民','none':'无'};
   const tagColors = {'wolf':'var(--wolf)','seer':'var(--seer)','witch':'var(--witch)','hunter':'var(--hunter)','guard':'var(--guard)','villager':'var(--villager)','none':'rgba(255,255,255,0.2)'};
   const currentTag = game.playerTags && game.playerTags[playerId] ? game.playerTags[playerId] : 'none';
+
+  // 是否显示打标签按钮（仅玩家模式且未死亡）
+  const showTagBtns = game.mode==='player' && !game.playerDied;
+
   let html = `<div class="modal-overlay" onclick="closeTagPanel(event)"><div class="modal tag-modal">
-    <h3 style="margin:0 0 10px 0;font-size:15px">给 ${p.name} 打标签</h3>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+    <h3 style="margin:0 0 4px 0;font-size:15px">${p.name}（${p.faction}）</h3>
+    ${attrsHtml}
+    <div style="margin:4px 0 10px 0;font-size:13px;color:var(--gray)">给 ${p.name} 打标签</div>
+    ${showTagBtns ? `<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
       ${Object.keys(tagMap).map(k=>
         `<button class="tag-option-btn ${k===currentTag?'tag-selected':''}" data-tag="${k}" onclick="selectPlayerTag('${k}')"
           style="padding:8px 16px;border-radius:8px;border:2px solid ${k===currentTag?tagColors[k]:'rgba(255,255,255,0.2)'};background:${tagColors[k]};color:#fff;font-weight:700;cursor:pointer;font-size:13px">
           ${tagMap[k]}
         </button>`
       ).join('')}
-    </div>
-    <button style="margin-top:14px;padding:6px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:var(--gray);cursor:pointer;font-size:12px" onclick="closeTagPanel()">取消</button>
+    </div>` : `<div style="color:var(--gray);font-size:12px;margin:8px 0">（仅玩家模式可打标签）</div>`}
+    <button style="margin-top:14px;padding:6px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:var(--gray);cursor:pointer;font-size:12px" onclick="closeTagPanel()">关闭</button>
   </div></div>`;
   document.getElementById('modalArea').innerHTML = html;
 }
