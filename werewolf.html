@@ -1940,11 +1940,53 @@ function generatePersonalSpeech(p, targetName) {
   if (traits.length === 0) return null;
   const trait = pick(traits);
   const templates = [
+    // 自夸+攻击（保留少量）
     `我${trait}，这一点在座各位有目共睹。{t}，你那种嘴脸骗不了我。`,
     `${trait}！这就是我${p.name}的座右铭。{t}的所作所为，完全是在侮辱在座各位的智商。`,
-    `世人皆知我${trait}，今天我就用这个眼光来审视一下——{t}，你很可疑。`,
-    `我一生${trait}，岂能容忍{t}这种宵小之辈在眼前晃悠？各位投他！`,
-    `哼，以我${trait}的经验来看，{t}绝对有问题。信不信由你。`,
+    // 观察/感慨型
+    `说实话，今天这局的水很深，大家都在藏。`,
+    `这局比我想象的复杂多了，每个人都不简单。`,
+    `我${trait}这么多年，头一回遇到这么难判断的局面。`,
+    `别看我嘴上不说，心里可都记着呢。`,
+    `有些人演得真好，差点就信了。`,
+    `这局势啊，看似风平浪静，实则暗流涌动。`,
+    `每个人的发言我都听进去了，谁真谁假，时间会给出答案。`,
+    `越是沉默的人，越值得留意。`,
+    // 立场/态度型
+    `我${trait}，从来不怕得罪人。有什么说什么。`,
+    `我这个人就是${trait}，藏不住话，该说的早晚要说。`,
+    `不管结果怎样，我问心无愧。${trait}二字，我问得起。`,
+    `我这人说话直，但句句是真心话。`,
+    `信不信随你们，反正我把该说的都说了。`,
+    `我${trait}一世，绝不会在这种事上含糊。`,
+    // 感慨/回忆型
+    `想当年我${trait}的名声，可都不是白来的。`,
+    `哼，以我${trait}的经验来看，这种局我见得多了。`,
+    `这游戏嘛，不到最后一刻谁也不好说。`,
+    `活到我这岁数，什么阵仗没见过？沉住气就行。`,
+    `${trait}二字，是我这一生最看重的东西。`,
+    // 提醒/暗示型
+    `大家仔细想想今天的发言，谁在带节奏，谁在划水，一目了然。`,
+    `我只能说，真话不一定好听，但假话总有破绽。`,
+    `今天的票型很关键，大家擦亮眼睛。`,
+    `别光听谁说了什么，要看谁没说什么。`,
+    `越是急着自证清白的人，越要好好想想。`,
+    `记住今天谁护着谁、谁踩着谁，比听发言管用。`,
+    // 威胁/警告型
+    `丑话说前头，谁要是想浑水摸鱼，我第一个不答应。`,
+    `别以为不说话就安全，沉默也是一种态度。`,
+    `狼人最怕的就是大家冷静分析，所以我们越冷静，他们越慌。`,
+    `投错一个人不要紧，要紧的是同一个坑别踩两次。`,
+    // 自嘲/轻松型
+    `反正我就是个直肠子，有什么说什么，你们也别嫌我烦。`,
+    `要是我判断错了，你们尽管笑我。但万一是对的呢？`,
+    `我这人别的本事没有，就是直觉准。`,
+    `好吧，可能我想多了，但多想想总不是坏事。`,
+    // 三国风味型
+    `乱世之中，人心最难测。各位，且行且珍惜。`,
+    `尔等鼠目寸光之辈，岂能识破我的${trait}之谋？`,
+    `我虽不才，但也知道兼听则明、偏信则暗的道理。`,
+    `兵者，诡道也。这局里谁是曹操谁是周瑜，走着瞧。`,
   ];
   return pick(templates).replace(/\{t\}/g, t);
 }
@@ -2492,6 +2534,13 @@ function init(optPlayer){
   document.getElementById('destinyPanel').classList.add('hide');
   document.getElementById('growthPanel').classList.add('hide');
   document.getElementById('charCreate').classList.add('hide');
+  const _hunterPanel = document.getElementById('hunterShootPanel');
+  if(_hunterPanel) _hunterPanel.classList.add('hide');
+  const _destinyDeath = document.getElementById('destinyDeathPanel');
+  if(_destinyDeath) _destinyDeath.classList.add('hide');
+  const _favorPanel = document.getElementById('favorPanel');
+  if(_favorPanel) _favorPanel.classList.remove('show');
+  document.getElementById('speechHistoryBtn').style.display = 'none';
   document.getElementById('modalArea').innerHTML='';
   document.getElementById('phaseBar').innerHTML='';
   document.getElementById('actionBar').innerHTML='';
@@ -4576,7 +4625,7 @@ function buildLastWordsFragments(player) {
 
 function generateLastWords(player) {
   const fragments = buildLastWordsFragments(player);
-  const text = generatePlayerSpeechText(fragments);
+  const text = generatePlayerSpeechText(fragments, player);
   return { fragments, text };
 }
 
@@ -4946,7 +4995,7 @@ async function votePhase(){
         else if(tp.role === 'wolf') fragments = buildWolfFragments(tp, getAlive(), getAliveWolves(), null, true, [], game.spokenToday);
         else if(tp.role === 'villager') fragments = buildVillagerFragments(tp, suspectPool, [], game.spokenToday);
         else fragments = buildGoodFragments(tp, suspectPool, [], game.spokenToday);
-        speech = generatePlayerSpeechText(fragments);
+        speech = generatePlayerSpeechText(fragments, tp);
         classified = fragmentsToClassified(fragments);
       }
 
@@ -5227,6 +5276,9 @@ function endGame(winner){
   
   // 更新声望（成就系统）
   updatePrestigeOnGameEnd(winner);
+  
+  // 存储胜者，用于成长系统
+  _lastGameWinner = winner;
 }
 
 function onPlayerClick(id){
@@ -5270,10 +5322,10 @@ function startGodMode(){
 function startPlayerMode(){
   hideTitle();
   game.mode='player';
-  // 检查是否有存档
-  const savedGame = localStorage.getItem('playerModeSave');
+  // 检查是否有已保存的角色（供"继续游戏"继承）
+  const savedChar = localStorage.getItem('playerCharacter');
   const continueBtn = document.getElementById('continueBtn');
-  if(savedGame){
+  if(savedChar){
     continueBtn.disabled = false;
   } else {
     continueBtn.disabled = true;
@@ -5286,27 +5338,16 @@ function startNewGame(){
   renderCharAttrGrid();
 }
 function continueGame(){
-  const savedGame = localStorage.getItem('playerModeSave');
-  if(!savedGame){
-    alert('没有找到存档！');
+  const savedChar = localStorage.getItem('playerCharacter');
+  if(!savedChar){
+    alert('没有找到已保存的角色！');
     return;
   }
   try {
-    const data = JSON.parse(savedGame);
-    // 恢复游戏状态
-    Object.assign(game, data.gameState);
-    // 将 spokenToday / claimedPlayers 从 Array 转回 Set（JSON 不支持 Set 类型）
-    if(Array.isArray(game.spokenToday)) game.spokenToday = new Set(game.spokenToday);
-    if(Array.isArray(game.claimedPlayers)) game.claimedPlayers = new Set(game.claimedPlayers);
-    if(data.playerClaims) game.playerClaims = data.playerClaims;
-    if(data.playerTags) game.playerTags = data.playerTags;
-    if(data.wolfRoles) game.wolfRoles = data.wolfRoles;
-    if(!game.wolfFakeChecks) game.wolfFakeChecks = {};
-    if (data.seerReportedChecks) game.seerReportedChecks = data.seerReportedChecks;
+    const charData = JSON.parse(savedChar);
     document.getElementById('playerModeSelect').classList.add('hide');
-    renderPlayers();
-    showStartModal();
-    addLog('<span style="color:var(--gold)">【读档成功】继续游戏！</span>');
+    clearSavePlayerGame();
+    init(charData);
   } catch(e){
     alert('读档失败：' + e.message);
     console.error(e);
@@ -5438,6 +5479,8 @@ function confirmCharCreate(){
   for(const a of attrs) attr[a] = parseInt(document.getElementById('attr-val-'+a).textContent);
   const avatarSrc = _selectedAvatar ? `avatars/player/${_selectedAvatar}.png` : '';
   const optPlayer = { name, faction: _selectedFaction, attr, growthPts: 0, avatar: avatarSrc };
+  // 持久化角色信息，供"继续游戏"继承
+  localStorage.setItem('playerCharacter', JSON.stringify(optPlayer));
   document.getElementById('charCreate').classList.add('hide');
   // 开始新游戏前清除存档
   clearSavePlayerGame();
@@ -5798,8 +5841,100 @@ function getTargetFacts(targetId) {
 }
 
 // ===== 生成发言文本（支持多片段，上下文感知）=====
-function generatePlayerSpeechText(fragments){
-  return fragments.map(frag => {
+// ===== 肢体动作/表情描写 =====
+function getActionDescription(fragments, player) {
+  const actionPools = {
+    attack: [
+      '猛地一拍桌子，目光锐利',
+      '双手抱胸，冷冷地盯着对方',
+      '眉头紧锁，语气不善',
+      '用手指点着桌面，一字一顿',
+      '身子前倾，逼视着对方',
+      '冷笑一声，摇了摇头',
+      '眯起眼睛，若有所思',
+      '攥紧拳头，压低了声音',
+    ],
+    shield: [
+      '摆了摆手，连忙摇头',
+      '皱着眉，语气急切',
+      '摊开双手，满脸不解',
+      '伸手挡了一下，语气坚定',
+      '轻轻叹了口气，目光诚恳',
+      '拍了拍胸口，语气真挚',
+    ],
+    claim: [
+      '站起身来，环顾四周',
+      '深吸一口气，挺直了腰板',
+      '清了清嗓子，正色道',
+      '双手按在桌上，目光坚定',
+      '不紧不慢地站了起来',
+      '微微一笑，从容开口',
+      '拍了拍桌子，声音洪亮',
+    ],
+    info: [
+      '压低声音，凑近桌面',
+      '敲了敲桌子，示意大家安静',
+      '伸出手指比划着',
+      '压低帽檐，语气严肃',
+      '左右看了看，才缓缓开口',
+    ],
+    conservative: [
+      '靠在椅背上，语气有点无奈',
+      '托着下巴，若有所思',
+      '耸了耸肩，一脸无所谓',
+      '打了个哈欠，百无聊赖',
+      '慢悠悠地喝了口茶',
+      '歪着头，漫不经心',
+      '伸了个懒腰，随口说道',
+    ],
+    neutral: [
+      '微微点头，语气沉稳',
+      '慢悠悠捻着袖口，笑了笑',
+      '捋了捋胡须，不紧不慢',
+      '端着茶杯，轻啜一口',
+      '目光扫过在座各位，缓缓开口',
+      '整理了一下衣襟，正色道',
+      '双手交叉放在膝上，语气平和',
+    ],
+    wolfLie: [
+      '不自觉地摸了一下鼻子',
+      '眼神微微闪躲，随即恢复镇定',
+      '清了清嗓子，略显不自然',
+      '手指无意识地搓着袖口',
+      '嘴角微微抽动了一下',
+    ]
+  };
+
+  // 确定主要发言类型
+  const mainType = fragments[0]?.type || 'conservative';
+  const hasClaimOrInfo = fragments.some(f => f.type === 'claim' || f.type === 'info');
+
+  // 狼人撒谎检测：政治越低越容易露出破绽
+  if (player && player.role === 'wolf' && hasClaimOrInfo) {
+    const politic = getAttr(player, '政治');
+    let lieChance = 0;
+    if (politic <= 2) lieChance = 0.25;
+    else if (politic <= 4) lieChance = 0.10;
+    // 政治 5+ → 0%，不会出现撒谎微表情
+    if (Math.random() < lieChance) {
+      return pick(actionPools.wolfLie);
+    }
+  }
+
+  // 根据类型选池
+  let pool;
+  if (mainType === 'attack') pool = actionPools.attack;
+  else if (mainType === 'shield') pool = actionPools.shield;
+  else if (mainType === 'claim') pool = actionPools.claim;
+  else if (mainType === 'info') pool = actionPools.info;
+  else if (mainType === 'conservative') pool = actionPools.conservative;
+  else pool = actionPools.neutral;
+
+  return pick(pool);
+}
+
+function generatePlayerSpeechText(fragments, player){
+  const text = fragments.map(frag => {
     // --- 划水 ---
     if(frag.type === 'conservative'){
       const templates = [
@@ -6004,6 +6139,11 @@ function generatePlayerSpeechText(fragments){
     }
     return '';
   }).join('');
+  
+  // 在发言前添加肢体动作/表情描写
+  const speaker = player || (game.currentSpeakerId != null ? game.players[game.currentSpeakerId] : null);
+  const action = getActionDescription(fragments, speaker);
+  return '（' + action + '）' + text;
 }
 
 // ===== fragments 转 classified 格式（供 speechTypeLabel / applySpeechFavorEffect 使用）=====
@@ -6714,10 +6854,126 @@ function selectDestinyDeathOption(option){
   }
 }
 
-// ===== 属性成长 =====
+// ===== 属性成长系统 =====
+let _pendingGrowthAction = null;  // 'retry' | 'title'
+let _lastGameWinner = null;
+let _growthEarned = 0;
+let _growthRemaining = 0;
+let _growthAttrs = {};
+const GROWTH_CAP = 10;
+const GROWTH_ATTRS = ['武力','智谋','统帅','政治','魅力','意志'];
+
+// 计算本局获得的属性点
+function calcGrowthPoints(winner){
+  if(game.mode !== 'player' || game.playerId == null) return 0;
+  const me = game.players[game.playerId];
+  if(!me) return 0;
+  const playerTeam = me.role === 'wolf' ? 'wolf' : 'good';
+  const isWin = (winner === playerTeam);
+  if(!isWin) return 1;           // 阵营失败 → 1点
+  return me.alive ? 3 : 2;       // 胜利+存活 → 3点，胜利+死亡 → 2点
+}
+
+// 判断是否需要弹出成长面板
+function shouldShowGrowth(winner){
+  if(game.mode !== 'player' || game.playerId == null) return false;
+  const me = game.players[game.playerId];
+  if(!me) return false;
+  const earned = calcGrowthPoints(winner);
+  const carried = me.growthPts || 0;
+  const total = earned + carried;
+  if(total <= 0) return false;
+  // 全部属性已满则跳过
+  if(GROWTH_ATTRS.every(a => getAttr(me, a) >= GROWTH_CAP)) return false;
+  return true;
+}
+
+// 显示成长面板
+function showGrowthPanel(earned, winner){
+  const me = game.players[game.playerId];
+  const carried = me.growthPts || 0;
+  _growthEarned = earned + carried;
+  _growthRemaining = _growthEarned;
+  _growthAttrs = {};
+  for(const a of GROWTH_ATTRS){
+    _growthAttrs[a] = getAttr(me, a);
+  }
+  // 胜负文字
+  const playerTeam = me.role === 'wolf' ? 'wolf' : 'good';
+  const isWin = (winner === playerTeam);
+  const resultEl = document.getElementById('growthResult');
+  resultEl.textContent = isWin ? '胜利！' : '败北...';
+  resultEl.className = 'growth-result ' + (isWin ? 'win' : 'lose');
+  renderGrowthGrid();
+  document.getElementById('growthPanel').classList.remove('hide');
+}
+
+// 渲染属性网格
+function renderGrowthGrid(){
+  let html = '';
+  for(const a of GROWTH_ATTRS){
+    const val = _growthAttrs[a];
+    const canMinus = val > 1;
+    const canPlus = val < GROWTH_CAP && _growthRemaining > 0;
+    html += `<div class="growth-attr-row">
+      <button class="ga-btn" onclick="changeGrowthAttr('${a}',-1)" ${canMinus ? '' : 'disabled'}>-</button>
+      <span class="ga-name">${a}</span>
+      <span class="ga-val">${val}</span>
+      <button class="ga-btn" onclick="changeGrowthAttr('${a}',1)" ${canPlus ? '' : 'disabled'}>+</button>
+    </div>`;
+  }
+  document.getElementById('growthAttrGrid').innerHTML = html;
+  document.getElementById('growthPts').textContent = _growthRemaining;
+  // 确认按钮：至少分配1点，或所有属性已满，或点数为0
+  const spent = _growthEarned - _growthRemaining;
+  const allMaxed = GROWTH_ATTRS.every(a => _growthAttrs[a] >= GROWTH_CAP);
+  document.getElementById('growthConfirmBtn').disabled = !(spent > 0 || _growthRemaining === 0 || allMaxed);
+}
+
+// 处理 +/- 按钮
+function changeGrowthAttr(attr, delta){
+  const current = _growthAttrs[attr];
+  const newVal = current + delta;
+  if(delta > 0){
+    if(_growthRemaining <= 0 || newVal > GROWTH_CAP) return;
+    _growthRemaining -= 1;
+  } else {
+    if(newVal < 1) return;
+    _growthRemaining += 1;
+  }
+  _growthAttrs[attr] = newVal;
+  renderGrowthGrid();
+}
+
+// 确认成长分配
 function confirmGrowth(){
-  // 简化：直接关闭面板
+  const me = game.players[game.playerId];
+  if(me){
+    me.attr = { ..._growthAttrs };
+    me.growthPts = _growthRemaining; // 未用完的点数保留
+  }
+  // 持久化到 localStorage
+  if(me){
+    const charData = {
+      name: me.name,
+      faction: me.faction,
+      attr: { ..._growthAttrs },
+      growthPts: me.growthPts,
+      avatar: me.avatar || ''
+    };
+    localStorage.setItem('playerCharacter', JSON.stringify(charData));
+  }
+  // 隐藏面板
   document.getElementById('growthPanel').classList.add('hide');
+  // 执行之前拦截的操作
+  const action = _pendingGrowthAction;
+  _pendingGrowthAction = null;
+  _lastGameWinner = null;  // 清除，防止二次触发成长面板
+  if(action === 'retry'){
+    retryGame();
+  } else if(action === 'title'){
+    backToTitle();
+  }
 }
 
 // ===== 确认弹窗 =====
@@ -6753,14 +7009,57 @@ function confirmBackToTitle(){
 
 // ===== 返回标题/重试 =====
 function backToTitle(){
+  // 成长面板拦截：如果本局结束有属性点可分配，先弹出成长面板
+  if(shouldShowGrowth(_lastGameWinner)){
+    _pendingGrowthAction = 'title';
+    const earned = calcGrowthPoints(_lastGameWinner);
+    showGrowthPanel(earned, _lastGameWinner);
+    return;
+  }
   game.mode = null;
   document.getElementById('playerModeSelect').classList.add('hide');
   document.getElementById('modalArea').innerHTML='';
   document.getElementById('endScreen').classList.remove('show');
+  // 清理游戏界面元素，防止旧局残留
+  document.getElementById('playerGrid').innerHTML = '';
+  document.getElementById('logArea').innerHTML = '';
+  document.getElementById('phaseBar').innerHTML = '';
+  document.getElementById('actionBar').innerHTML = '';
+  document.getElementById('speechHistoryBtn').style.display = 'none';
+  document.getElementById('speechHistoryPanel').classList.remove('show');
+  document.getElementById('speechHistoryPanel').classList.add('hide');
+  // 关闭所有交互面板和 overlay
+  document.getElementById('nightOverlay').className='night-overlay';
+  document.getElementById('settingsOverlay').classList.add('hide');
+  document.getElementById('confirmOverlay').classList.add('hide');
+  document.getElementById('speechPanel').classList.add('hide');
+  document.getElementById('votePanel').classList.add('hide');
+  document.getElementById('nightPanel').classList.add('hide');
+  document.getElementById('destinySelect').classList.add('hide');
+  document.getElementById('destinyPanel').classList.add('hide');
+  document.getElementById('growthPanel').classList.add('hide');
+  document.getElementById('charCreate').classList.add('hide');
+  const hunterPanel = document.getElementById('hunterShootPanel');
+  if(hunterPanel) hunterPanel.classList.add('hide');
+  const destinyDeath = document.getElementById('destinyDeathPanel');
+  if(destinyDeath) destinyDeath.classList.add('hide');
+  const favor = document.getElementById('favorPanel');
+  if(favor) favor.classList.remove('show');
+  // 隐藏浮动按钮
+  document.getElementById('favorBtn').style.display='none';
+  document.getElementById('settingsBtn').style.display='none';
+  document.getElementById('pauseBtn').style.display='none';
   showTitle();
 }
 function retryGame(){
   console.log('[retryGame] ENTRY, playerClaims before clear=', JSON.stringify(game?game.playerClaims:'?'));
+  // 成长面板拦截：如果本局结束有属性点可分配，先弹出成长面板
+  if(shouldShowGrowth(_lastGameWinner)){
+    _pendingGrowthAction = 'retry';
+    const earned = calcGrowthPoints(_lastGameWinner);
+    showGrowthPanel(earned, _lastGameWinner);
+    return;
+  }
   if(game) game.playerClaims = {};
   if(game) game.playerTags = {};
   // 强制同步清空（防止引用残留）
