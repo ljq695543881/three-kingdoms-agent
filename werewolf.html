@@ -324,6 +324,41 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   100%{opacity:0;transform:translate(-50%,-50%) translateY(-20px)}
 }
 
+/* 成就统计栏 */
+.achievement-stats{
+  display:flex;justify-content:center;gap:16px;
+  margin-bottom:14px;font-size:12px;color:var(--gray);
+}
+.achievement-stats b{color:var(--gold);font-size:14px}
+
+/* 成就徽章 */
+.achievement-badges{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  max-height:280px;overflow-y:auto;margin-bottom:16px;
+}
+.ach-badge{
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 8px;border-radius:10px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  transition:all 0.2s;
+}
+.ach-badge.earned{
+  background:rgba(226,183,20,0.1);
+  border-color:rgba(226,183,20,0.4);
+}
+.ach-badge.locked{opacity:0.45}
+.ach-icon{font-size:22px;margin-bottom:2px}
+.ach-name{color:var(--white);font-size:12px;font-weight:600}
+.ach-desc{color:var(--gray);font-size:10px;text-align:center;line-height:1.3;margin-top:2px}
+.ach-badge.earned .ach-name{color:var(--gold)}
+
+/* 成就 toast 动画 */
+@keyframes achieveSlide{
+  from{transform:translateX(100%);opacity:0}
+  to{transform:translateX(0);opacity:1}
+}
+
 @media(max-width:768px){
   .achievement-ranks{grid-template-columns:repeat(3,1fr)}
   .achievement-card{padding:20px}
@@ -1052,7 +1087,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
       </div>
       <div class="ap-text" id="prestigeText">距离下一级：还需 30 声望</div>
     </div>
+    <div class="achievement-stats" id="achievementStats"></div>
     <div class="achievement-ranks" id="achievementRanks"></div>
+    <h3 style="color:var(--gold);font-size:15px;margin:16px 0 8px;text-align:left">成就徽章</h3>
+    <div class="achievement-badges" id="achievementBadges"></div>
     <button class="achievement-close" onclick="closeAchievement()">关闭</button>
   </div>
 </div>
@@ -2521,6 +2559,9 @@ function init(optPlayer){
   // 防御性清空：防止任何形式的旧数据残留
   if(game && game.playerClaims) { game.playerClaims = {}; console.log('[init] cleared old playerClaims'); }
   if(game && game.claimedPlayers && game.claimedPlayers.clear) { game.claimedPlayers.clear(); }
+  // 重置成就/成长残留状态
+  _gameAchievementsEarned = [];
+  _lastGameWinner = null;
   console.log('[init] start, game.playerId=', game ? game.playerId : '?');
   document.getElementById('logArea').innerHTML='';
   // 清理所有覆盖层和面板，防止旧局残留
@@ -2552,7 +2593,7 @@ function init(optPlayer){
     players:[], phase:"start", day:0, mode:keepMode, speed:keepSpeed,
     generation:(game.generation||0)+1, selectedPlayer:null, wolfTarget:null,
     seerTarget:null, seerChecks:[], witchSave:false, witchPoison:null,
-    guardTarget:null, lastGuardTarget:null, witchHasSave:true, witchHasPoison:true,
+    guardTarget:null, lastGuardTarget:null, guardSaveCount:0, witchHasSave:true, witchHasPoison:true,
     witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
     scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
     hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
@@ -3662,7 +3703,7 @@ function resolveNight(){
   // Wolf kill
   if(game.wolfTarget!==null){
     let saved=false;
-    if(game.guardTarget===game.wolfTarget) saved=true;
+    if(game.guardTarget===game.wolfTarget){ saved=true; game.guardSaveCount = (game.guardSaveCount||0)+1; }
     if(game.witchSave) saved=true;
     if(!saved) deaths.push({id:game.wolfTarget,cause:"wolf"});
   }
@@ -5245,6 +5286,9 @@ function endGame(winner){
   const color=isGood?"var(--green)":"var(--red)";
   const wolves=game.players.filter(p=>p.role==="wolf");
   
+  // 成就检测（在 UI 更新前执行，确保游戏状态完整）
+  _gameAchievementsEarned = checkAchievements(winner);
+  
   // 结算时保留发言历史按钮，方便复盘
   document.getElementById('speechHistoryPanel').classList.remove('show');
   document.getElementById('speechHistoryPanel').classList.add('hide');
@@ -5265,7 +5309,30 @@ function endGame(winner){
       <span style="width:auto;text-align:right;color:var(--gray);font-size:12px">${deathDetail}</span>
     </div>`;
   }
-  summary+=`</div><br><div style="display:flex;gap:12px;justify-content:center"><button class="btn-primary" onclick="retryGame()">🔄 再来一局</button><button class="btn-primary" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:var(--white)" onclick="backToTitle()">🏠 返回标题</button></div>`;
+  summary+=`</div>`;
+  
+  // 声望明细
+  const breakdown = getPrestigeBreakdown(winner, _gameAchievementsEarned);
+  if(breakdown.total > 0){
+    summary += `<div style="text-align:left;padding:10px 14px;margin-top:12px;background:rgba(226,183,20,0.08);border-radius:8px;border-left:3px solid var(--gold);font-size:13px">`;
+    summary += `<div style="color:var(--gold);font-weight:700;margin-bottom:6px">声望明细</div>`;
+    const detailParts = breakdown.parts.map(p => `<span style="color:var(--gray)">${p.label} <span style="color:var(--gold)">+${p.amount}</span></span>`).join(' + ');
+    summary += `<div>${detailParts} <span style="color:var(--white);font-weight:700">= +${breakdown.total}</span></div>`;
+    summary += `</div>`;
+  }
+  
+  // 成就达成展示
+  if(_gameAchievementsEarned.length > 0){
+    summary += `<div style="text-align:left;padding:10px 14px;margin-top:10px;background:rgba(46,204,113,0.08);border-radius:8px;border-left:3px solid var(--green);font-size:13px">`;
+    summary += `<div style="color:var(--green);font-weight:700;margin-bottom:6px">成就达成</div>`;
+    for(const id of _gameAchievementsEarned){
+      const def = ACHIEVEMENT_LIST.find(a => a.id === id);
+      if(def) summary += `<div style="padding:2px 0">${def.icon} <span style="color:var(--white)">${def.name}</span> <span style="color:var(--gray);font-size:11px">+${def.prestige}声望</span></div>`;
+    }
+    summary += `</div>`;
+  }
+  
+  summary+=`<br><div style="display:flex;gap:12px;justify-content:center"><button class="btn-primary" onclick="retryGame()">🔄 再来一局</button><button class="btn-primary" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:var(--white)" onclick="backToTitle()">🏠 返回标题</button></div>`;
 
   document.getElementById("modalArea").innerHTML=`<div class="modal-overlay"><div class="modal">${summary}</div></div>`;
   
@@ -5275,7 +5342,10 @@ function endGame(winner){
   }
   
   // 更新声望（成就系统）
-  updatePrestigeOnGameEnd(winner);
+  updatePrestigeOnGameEnd(winner, _gameAchievementsEarned);
+  
+  // 成就 toast 通知
+  showAchievementToasts(_gameAchievementsEarned);
   
   // 存储胜者，用于成长系统
   _lastGameWinner = winner;
@@ -6965,15 +7035,169 @@ function confirmGrowth(){
   }
   // 隐藏面板
   document.getElementById('growthPanel').classList.add('hide');
-  // 执行之前拦截的操作
+  // 执行之前拦截的操作（目前只有 retry）
   const action = _pendingGrowthAction;
   _pendingGrowthAction = null;
   _lastGameWinner = null;  // 清除，防止二次触发成长面板
   if(action === 'retry'){
     retryGame();
-  } else if(action === 'title'){
-    backToTitle();
   }
+}
+
+// ===== 成就徽章系统 =====
+const ACHIEVEMENT_LIST = [
+  {id:'empty_fort', name:'空城计', desc:'作为预言家被投票出局，最终阵营仍获胜', prestige:50, icon:'🏯'},
+  {id:'borrow_arrows', name:'草船借箭', desc:'作为狼人悍跳预言家且活到游戏结束', prestige:60, icon:'🚢'},
+  {id:'borrow_sword', name:'借刀杀人', desc:'作为猎人被投票出局时开枪带走一只狼', prestige:30, icon:'⚔️'},
+  {id:'lone_rescue', name:'单骑救主', desc:'作为守卫在一局中成功救下3人', prestige:40, icon:'🛡️'},
+  {id:'seven_captures', name:'七擒七纵', desc:'累计投对7次（投票目标为狼人并被流放）', prestige:40, icon:'🎯', target:7},
+  {id:'burning_camps', name:'火烧连营', desc:'狼人阵营连续赢3局', prestige:80, icon:'🔥', target:3},
+  {id:'peach_garden', name:'桃园结义', desc:'作为好人存活且≥3个好人活到最后', prestige:30, icon:'🌸'},
+  {id:'devotion', name:'鞠躬尽瘁', desc:'累计玩满20局', prestige:50, icon:'📜', target:20}
+];
+
+let _gameAchievementsEarned = []; // 本局结算时获得的成就
+
+function getAchievementStats(){
+  try { return JSON.parse(localStorage.getItem('threeKingdomsAchievements') || '{}'); }
+  catch(e){ return {}; }
+}
+function saveAchievementStats(stats){
+  localStorage.setItem('threeKingdomsAchievements', JSON.stringify(stats));
+}
+
+// 游戏结束时检测成就
+function checkAchievements(winner){
+  const earned = [];
+  if(game.mode !== 'player' && game.mode !== 'destiny') return earned;
+  const pid = game.mode === 'player' ? game.playerId : game.destiny;
+  if(pid == null) return earned;
+  const me = game.players[pid];
+  if(!me) return earned;
+  const playerTeam = me.role === 'wolf' ? 'wolf' : 'good';
+  const isWin = (winner === playerTeam);
+  const stats = getAchievementStats();
+
+  // ─── 单局成就 ───
+  // 空城计：预言家 + 被投票出局 + 阵营胜利
+  if(me.role === 'seer' && me.deathCause === 'vote' && isWin){
+    earned.push('empty_fort');
+  }
+  // 草船借箭：狼人 + 跳了预言家 + 存活到最后
+  if(me.role === 'wolf' && game.playerClaims[pid] === 'seer' && me.alive){
+    earned.push('borrow_arrows');
+  }
+  // 借刀杀人：猎人 + 被投票出局 + 带走了狼
+  if(me.role === 'hunter' && me.deathCause === 'vote'){
+    const hunterKill = game.players.find(p => p.deathCause === 'hunter' && p.role === 'wolf' && p.deathDay === me.deathDay);
+    if(hunterKill) earned.push('borrow_sword');
+  }
+  // 单骑救主：守卫 + 本局守对≥3次
+  if(me.role === 'guard' && (game.guardSaveCount || 0) >= 3){
+    earned.push('lone_rescue');
+  }
+  // 桃园结义：好人 + 存活 + ≥3好人存活 + 胜利
+  if(me.role !== 'wolf' && me.alive && isWin){
+    const goodAlive = game.players.filter(p => p.alive && p.role !== 'wolf').length;
+    if(goodAlive >= 3) earned.push('peach_garden');
+  }
+
+  // ─── 跨局统计 ───
+  stats.gamesPlayed = (stats.gamesPlayed || 0) + 1;
+  stats.wins = (stats.wins || 0) + (isWin ? 1 : 0);
+
+  // 狼连胜
+  if(me.role === 'wolf' && isWin){
+    stats.wolfWinStreak = (stats.wolfWinStreak || 0) + 1;
+  } else {
+    stats.wolfWinStreak = 0;
+  }
+
+  // 火烧连营
+  if(stats.wolfWinStreak >= 3) earned.push('burning_camps');
+
+  // 投对次数（投票目标是狼且被流放）
+  stats.correctVotes = stats.correctVotes || 0;
+  const myVotes = (game.voteRecords || []).filter(r =>
+    r.voterId === pid && !r.tieBreak
+  );
+  const exileResults = (game.voteRecords || []).filter(r => r.type === 'result');
+  for(const v of myVotes){
+    const result = exileResults.find(r => r.day === v.day && r.targetId === v.targetId);
+    if(result && game.players[v.targetId] && game.players[v.targetId].role === 'wolf'){
+      stats.correctVotes++;
+    }
+  }
+  // 七擒七纵
+  if(stats.correctVotes >= 7) earned.push('seven_captures');
+
+  // 鞠躬尽瘁
+  if(stats.gamesPlayed >= 20) earned.push('devotion');
+
+  // 记录已获得
+  stats.earned = stats.earned || [];
+  for(const id of earned){
+    if(!stats.earned.includes(id)) stats.earned.push(id);
+  }
+  saveAchievementStats(stats);
+  return earned;
+}
+
+// 成就 toast 通知
+function showAchievementToasts(achievements){
+  if(!achievements.length) return;
+  let container = document.getElementById('achieveToastContainer');
+  if(!container){
+    container = document.createElement('div');
+    container.id = 'achieveToastContainer';
+    container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:10001;display:flex;flex-direction:column;gap:8px';
+    document.body.appendChild(container);
+  }
+  for(const id of achievements){
+    const def = ACHIEVEMENT_LIST.find(a => a.id === id);
+    if(!def) continue;
+    const toast = document.createElement('div');
+    toast.style.cssText = 'background:var(--bg2);border:2px solid var(--gold);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;animation:achieveSlide 0.3s ease;min-width:220px';
+    toast.innerHTML = `<span style="font-size:24px">${def.icon}</span><div><div style="color:var(--gold);font-size:13px;font-weight:700">成就达成！</div><div style="color:var(--white);font-size:14px">${def.name}</div><div style="color:var(--gray);font-size:11px">+${def.prestige} 声望</div></div>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity 0.3s'; setTimeout(()=>toast.remove(),300); }, 3000);
+  }
+}
+
+// 声望明细计算（不修改存储）
+function getPrestigeBreakdown(winner, achievements){
+  const parts = [];
+  let baseAmount = 0;
+  let isWin = false;
+
+  if(game.mode === 'player' && game.playerId != null){
+    const me = game.players[game.playerId];
+    const playerTeam = me && me.role === 'wolf' ? 'wolf' : 'good';
+    isWin = (winner === playerTeam);
+    baseAmount = isWin ? 30 : 15;
+    parts.push({label: isWin ? '胜利' : '败北', amount: baseAmount});
+  } else if(game.mode === 'destiny' && game.destiny != null){
+    const me = game.players[game.destiny];
+    const team = me && me.role === 'wolf' ? 'wolf' : 'good';
+    isWin = (winner === team);
+    baseAmount = isWin ? 15 : 5;
+    parts.push({label: isWin ? '胜利' : '败北', amount: baseAmount});
+  } else {
+    baseAmount = 15;
+    parts.push({label: '观战', amount: baseAmount});
+  }
+
+  let achieveAmount = 0;
+  if(achievements && achievements.length){
+    for(const id of achievements){
+      const def = ACHIEVEMENT_LIST.find(a => a.id === id);
+      if(def){
+        parts.push({label: def.name, amount: def.prestige});
+        achieveAmount += def.prestige;
+      }
+    }
+  }
+  return {parts, total: baseAmount + achieveAmount};
 }
 
 // ===== 确认弹窗 =====
@@ -7009,13 +7233,23 @@ function confirmBackToTitle(){
 
 // ===== 返回标题/重试 =====
 function backToTitle(){
-  // 成长面板拦截：如果本局结束有属性点可分配，先弹出成长面板
-  if(shouldShowGrowth(_lastGameWinner)){
-    _pendingGrowthAction = 'title';
-    const earned = calcGrowthPoints(_lastGameWinner);
-    showGrowthPanel(earned, _lastGameWinner);
-    return;
+  // 返回标题时不弹成长面板，但未分配的属性点要存到角色上
+  if(game.mode === 'player' && game.playerId != null && _lastGameWinner){
+    const me = game.players[game.playerId];
+    if(me){
+      const earned = calcGrowthPoints(_lastGameWinner);
+      const carried = me.growthPts || 0;
+      const totalPts = earned + carried;
+      // 把未分配的点数存入 localStorage.playerCharacter
+      try {
+        const savedChar = JSON.parse(localStorage.getItem('playerCharacter') || '{}');
+        savedChar.growthPts = totalPts;
+        localStorage.setItem('playerCharacter', JSON.stringify(savedChar));
+      } catch(e){}
+    }
   }
+  _lastGameWinner = null;
+  _gameAchievementsEarned = [];
   game.mode = null;
   document.getElementById('playerModeSelect').classList.add('hide');
   document.getElementById('modalArea').innerHTML='';
@@ -7060,6 +7294,9 @@ function retryGame(){
     showGrowthPanel(earned, _lastGameWinner);
     return;
   }
+  // 成长面板未触发时，清除残留防止二次计算声望/成就
+  _lastGameWinner = null;
+  _gameAchievementsEarned = [];
   if(game) game.playerClaims = {};
   if(game) game.playerTags = {};
   // 强制同步清空（防止引用残留）
@@ -7374,6 +7611,7 @@ function updateAchievementDisplay(){
   const prestige = getPrestige();
   const currentRank = getCurrentRank(prestige);
   const nextRank = getNextRank(prestige);
+  const stats = getAchievementStats();
   
   // 更新声望值
   document.getElementById('prestigeValue').textContent = prestige;
@@ -7403,6 +7641,40 @@ function updateAchievementDisplay(){
     if(rank.name === currentRank.name && prestige < (nextRank?nextRank.prestige:Infinity)) item.classList.add('current');
     item.innerHTML = `<div class="rank-name">${rank.name}</div><div class="rank-prestige">${rank.prestige}声望</div>`;
     ranksDiv.appendChild(item);
+  }
+  
+  // 更新统计数据
+  const statsDiv = document.getElementById('achievementStats');
+  if(statsDiv){
+    const gp = stats.gamesPlayed || 0;
+    const wins = stats.wins || 0;
+    const cv = stats.correctVotes || 0;
+    const ws = stats.wolfWinStreak || 0;
+    statsDiv.innerHTML = `<span>总局数 <b>${gp}</b></span><span>胜场 <b>${wins}</b></span><span>投对 <b>${cv}</b></span><span>狼连胜 <b>${ws}</b></span>`;
+  }
+  
+  // 更新成就徽章
+  const badgesDiv = document.getElementById('achievementBadges');
+  if(badgesDiv){
+    const earnedIds = stats.earned || [];
+    let html = '';
+    for(const def of ACHIEVEMENT_LIST){
+      const isEarned = earnedIds.includes(def.id);
+      let progressText = '';
+      if(def.target && !isEarned){
+        let current = 0;
+        if(def.id === 'seven_captures') current = stats.correctVotes || 0;
+        else if(def.id === 'burning_camps') current = stats.wolfWinStreak || 0;
+        else if(def.id === 'devotion') current = stats.gamesPlayed || 0;
+        progressText = ` (${current}/${def.target})`;
+      }
+      html += `<div class="ach-badge ${isEarned?'earned':'locked'}" title="${def.desc}${progressText}">
+        <span class="ach-icon">${def.icon}</span>
+        <span class="ach-name">${def.name}</span>
+        <span class="ach-desc">${isEarned ? '+'+def.prestige+'声望' : def.desc + progressText}</span>
+      </div>`;
+    }
+    badgesDiv.innerHTML = html;
   }
 }
 
@@ -7434,36 +7706,12 @@ function showRankUpToast(rankName){
 }
 
 // 在游戏结束时调用此函数更新声望
-function updatePrestigeOnGameEnd(winner){
-  let amount = 0;
-  let isWin = false;
-  if(game.mode === 'player' && game.playerId != null){
-    const playerRole = game.players[game.playerId] && game.players[game.playerId].role;
-    const playerTeam = playerRole === 'wolf' ? 'wolf' : 'good';
-    isWin = (winner === playerTeam);
-  } else if(game.mode === 'destiny' && game.destiny != null){
-    const destinyRole = game.players[game.destiny] && game.players[game.destiny].role;
-    const destinyTeam = destinyRole === 'wolf' ? 'wolf' : 'good';
-    isWin = (winner === destinyTeam);
-  } else {
-    isWin = true; // god模式：观战不参与，统一给观战奖励
+function updatePrestigeOnGameEnd(winner, achievements){
+  const breakdown = getPrestigeBreakdown(winner, achievements);
+  if(breakdown.total > 0){
+    addPrestige(breakdown.total, game.mode);
   }
-  
-  switch(game.mode){
-    case 'player':
-      amount = isWin ? 30 : 15;
-      break;
-    case 'destiny':
-      amount = isWin ? 15 : 5;
-      break;
-    case 'god':
-      amount = isWin ? 15 : 5;
-      break;
-  }
-  
-  if(amount > 0){
-    addPrestige(amount, game.mode);
-  }
+  return breakdown;
 }
 // ===== 发言投票历史功能 =====
 let _historySortAsc = false; // false=倒序（默认）, true=正序
