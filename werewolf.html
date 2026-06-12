@@ -4898,14 +4898,252 @@ async function votePhase(){
     if(votes[id]>maxVotes){maxVotes=votes[id];maxIds=[parseInt(id)]}
     else if(votes[id]===maxVotes){maxIds.push(parseInt(id))}
   }
-  const maxId=pick(maxIds); // 并列最高票时随机选一个
 
-  if(maxId!==null){
-    const exiled=game.players[maxId];
+  let finalMaxId = null;
+  let finalMaxVotes = maxVotes;
+
+  if(maxIds.length <= 1){
+    // 无平票：直接放逐
+    finalMaxId = maxIds.length === 1 ? maxIds[0] : null;
+  } else {
+    // ===== 平票处理：申辩发言 + 重投 =====
+    const tiedIds = maxIds;
+    const tiedNames = tiedIds.map(id => game.players[id]?.name).filter(Boolean).join('、');
+    addLog(`<span class="system-text">⚖️ 平票！${tiedNames} 各${maxVotes}票，进入申辩环节。</span>`);
     if(!game.voteRecords) game.voteRecords = [];
-    game.voteRecords.push({type:'result', targetId: maxId, votes: maxVotes, day: game.day});
+    game.voteRecords.push({type:'tie', tiedIds: tiedIds, votes: maxVotes, day: game.day});
+    await delay(800);
+
+    // ① 平票玩家依次申辩发言（使用正常白天模板）
+    addLog(`<span class="system-text">=== 平票申辩 ===</span>`);
+    for(const tid of tiedIds){
+      const tp = game.players[tid];
+      if(!tp || !tp.alive) continue;
+      const suspectPool = getAlive().filter(x => x.id !== tid);
+
+      let speech = '', classified = null;
+      if(game.mode === 'player' && tid === game.playerId && !game.playerDied){
+        addLog(`<span style="color:var(--gold)">【你的申辩】请输入发言...</span>`);
+        const result = await showSpeechPanel();
+        speech = result.text || '';
+        const fragments = result.fragments || [{type:'conservative'}];
+        classified = fragments.map(f => {
+          const item = {type: f.type};
+          if(f.type === 'claim'){ item.subtype = 'claim'; item.role = f.role; item.targets = []; }
+          else if(f.type === 'attack'){ item.subtype = 'suspect'; const t = game.players[f.targetId]; item.targets = t?[t]:[]; }
+          else if(f.type === 'shield'){ item.subtype = 'protect'; const t = game.players[f.targetId]; item.targets = t?[t]:[]; }
+          else if(f.type === 'info'){ item.subtype = 'info'; item.role = f.role; const t = game.players[f.infoTargetId]; item.targets = t?[t]:[]; item.infoResult = f.infoResult; item.infoAction = f.infoAction; }
+          else { item.subtype = null; item.targets = []; }
+          return item;
+        });
+      } else {
+        // AI 用正常白天模板生成申辩
+        let fragments;
+        if(tp.role === 'seer') fragments = buildSeerFragments(tp, suspectPool, [], game.spokenToday);
+        else if(tp.role === 'witch') fragments = buildWitchFragments(tp, suspectPool, [], game.spokenToday);
+        else if(tp.role === 'guard') fragments = buildGuardFragments(tp, suspectPool, [], game.spokenToday);
+        else if(tp.role === 'hunter') fragments = buildHunterFragments(tp, suspectPool, [], game.spokenToday);
+        else if(tp.role === 'wolf') fragments = buildWolfFragments(tp, getAlive(), getAliveWolves(), null, true, [], game.spokenToday);
+        else if(tp.role === 'villager') fragments = buildVillagerFragments(tp, suspectPool, [], game.spokenToday);
+        else fragments = buildGoodFragments(tp, suspectPool, [], game.spokenToday);
+        speech = generatePlayerSpeechText(fragments);
+        classified = fragmentsToClassified(fragments);
+      }
+
+      const typeLabel = speechTypeLabel(classified);
+      addLog(`${speakerHTML(tp)}${speech}${typeLabel}`);
+      const mainType = classified[0] ? classified[0].type : 'conservative';
+      game.speeches.push({speaker: tp.role, about: null, text: speech, speakerId: tp.id, speechType: mainType, classified, day: game.day, tieBreak: true});
+      game.spokenToday.add(tp.id);
+      await delay(800 + Math.random() * 700);
+    }
+
+    // ② 重投票：仅限平票玩家
+    addLog(`<span class="system-text">=== 重新投票（仅限：${tiedNames}）===</span>`);
+    await delay(600);
+
+    const revoteAlive = getAlive();
+    const revotes = {};
+
+    for(const p of revoteAlive){
+      while(game.isPaused) await delay(100);
+
+      // 玩家手动投票
+      if(game.mode === 'player' && p.id === game.playerId && !game.playerDied){
+        addLog(`<span style="color:var(--gold)">【你的投票】请从平票玩家中选择...</span>`);
+        const rvTargetId = await showVotePanel(tiedIds);
+        if(rvTargetId !== null && game.players[rvTargetId]){
+          revotes[rvTargetId] = (revotes[rvTargetId] || 0) + 1;
+          addLog(`${speakerHTML(p)}<span class="vote-text">→ 我投给了 ${game.players[rvTargetId].name}</span>`);
+          if(!game.voteRecords) game.voteRecords = [];
+          game.voteRecords.push({voterId: p.id, targetId: rvTargetId, day: game.day, tieBreak: true});
+        } else {
+          addLog(`${speakerHTML(p)}<span class="vote-text">→ 弃权</span>`);
+        }
+        await delay(400);
+        continue;
+      }
+
+      // AI 投票：只对平票候选人评分
+      const suspectPool = tiedIds.filter(x => x !== p.id);
+      if(suspectPool.length === 0){
+        // 投票者自己就是唯一平票者（不应该发生，但兜底）
+        const fallbackId = tiedIds.find(x => x !== p.id) || tiedIds[0];
+        if(fallbackId != null){
+          revotes[fallbackId] = (revotes[fallbackId] || 0) + 1;
+          if(!game.voteRecords) game.voteRecords = [];
+          game.voteRecords.push({voterId: p.id, targetId: fallbackId, day: game.day, tieBreak: true});
+          addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[fallbackId].name}</span>`);
+        }
+        await delay(400);
+        continue;
+      }
+
+      const suspectScores = {};
+      for(const xId of suspectPool){
+        const x = game.players[xId];
+        let score = 0;
+        const f = getFavor(p, xId);
+        score += (50 - f) * 0.3;
+
+        // 攻击/袒护加权
+        function countSuspects(pid){
+          let n = 0;
+          for(const s of game.speeches){
+            if(!s || !s.classified) continue;
+            for(const c of s.classified){
+              if(c.type === 'attack' && c.subtype === 'suspect' && c.targets){
+                if(c.targets.some(t => t.id === pid)) n++;
+              }
+            }
+          }
+          return n;
+        }
+        const attackEntries = [], shieldEntries = [];
+        for(const s of game.speeches){
+          if(!s || !s.classified) continue;
+          for(const c of s.classified){
+            if(c.type === 'attack' && c.subtype === 'suspect' && c.targets){
+              for(const t of c.targets){ if(t.id === xId) attackEntries.push({attackerId: s.speakerId}); }
+            }
+            if(c.type === 'attack' && c.subtype === 'shield' && c.targets){
+              for(const t of c.targets){ if(t.id === xId) shieldEntries.push({defenderId: s.speakerId}); }
+            }
+          }
+        }
+        let attackScore = 0;
+        for(let i = 0; i < attackEntries.length; i++){
+          const suspectN = countSuspects(attackEntries[i].attackerId);
+          let weight = suspectN >= 2 ? 1 : 2;
+          if(i >= 2) weight = Math.max(1, Math.floor(weight / 2));
+          attackScore = Math.min(8, attackScore + weight);
+        }
+        let shieldScore = 0;
+        for(let i = 0; i < shieldEntries.length; i++){
+          const suspectN = countSuspects(shieldEntries[i].defenderId);
+          let weight = suspectN >= 2 ? 1 : 2;
+          if(i >= 2) weight = Math.max(1, Math.floor(weight / 2));
+          shieldScore = Math.min(8, shieldScore + weight);
+        }
+        score += attackScore - shieldScore;
+
+        // 预言家查杀加成
+        const seerClaims = [];
+        for(const s of game.speeches){
+          if(!s || !s.classified) continue;
+          for(const c of s.classified){
+            if(c.type === 'info' && c.role === 'seer' && c.targets && c.targets.length > 0 && c.infoResult){
+              if(c.targets[0].id === xId) seerClaims.push({claimerId: s.speakerId, claimResult: c.infoResult});
+            }
+          }
+        }
+        if(seerClaims.length >= 1){
+          const claim = seerClaims[0];
+          if(claim.claimResult === 'wolf') score += 15;
+          else score -= 12;
+        }
+
+        // 狼人投票差异化
+        if(p.role === 'wolf' && x.role !== 'wolf'){
+          score += Math.max(2, Math.round((50 - getFavor(p, xId)) * 0.2));
+          if(game.wolfScriptCompliance[p.id] && game.wolfScript && game.wolfScript.target){
+            if(xId === game.wolfScript.target) score += 30;
+          }
+        } else if(p.role === 'wolf' && x.role === 'wolf'){
+          score -= 25;
+        }
+
+        suspectScores[xId] = score + (Math.random() - 0.5) * 12;
+      }
+
+      // 从平票候选人中选最高分
+      const sorted = suspectPool.slice().sort((a,b) => (suspectScores[b]||0) - (suspectScores[a]||0));
+      const target = sorted[0];
+      if(target != null){
+        revotes[target] = (revotes[target] || 0) + 1;
+        if(!game.voteRecords) game.voteRecords = [];
+        game.voteRecords.push({voterId: p.id, targetId: target, day: game.day, tieBreak: true});
+        addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[target].name}</span>`);
+      }
+      await delay(400);
+    }
+
+    await delay(600);
+    // ③ 计算重投结果
+    let rvMaxVotes = 0, rvMaxIds = [];
+    for(let id in revotes){
+      if(revotes[id] > rvMaxVotes){ rvMaxVotes = revotes[id]; rvMaxIds = [parseInt(id)]; }
+      else if(revotes[id] === rvMaxVotes){ rvMaxIds.push(parseInt(id)); }
+    }
+
+    if(rvMaxIds.length === 1){
+      finalMaxId = rvMaxIds[0];
+      finalMaxVotes = rvMaxVotes;
+      const exiled = game.players[finalMaxId];
+      addLog(`<span class="death-text" style="font-size:15px">重投结果：${exiled.name}以${rvMaxVotes}票被放逐！</span>`);
+      game.voteRecords.push({type:'result', targetId: finalMaxId, votes: rvMaxVotes, day: game.day, tieBreak: true});
+      await markDeath(exiled, game.day, "vote");
+      await delay(500);
+      addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled).text}"</span>`);
+      await delay(500);
+      if(exiled.role === 'hunter'){
+        const isPlayerHunter = game.mode === 'player' && game.playerId === exiled.id;
+        let ht = null;
+        if(isPlayerHunter){
+          ht = await showHunterShootPanel(exiled, 'vote');
+        } else {
+          const targets = getAlive().filter(p => p.id !== exiled.id);
+          if(targets.length > 0) ht = getAttr(exiled,'智谋') >= 4 ? pickHunterTarget(exiled, targets) : pick(targets);
+        }
+        if(ht){
+          await markDeath(ht, game.day, "hunter");
+          const htRoleText = isGodView() ? `（${ROLE_CFG[ht.role].name}）` : '';
+          addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}${htRoleText}！</span>`);
+        }
+      }
+    } else {
+      // 重投仍然平票 → 无人出局
+      addLog(`<span class="system-text">⚖️ 重投仍然平票（${rvMaxIds.map(id => game.players[id]?.name).join('、')} 各${rvMaxVotes}票），无人出局，进入夜晚。</span>`);
+      game.voteRecords.push({type:'peaceful_vote', tiedIds: rvMaxIds, votes: rvMaxVotes, day: game.day});
+    }
+
+    // 平票流程已处理完毕，跳过后续常规放逐
+    renderPlayers();
+    await delay(500);
+    if(!checkWin()){
+      await delay(500);
+      nightPhase();
+    }
+    return;
+  }
+
+  // ===== 常规放逐（无平票）=====
+  if(finalMaxId !== null){
+    const exiled=game.players[finalMaxId];
+    if(!game.voteRecords) game.voteRecords = [];
+    game.voteRecords.push({type:'result', targetId: finalMaxId, votes: finalMaxVotes, day: game.day});
     await markDeath(exiled, game.day, "vote");
-    addLog(`<span class="death-text" style="font-size:15px">${exiled.name}以${maxVotes}票被放逐！</span>`);
+    addLog(`<span class="death-text" style="font-size:15px">${exiled.name}以${finalMaxVotes}票被放逐！</span>`);
     await delay(500);
     addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled).text}"</span>`);
     await delay(500);
@@ -6685,11 +6923,16 @@ function showSpeechPanel(){
 }
 
 // ===== 投票面板 =====
-function showVotePanel(){
+function showVotePanel(candidateIds){
   return new Promise(resolve => {
     game.pendingVoteResolve = resolve;
     const container = document.getElementById('voteOptions');
-    const alive = getAlive().filter(p => p.id !== game.playerId);
+    let alive;
+    if(candidateIds && candidateIds.length > 0){
+      alive = candidateIds.map(id => game.players[id]).filter(p => p && p.alive && p.id !== game.playerId);
+    } else {
+      alive = getAlive().filter(p => p.id !== game.playerId);
+    }
     const getImgSrc = (p) => p.avatar ? p.avatar : (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
     container.innerHTML = `<div class="vote-players">` + alive.map(p =>
       `<div class="vote-player-card" data-id="${p.id}" onclick="selectVoteTarget(${p.id})">
@@ -6997,6 +7240,41 @@ function getSpeechSummary(classified, speechType){
   return parts.join(' · ') || '发言';
 }
 
+// 投票区块渲染辅助
+function renderVoteSection(voteList, label){
+  const voteCounts = {};
+  const voteDetails = [];
+  for(const v of voteList){
+    if(v.type === 'result' || v.type === 'tie' || v.type === 'peaceful_vote') continue;
+    voteDetails.push(v);
+    voteCounts[v.targetId] = (voteCounts[v.targetId] || 0) + 1;
+  }
+  const sortedTargets = Object.keys(voteCounts).sort((a,b) => voteCounts[b] - voteCounts[a]);
+  
+  let html = '<div class="sh-vote-section">';
+  html += '<div class="sh-vote-label">' + label + '</div>';
+  
+  for(const targetId of sortedTargets){
+    const target = game.players[parseInt(targetId)];
+    if(!target) continue;
+    const voters = voteDetails.filter(v => v.targetId === parseInt(targetId))
+      .map(v => game.players[v.voterId]?.name || '?')
+      .join('、');
+    html += '<div class="sh-vote-item">' + target.name + '（' + voteCounts[targetId] + '票）← ' + voters + '</div>';
+  }
+  
+  const resultRecord = voteList.find(v => v.type === 'result');
+  if(resultRecord){
+    const exiled = game.players[resultRecord.targetId];
+    if(exiled){
+      html += '<div class="sh-vote-result">→ ' + exiled.name + ' 以' + resultRecord.votes + '票被放逐</div>';
+    }
+  }
+  
+  html += '</div>';
+  return html;
+}
+
 function renderSpeechHistory(){
   const content = document.getElementById('speechHistoryContent');
   if(!game || (!game.speeches?.length && !game.voteRecords?.length)){
@@ -7036,8 +7314,12 @@ function renderSpeechHistory(){
     
     html += '<div class="sh-day-group"><div class="sh-day-label">第' + day + '天</div>';
     
-    // 发言列表
-    for(const s of speeches){
+    // 分离常规发言和平票申辩发言
+    const regularSpeeches = speeches.filter(s => !s.tieBreak);
+    const tieBreakSpeeches = speeches.filter(s => s.tieBreak);
+    
+    // 常规发言列表
+    for(const s of regularSpeeches){
       const speaker = game.players[s.speakerId];
       if(!speaker) continue;
       
@@ -7047,39 +7329,45 @@ function renderSpeechHistory(){
       html += '<div class="sh-item"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + '</div>';
     }
     
-    // 投票票型
-    if(votes.length > 0){
-      html += '<div class="sh-vote-section">';
-      html += '<div class="sh-vote-label">📊 投票</div>';
+    // 分离常规投票和平票重投
+    const regularVotes = votes.filter(v => !v.tieBreak);
+    const tieBreakVotes = votes.filter(v => v.tieBreak);
+    const tieRecord = votes.find(v => v.type === 'tie');
+    
+    // 常规投票票型
+    if(regularVotes.length > 0){
+      html += renderVoteSection(regularVotes, '📊 投票');
+    }
+    
+    // 平票申辩 + 重投
+    if(tieRecord){
+      const tiedNames = tieRecord.tiedIds.map(id => game.players[id]?.name).filter(Boolean).join('、');
+      html += '<div class="sh-vote-section" style="border-left-color:var(--red);margin-top:10px">';
+      html += '<div class="sh-vote-label" style="color:var(--red)">⚖️ 平票！' + tiedNames + ' 各' + tieRecord.votes + '票</div>';
       
-      // 统计每人得票
-      const voteCounts = {};
-      const voteDetails = [];
-      for(const v of votes){
-        if(v.type === 'result') continue;
-        voteDetails.push(v);
-        voteCounts[v.targetId] = (voteCounts[v.targetId] || 0) + 1;
-      }
-      
-      // 按得票数降序展示
-      const sortedTargets = Object.keys(voteCounts).sort((a,b) => voteCounts[b] - voteCounts[a]);
-      
-      for(const targetId of sortedTargets){
-        const target = game.players[parseInt(targetId)];
-        if(!target) continue;
-        const voters = voteDetails.filter(v => v.targetId === parseInt(targetId))
-          .map(v => game.players[v.voterId]?.name || '?')
-          .join('、');
-        html += '<div class="sh-vote-item">' + target.name + '（' + voteCounts[targetId] + '票）← ' + voters + '</div>';
-      }
-      
-      // 投票结果
-      const resultRecord = votes.find(v => v.type === 'result');
-      if(resultRecord){
-        const exiled = game.players[resultRecord.targetId];
-        if(exiled){
-          html += '<div class="sh-vote-result">→ ' + exiled.name + ' 以' + resultRecord.votes + '票被放逐</div>';
+      // 申辩发言
+      if(tieBreakSpeeches.length > 0){
+        html += '<div style="font-size:11px;color:var(--gray);margin:4px 0">申辩发言：</div>';
+        for(const s of tieBreakSpeeches){
+          const speaker = game.players[s.speakerId];
+          if(!speaker) continue;
+          const nameColor = isGodView() ? getRoleColor(speaker.role) : '#ecf0f1';
+          const summary = getSpeechSummary(s.classified || [], s.speechType || '');
+          html += '<div class="sh-item" style="padding:3px 6px"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + '</div>';
         }
+      }
+      
+      // 重投票型
+      if(tieBreakVotes.length > 0){
+        const reVoteHtml = renderVoteSection(tieBreakVotes, '📊 重新投票');
+        html += reVoteHtml.replace('<div class="sh-vote-section">', '').replace(/<\/div>$/, '');
+      }
+      
+      // 重投平票结果
+      const peacefulRecord = votes.find(v => v.type === 'peaceful_vote');
+      if(peacefulRecord){
+        const peacefulNames = peacefulRecord.tiedIds.map(id => game.players[id]?.name).filter(Boolean).join('、');
+        html += '<div class="sh-vote-result" style="color:var(--gold)">→ 重投仍平票（' + peacefulNames + '），无人出局</div>';
       }
       
       html += '</div>';
