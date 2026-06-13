@@ -116,7 +116,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 
 /* ===== 移动端适配 ===== */
 @media(max-width:768px){
-  .header{padding:14px}
+  .header{padding:14px;padding-top:50px}
   .header h1{font-size:22px}
   .header p{font-size:12px}
   .phase-bar{padding:8px}
@@ -136,10 +136,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   .card h3{font-size:12px}
   .action-bar button{padding:8px 16px;font-size:13px}
   .info-bar{font-size:11px;padding:6px 8px}
-  .btn-pause{top:8px;right:8px;min-width:80px;text-align:center;padding:6px 14px;font-size:12px}
-  .btn-settings{top:8px;right:100px;min-width:80px;text-align:center;padding:6px 14px;font-size:12px}
-  .btn-favor{top:8px;left:8px;min-width:80px;text-align:center;padding:6px 14px;font-size:12px}
-  .speech-history-btn{top:8px;left:110px;min-width:80px;text-align:center;padding:6px 14px;font-size:12px}
+  /* 工具栏：flex 布局，按钮等宽分布 */
+  .mobile-toolbar{position:fixed;top:0;left:0;right:0;z-index:9998;display:flex;gap:4px;padding:6px 6px;background:rgba(10,25,47,0.95);backdrop-filter:blur(6px)}
+  .mobile-toolbar .speech-history-btn,
+  .mobile-toolbar .btn-favor,
+  .mobile-toolbar .btn-settings,
+  .mobile-toolbar .btn-pause{position:static;flex:1;min-width:0;right:auto;left:auto;top:auto;bottom:auto;transform:none;padding:6px 4px;font-size:11px;border-radius:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .favor-panel{top:48px;left:8px;max-height:60vh;padding:10px}
   .modal{padding:16px;width:92%}
   .modal h2{font-size:18px}
@@ -167,11 +169,13 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 
 /* ===== 手机窄屏适配（≤480px）===== */
 @media(max-width:480px){
-  /* 顶部按钮：保持顶部，缩小尺寸，百分比均匀分布 */
-  .speech-history-btn{position:fixed;top:8px;left:2%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
-  .btn-favor{position:fixed;top:8px;left:27%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
-  .btn-settings{position:fixed;top:8px;left:52%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
-  .btn-pause{position:fixed;top:8px;left:76%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
+  /* 工具栏：更紧凑 */
+  .mobile-toolbar{padding:4px 4px;gap:3px}
+  .mobile-toolbar .speech-history-btn,
+  .mobile-toolbar .btn-favor,
+  .mobile-toolbar .btn-settings,
+  .mobile-toolbar .btn-pause{padding:5px 2px;font-size:10px;border-radius:14px;border-width:1.5px}
+  .header{padding-top:44px}
   /* 玩家网格改为 3 列 */
   .player-grid{grid-template-columns:repeat(3,1fr);gap:8px}
   .p-card .avatar{width:36px;height:36px}
@@ -746,6 +750,9 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 }
 .speech-history-btn:hover{background:var(--blue);color:#fff;transform:scale(1.05)}
 
+/* ===== 移动端工具栏 ===== */
+.mobile-toolbar{display:contents}
+
 /* ===== 发言历史面板 ===== */
 .speech-history-panel{
   position:fixed;top:0;left:0;width:380px;height:100vh;z-index:10000;
@@ -813,8 +820,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 </style>
 </head>
 <body>
-<!-- ===== 发言历史按钮 ===== -->
-<button id="speechHistoryBtn" class="speech-history-btn" onclick="toggleSpeechHistory()" style="display:none;">📜 <span class="btn-label">发言投票历史</span></button>
+<!-- ===== 发言历史按钮（已移入工具栏） -->
 
 <!-- ===== 发言历史面板 ===== -->
 <div id="speechHistoryPanel" class="speech-history-panel hide">
@@ -1096,9 +1102,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 </div>
 
 <div class="night-overlay" id="nightOverlay"></div>
-<button class="btn-favor" id="favorBtn" onclick="openFavorPanel()">♡ <span class="btn-label">好感度</span></button>
-<button class="btn-settings" id="settingsBtn" onclick="openSettings()">⚙ <span class="btn-label">设置</span></button>
-<button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ <span class="btn-label">暂停</span></button>
+<div class="mobile-toolbar" id="mobileToolbar">
+  <button id="speechHistoryBtn" class="speech-history-btn" onclick="toggleSpeechHistory()" style="display:none;">📜 <span class="btn-label">历史</span></button>
+  <button class="btn-favor" id="favorBtn" onclick="openFavorPanel()">♡ <span class="btn-label">好感度</span></button>
+  <button class="btn-settings" id="settingsBtn" onclick="openSettings()">⚙ <span class="btn-label">设置</span></button>
+  <button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ <span class="btn-label">暂停</span></button>
+</div>
 <div class="favor-panel" id="favorPanel">
   <h4>好感度面板（上帝视角）</h4>
   <div class="fp-hint">点击数值可手动修改 · 滚轮调整</div>
