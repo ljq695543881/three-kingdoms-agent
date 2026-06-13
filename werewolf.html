@@ -167,11 +167,11 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 
 /* ===== 手机窄屏适配（≤480px）===== */
 @media(max-width:480px){
-  /* 顶部按钮栏改为 flex 布局，避免重叠 */
-  .btn-pause{position:fixed;top:auto;bottom:12px;right:12px;min-width:44px;padding:10px 12px;font-size:11px;z-index:9997;border-radius:22px}
-  .btn-settings{position:fixed;top:auto;bottom:12px;right:72px;min-width:44px;padding:10px 12px;font-size:11px;z-index:9997;border-radius:22px}
-  .btn-favor{position:fixed;top:auto;bottom:12px;left:72px;min-width:44px;padding:10px 12px;font-size:11px;z-index:9997;border-radius:22px}
-  .speech-history-btn{position:fixed;top:auto;bottom:12px;left:12px;min-width:44px;padding:10px 12px;font-size:11px;z-index:9997;border-radius:22px}
+  /* 顶部按钮：保持顶部，缩小尺寸，百分比均匀分布 */
+  .speech-history-btn{position:fixed;top:8px;left:2%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
+  .btn-favor{position:fixed;top:8px;left:27%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
+  .btn-settings{position:fixed;top:8px;left:52%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
+  .btn-pause{position:fixed;top:8px;left:76%;right:auto;bottom:auto;transform:none;min-width:auto;padding:5px 6px;font-size:10px;z-index:9997;border-radius:14px;width:auto;height:auto}
   /* 玩家网格改为 3 列 */
   .player-grid{grid-template-columns:repeat(3,1fr);gap:8px}
   .p-card .avatar{width:36px;height:36px}
@@ -814,7 +814,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 </head>
 <body>
 <!-- ===== 发言历史按钮 ===== -->
-<button id="speechHistoryBtn" class="speech-history-btn" onclick="toggleSpeechHistory()" style="display:none;">📜 发言投票历史</button>
+<button id="speechHistoryBtn" class="speech-history-btn" onclick="toggleSpeechHistory()" style="display:none;">📜 <span class="btn-label">发言投票历史</span></button>
 
 <!-- ===== 发言历史面板 ===== -->
 <div id="speechHistoryPanel" class="speech-history-panel hide">
@@ -1096,9 +1096,9 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 </div>
 
 <div class="night-overlay" id="nightOverlay"></div>
-<button class="btn-favor" id="favorBtn" onclick="openFavorPanel()">♡ 好感度</button>
-<button class="btn-settings" id="settingsBtn" onclick="openSettings()">⚙ 设置</button>
-<button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ 暂停</button>
+<button class="btn-favor" id="favorBtn" onclick="openFavorPanel()">♡ <span class="btn-label">好感度</span></button>
+<button class="btn-settings" id="settingsBtn" onclick="openSettings()">⚙ <span class="btn-label">设置</span></button>
+<button class="btn-pause" id="pauseBtn" onclick="togglePause()">⏸ <span class="btn-label">暂停</span></button>
 <div class="favor-panel" id="favorPanel">
   <h4>好感度面板（上帝视角）</h4>
   <div class="fp-hint">点击数值可手动修改 · 滚轮调整</div>
@@ -2331,7 +2331,7 @@ function openSettings(){
   if(!game.isPaused){
     game.isPaused=true;
     const btn=document.getElementById("pauseBtn");
-    btn.textContent="▶ 继续";
+    btn.innerHTML='▶ <span class="btn-label">继续</span>';
     btn.classList.add("paused");
     game._pausedBySettings=true;
   }
@@ -2343,7 +2343,7 @@ function closeSettings(){
   if(game._pausedBySettings){
     game.isPaused=false;
     const btn=document.getElementById("pauseBtn");
-    btn.textContent="⏸ 暂停";
+    btn.innerHTML='⏸ <span class="btn-label">暂停</span>';
     btn.classList.remove("paused");
     game.pauseResolvers.forEach(r=>r());
     game.pauseResolvers=[];
@@ -2428,7 +2428,7 @@ function openFavorPanel(){
   if(!game.isPaused){
     game.isPaused=true;
     const btn=document.getElementById("pauseBtn");
-    btn.textContent="▶ 继续";
+    btn.innerHTML='▶ <span class="btn-label">继续</span>';
     btn.classList.add("paused");
     game._pausedByFavor=true;
   }
@@ -2438,7 +2438,7 @@ function closeFavorPanel(){
   if(game._pausedByFavor){
     game.isPaused=false;
     const btn=document.getElementById("pauseBtn");
-    btn.textContent="⏸ 暂停";
+    btn.innerHTML='⏸ <span class="btn-label">暂停</span>';
     btn.classList.remove("paused");
     game.pauseResolvers.forEach(r=>r());
     game.pauseResolvers=[];
@@ -2529,10 +2529,10 @@ function togglePause(){
   game.isPaused=!game.isPaused;
   const btn=document.getElementById("pauseBtn");
   if(game.isPaused){
-    btn.textContent="▶ 继续";
+    btn.innerHTML='▶ <span class="btn-label">继续</span>';
     btn.classList.add("paused");
   } else {
-    btn.textContent="⏸ 暂停";
+    btn.innerHTML='⏸ <span class="btn-label">暂停</span>';
     btn.classList.remove("paused");
     game._pausedByFavor=false;
     game.pauseResolvers.forEach(r=>r());
@@ -2607,7 +2607,7 @@ function init(optPlayer){
   _activeGen=game.generation;
   // 重置暂停按钮外观
   const pauseBtn=document.getElementById("pauseBtn");
-  pauseBtn.textContent="⏸ 暂停";
+  pauseBtn.innerHTML='⏸ <span class="btn-label">暂停</span>';
   pauseBtn.classList.remove("paused");
   // 从 219 人的角色库中随机抽取 15 人
   const pool = shuffle([...ALL_CHARS]);
