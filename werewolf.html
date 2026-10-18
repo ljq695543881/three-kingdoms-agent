@@ -2162,6 +2162,7 @@ async function markDeath(player, day, cause) {
   // 首先标记死亡状态
   player.deathDay = day;
   player.deathCause = cause;
+  player.deathPeriod = cause==='wolf'||cause==='poison'?'night':cause==='vote'?'day':(game.timeOfDay||'day');
   player.alive = false;
   
   // 检查是否是天意附体角色死亡
@@ -2199,7 +2200,7 @@ function deathInfoText(p) {
   const causeMap = {
     "wolf": "被刀死", "poison": "被毒死", "vote": "被票死", "hunter": "被猎人带走"
   };
-  return ` 第${p.deathDay}${p.deathCause === 'vote' ? '天' : '夜'}${causeMap[p.deathCause] || '阵亡'}`;
+  return ` 第${p.deathDay}${(p.deathPeriod||(p.deathCause==='vote'?'day':'night'))==='day'?'天':'夜'}${causeMap[p.deathCause] || '阵亡'}`;
 }
 
 // ===== 属性辅助函数 =====
@@ -3197,7 +3198,7 @@ function setPhase(text,color){
   <span style="color:${color};font-size:13px;font-weight:700;margin-left:8px">${text}</span>`;
 }
 
-function setNight(b){document.getElementById("nightOverlay").className="night-overlay"+(b?" is-night":"")}
+function setNight(b){game.timeOfDay=b?'night':'day';document.getElementById("nightOverlay").className="night-overlay"+(b?" is-night":"")}
 
 function getAlive(){return game.players.filter(p=>p.alive)}
 function getAliveGood(){return getAlive().filter(p=>p.role!=="wolf")}
@@ -3253,6 +3254,7 @@ async function startGame(){
 }
 
 async function nightPhase(){
+  if(game.ended)return;
   const gen=game.generation;
   try{
   game.day++;
@@ -4060,8 +4062,13 @@ async function dayPhase(deaths){
   setPhase(`第${game.day}天`,"var(--gold)");
   addLog(`<span class="system-text">--- 第${game.day}天 · 天亮了 ---</span>`);
   await delay(800);
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
 
+  // 夜间死亡同时生效，避免猎人选择同夜已经中毒或被刀的角色。
+  deaths=[...new Map(deaths.filter(d=>game.players[d.id]?.alive).map(d=>[d.id,d])).values()];
+  for(const d of deaths){
+    const p=game.players[d.id];p.alive=false;p.deathDay=game.day;p.deathCause=d.cause;p.deathPeriod='night';
+  }
   // Announce deaths
   if(deaths.length===0){
     addLog('<span style="color:var(--green)">昨夜是平安夜，没有人死亡。</span>');
@@ -4069,7 +4076,7 @@ async function dayPhase(deaths){
     for(const d of deaths){
       const p=game.players[d.id];
       await markDeath(p, game.day, d.cause);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       const causeText=d.cause==="wolf"?"被狼人杀害":d.cause==="poison"?"被女巫毒杀":"死亡";
       const roleText = isGodView() ? `（${p.faction}·${ROLE_CFG[p.role].name}）` : '';
       addLog(`<span class="death-text">${p.name}${roleText}昨夜${causeText}了！</span>`);
@@ -4081,7 +4088,7 @@ async function dayPhase(deaths){
         let target = null;
         if(isPlayerHunter){
           target = await showHunterShootPanel(p, d.cause);
-          if(game.generation!==gen)return;
+          if(game.generation!==gen||game.ended)return;
         } else {
           const candidates = getAlive().filter(t => t.id !== p.id);
           // 智谋≥4优先带走狼人
@@ -4089,7 +4096,7 @@ async function dayPhase(deaths){
         }
         if(target){
           await markDeath(target, game.day, "hunter");
-          if(game.generation!==gen)return;
+          if(game.generation!==gen||game.ended)return;
           const targetRoleText = isGodView() ? `（${ROLE_CFG[target.role].name}）` : '';
           addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}${targetRoleText}！</span>`);
           if(target.role==="hunter"&&getAlive().find(pp=>pp.role==="hunter"&&pp.id!==p.id)){/* chain handled */}
@@ -4100,7 +4107,7 @@ async function dayPhase(deaths){
 
   renderPlayers();
   await delay(300);
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
 
   // Check win
   if(checkWin())return;
@@ -4114,9 +4121,9 @@ async function dayPhase(deaths){
     if(destinyChar && destinyChar.alive){
       addLog('<span class="system-text" style="color:#9b59b6">=== 天意干预 ===</span>');
       await delay(400);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       const result = await showDestinyPanel();
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       if(result && result.action){
         if(result.action === 'help' || result.action === 'harm'){
           game.destinyEffects[result.targetId] = result.action;
@@ -4125,25 +4132,25 @@ async function dayPhase(deaths){
         }
       }
       await delay(400);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
     }
   }
 
   // Discussion
   addLog('<span class="system-text">=== 进入讨论环节 ===</span>');
   await delay(600);
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
   // 显示发言历史按钮
   document.getElementById('speechHistoryBtn').style.display = 'block';
   // Discussion
   await generateSpeeches();
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
   await delay(600);
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
 
   // Vote
   await votePhase();
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
   
   // 保存游戏进度（玩家模式）
   if(game.mode === 'player'){
@@ -5028,14 +5035,14 @@ async function votePhase(){
   const gen=game.generation;
   addLog('<span class="system-text">=== 投票环节 ===</span>');
   await delay(600);
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
 
   const alive=getAlive();
   const votes={};
 
   for(const p of alive){
     while(game.isPaused) await delay(100);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
 
     // ===== 一人一票：好感度 + 发言综合决策 =====
     const suspectPool=alive.filter(x=>x.id!==p.id);
@@ -5287,7 +5294,7 @@ async function votePhase(){
     if(game.mode === 'player' && p.id === game.playerId){
       addLog(`<span style="color:var(--gold)">【你的投票】请选择要放逐的玩家...</span>`);
       const playerVoteTargetId = await showVotePanel();
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       if(playerVoteTargetId !== null && game.players[playerVoteTargetId]){
         votes[playerVoteTargetId] = (votes[playerVoteTargetId] || 0) + 1;
         if(!game.voteRecords) game.voteRecords = [];
@@ -5298,7 +5305,7 @@ async function votePhase(){
         addLog(`${speakerHTML(p)}<span class="vote-text">→ 弃权</span>`);
       }
       await delay(400);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       continue;
     }
 
@@ -5338,11 +5345,11 @@ async function votePhase(){
       addLog(`${speakerHTML(p)}<span class="vote-text">→ ${target.name}</span>`);
     }
     await delay(400);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
   }
 
   await delay(600);
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
   // Find max votes (handle ties)
   let maxVotes=0,maxIds=[];
   for(let id in votes){
@@ -5364,7 +5371,7 @@ async function votePhase(){
     if(!game.voteRecords) game.voteRecords = [];
     game.voteRecords.push({type:'tie', tiedIds: tiedIds, votes: maxVotes, day: game.day});
     await delay(800);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
 
     // ① 平票玩家依次申辩发言（使用正常白天模板）
     addLog(`<span class="system-text">=== 平票申辩 ===</span>`);
@@ -5377,7 +5384,7 @@ async function votePhase(){
       if(game.mode === 'player' && tid === game.playerId && !game.playerDied){
         addLog(`<span style="color:var(--gold)">【你的申辩】请输入发言...</span>`);
         const result = await showSpeechPanel();
-        if(game.generation!==gen)return;
+        if(game.generation!==gen||game.ended)return;
         speech = result.text || '';
         const fragments = result.fragments || [{type:'conservative'}];
         classified = fragments.map(f => {
@@ -5409,26 +5416,26 @@ async function votePhase(){
       game.speeches.push({speaker: tp.role, about: null, text: speech, speakerId: tp.id, speechType: mainType, classified, day: game.day, tieBreak: true});
       game.spokenToday.add(tp.id);
       await delay(800 + Math.random() * 700);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
     }
 
     // ② 重投票：仅限平票玩家
     addLog(`<span class="system-text">=== 重新投票（仅限：${tiedNames}）===</span>`);
     await delay(600);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
 
     const revoteAlive = getAlive();
     const revotes = {};
 
     for(const p of revoteAlive){
       while(game.isPaused) await delay(100);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
 
       // 玩家手动投票
       if(game.mode === 'player' && p.id === game.playerId && !game.playerDied){
         addLog(`<span style="color:var(--gold)">【你的投票】请从平票玩家中选择...</span>`);
         const rvTargetId = await showVotePanel(tiedIds);
-        if(game.generation!==gen)return;
+        if(game.generation!==gen||game.ended)return;
         if(rvTargetId !== null && game.players[rvTargetId]){
           revotes[rvTargetId] = (revotes[rvTargetId] || 0) + 1;
           addLog(`${speakerHTML(p)}<span class="vote-text">→ 我投给了 ${game.players[rvTargetId].name}</span>`);
@@ -5438,7 +5445,7 @@ async function votePhase(){
           addLog(`${speakerHTML(p)}<span class="vote-text">→ 弃权</span>`);
         }
         await delay(400);
-        if(game.generation!==gen)return;
+        if(game.generation!==gen||game.ended)return;
         continue;
       }
 
@@ -5454,7 +5461,7 @@ async function votePhase(){
           addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[fallbackId].name}</span>`);
         }
         await delay(400);
-        if(game.generation!==gen)return;
+        if(game.generation!==gen||game.ended)return;
         continue;
       }
 
@@ -5545,11 +5552,11 @@ async function votePhase(){
         addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[target].name}</span>`);
       }
       await delay(400);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
     }
 
     await delay(600);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
     // ③ 计算重投结果
     let rvMaxVotes = 0, rvMaxIds = [];
     for(let id in revotes){
@@ -5564,25 +5571,25 @@ async function votePhase(){
       addLog(`<span class="death-text" style="font-size:15px">重投结果：${exiled.name}以${rvMaxVotes}票被放逐！</span>`);
       game.voteRecords.push({type:'result', targetId: finalMaxId, votes: rvMaxVotes, day: game.day, tieBreak: true});
       await markDeath(exiled, game.day, "vote");
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       await delay(500);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled).text}"</span>`);
       await delay(500);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       if(exiled.role === 'hunter'){
         const isPlayerHunter = game.mode === 'player' && game.playerId === exiled.id;
         let ht = null;
         if(isPlayerHunter){
           ht = await showHunterShootPanel(exiled, 'vote');
-          if(game.generation!==gen)return;
+          if(game.generation!==gen||game.ended)return;
         } else {
           const targets = getAlive().filter(p => p.id !== exiled.id);
           if(targets.length > 0) ht = getAttr(exiled,'智谋') >= 4 ? pickHunterTarget(exiled, targets) : pick(targets);
         }
         if(ht){
           await markDeath(ht, game.day, "hunter");
-          if(game.generation!==gen)return;
+          if(game.generation!==gen||game.ended)return;
           const htRoleText = isGodView() ? `（${ROLE_CFG[ht.role].name}）` : '';
           addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}${htRoleText}！</span>`);
         }
@@ -5596,10 +5603,10 @@ async function votePhase(){
     // 平票流程已处理完毕，跳过后续常规放逐
     renderPlayers();
     await delay(500);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
     if(!checkWin()){
       await delay(500);
-      if(game.generation!==gen)return;
+      if(game.generation!==gen||game.ended)return;
       nightPhase();
     }
     return;
@@ -5611,13 +5618,13 @@ async function votePhase(){
     if(!game.voteRecords) game.voteRecords = [];
     game.voteRecords.push({type:'result', targetId: finalMaxId, votes: finalMaxVotes, day: game.day});
     await markDeath(exiled, game.day, "vote");
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
     addLog(`<span class="death-text" style="font-size:15px">${exiled.name}以${finalMaxVotes}票被放逐！</span>`);
     await delay(500);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
     addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled).text}"</span>`);
     await delay(500);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
 
     // Hunter
     if(exiled.role==="hunter"){
@@ -5625,7 +5632,7 @@ async function votePhase(){
       let ht = null;
       if(isPlayerHunter){
         ht = await showHunterShootPanel(exiled, 'vote');
-        if(game.generation!==gen)return;
+        if(game.generation!==gen||game.ended)return;
       } else {
         const targets=getAlive().filter(p=>p.id!==exiled.id);
         if(targets.length>0){
@@ -5634,7 +5641,7 @@ async function votePhase(){
       }
       if(ht){
         await markDeath(ht, game.day, "hunter");
-        if(game.generation!==gen)return;
+        if(game.generation!==gen||game.ended)return;
         const htRoleText = isGodView() ? `（${ROLE_CFG[ht.role].name}）` : '';
         addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}${htRoleText}！</span>`);
       }
@@ -5643,11 +5650,11 @@ async function votePhase(){
 
   renderPlayers();
   await delay(500);
-  if(game.generation!==gen)return;
+  if(game.generation!==gen||game.ended)return;
 
   if(!checkWin()){
     await delay(500);
-    if(game.generation!==gen)return;
+    if(game.generation!==gen||game.ended)return;
     nightPhase();
   }
 }
@@ -6072,7 +6079,13 @@ function renderFragments(){
 }
 
 function removeSpeechFragment(index){
-  _speechFragments.splice(index, 1);
+  const [removed]=_speechFragments.splice(index,1);
+  if(removed?.type==='claim'&&!game.playerClaims[game.playerId]){
+    _speechFragments=_speechFragments.filter(f=>f.type!=='info');
+    document.getElementById('st-claim').style.display='';
+    document.getElementById('st-info').style.display='none';
+    document.getElementById('speechInfoRow').classList.remove('show');
+  }
   renderFragments();
   // 如果移除后为空，重置面板状态
   if(_speechFragments.length === 0){
@@ -6099,7 +6112,7 @@ function selectSpeechType(type){
   if(_speechFragments.length >= 3) return;
 
   if(type === 'info'){
-    const myClaim = game.playerClaims[game.playerId];
+    const myClaim = game.playerClaims[game.playerId]||_speechFragments.find(f=>f.type==='claim')?.role;
     if(myClaim){
       showInfoActions(myClaim);
     }
@@ -6134,15 +6147,14 @@ function showClaimRoleSelection(){
 }
 
 function selectClaimRole(role){
+  if(game.playerClaims[game.playerId]||_speechFragments.some(f=>f.type==='claim')||_speechFragments.length>=3)return;
   _speechClaimRole = role;
   document.querySelectorAll('.claim-role-btn').forEach(b=>{
     b.classList.toggle('selected', b.dataset.role === role);
   });
   // 添加 claim 片段
   _speechFragments.push({type:'claim', role});
-  // 记录玩家跳的身份（全局只跳一次）
-  game.claimedPlayers.add(game.playerId);
-  game.playerClaims[game.playerId] = role;
+  // 选择仍是草稿，确认发言后才公开记录身份。
   // 隐藏"跳身份"按钮（已跳过）
   document.getElementById('st-claim').style.display = 'none';
   // 如果角色是预言家/女巫/守卫，显示"告知信息"按钮
@@ -6163,31 +6175,16 @@ function showInfoActions(role){
   const container = document.getElementById('infoActions');
   let html = '';
   if(role === 'seer'){
-    // 预言家：显示所有存活玩家（含自己），以及昨晚验的人（可能已死）
-    let targets = getAlive().filter(p=>p.id!==game.playerId);
-    const lastCheck = game.seerChecks && game.seerChecks.length > 0 ? game.seerChecks[game.seerChecks.length-1] : null;
-    if(lastCheck){
-      const lastTarget = game.players[lastCheck.targetId];
-      if(lastTarget && !lastTarget.alive && !targets.find(p=>p.id===lastCheck.targetId)){
-        targets = [...targets, lastTarget];
-      }
-    }
-    targets = [game.players[game.playerId], ...targets];
+    // 报信息可提及所有座位；候选列表不能暴露真实预言家的隐藏查验目标。
+    const targets=game.players;
     html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知验人信息：</div>';
     html += targets.map(p=>
       `<button class="info-act-btn" onclick="selectInfoAction('seer','result',${p.id},'wolf')">${p.name}是狼人</button>` +
       `<button class="info-act-btn" onclick="selectInfoAction('seer','result',${p.id},'good')">${p.name}是好人</button>`
     ).join('');
   } else if(role === 'witch'){
-    // 女巫：显示所有存活玩家（含自己），以及昨晚毒的人（可能已死）
-    let targets = getAlive().filter(p=>p.id!==game.playerId);
-    if(game.witchPoisonTarget!=null){
-      const poisonTarget = game.players[game.witchPoisonTarget];
-      if(poisonTarget && !poisonTarget.alive && !targets.find(p=>p.id===game.witchPoisonTarget)){
-        targets = [...targets, poisonTarget];
-      }
-    }
-    targets = [game.players[game.playerId], ...targets];
+    // 真报、假报使用相同候选，支持回顾已阵亡角色。
+    const targets=game.players;
     html += '<div style="color:var(--gray);font-size:11px;margin-bottom:4px;">告知用药信息：</div>';
     html += targets.map(p=>
       `<button class="info-act-btn" onclick="selectInfoAction('witch','save',${p.id})">救了${p.name}</button>` +
@@ -6231,7 +6228,7 @@ function showSpeechTargetSelection(type){
   sel.value = '';
   document.getElementById('speechConfirmBtn').disabled = true;
   // 根据是否已跳身份设置"跳身份"按钮的可见性
-  const _myClaim = game.playerClaims[game.playerId];
+  const _myClaim = game.playerClaims[game.playerId]||_speechFragments.find(f=>f.type==='claim')?.role;
   if(_myClaim){
     document.getElementById('st-claim').style.display = 'none';
   } else {
@@ -7230,6 +7227,8 @@ function updateSpeechPreview(){
 function confirmPlayerSpeech(){
   clearSuspendedAction();
   if(!_speechFragments.length||!game.pendingSpeechResolve)return;
+  const claim=_speechFragments.find(f=>f.type==='claim');
+  if(claim){game.claimedPlayers.add(game.playerId);game.playerClaims[game.playerId]=claim.role;}
   const text = generatePlayerSpeechText(_speechFragments);
   document.getElementById('speechPanel').classList.add('hide');
   const fragments = _speechFragments.slice(); // copy
