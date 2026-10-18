@@ -220,7 +220,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
   .growth-card,.endscreen-card{min-width:auto !important;width:95vw;padding:16px 12px}
 }
 .tag-conservative{color:var(--gray);font-size:11px;font-style:italic}
-.tag-attack{color:#e67e22;font-size:11px;font-weight:700}
+.tag-attack{color:var(--hunter);font-size:11px;font-weight:700}
 .tag-shield{color:var(--green);font-size:11px;font-weight:700}
 .tag-break{color:var(--red);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(192,57,43,0.4)}
 .tag-claim{color:var(--gold);font-size:11px;font-weight:700;text-shadow:0 0 6px rgba(241,196,15,0.4)}
@@ -616,12 +616,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 #destinySelect{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75)}
 #destinySelect.hide{display:none}
 .destiny-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:20px 24px;min-width:320px;text-align:center;max-height:80vh;overflow-y:auto}
-.destiny-card h2{color:#9b59b6;font-size:18px;margin-bottom:2px;letter-spacing:2px}
+.destiny-card h2{color:var(--witch);font-size:18px;margin-bottom:2px;letter-spacing:2px}
 .destiny-card .destiny-hint{color:var(--gray);font-size:11px;margin-bottom:10px}
 .destiny-players{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
 .destiny-player-card{padding:4px;border:2px solid rgba(255,255,255,0.15);border-radius:8px;background:transparent;color:var(--white);font-size:10px;cursor:pointer;transition:all 0.2s;text-align:center}
-.destiny-player-card:hover{border-color:#9b59b6;background:rgba(155,89,182,0.1)}
-.destiny-player-card.selected{border-color:#9b59b6;background:rgba(155,89,182,0.2);box-shadow:0 0 10px rgba(155,89,182,0.5)}
+.destiny-player-card:hover{border-color:var(--witch);background:rgba(155,89,182,0.1)}
+.destiny-player-card.selected{border-color:var(--witch);background:rgba(155,89,182,0.2);box-shadow:0 0 10px rgba(155,89,182,0.5)}
 .destiny-player-card img{width:32px;height:32px;border-radius:50%;margin-bottom:2px;object-fit:cover}
 .destiny-player-card div{font-size:10px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .destiny-confirm{padding:6px 24px;border:none;border-radius:16px;background:#9b59b6;color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s}
@@ -645,15 +645,15 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 #destinyDeathPanel{position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7)}
 #destinyDeathPanel.hide{display:none}
 .destiny-panel-card{background:var(--bg2);border:2px solid #9b59b6;border-radius:16px;padding:20px 24px;min-width:360px;text-align:center}
-.destiny-panel-card h2{color:#9b59b6;font-size:16px;margin-bottom:4px}
+.destiny-panel-card h2{color:var(--witch);font-size:16px;margin-bottom:4px}
 .destiny-panel-card .dp-hint{color:var(--gray);font-size:12px;margin-bottom:10px}
 .destiny-actions{display:flex;gap:10px;justify-content:center;margin-bottom:12px}
 .destiny-act-btn{padding:10px 18px;border:2px solid rgba(255,255,255,0.2);border-radius:10px;background:transparent;color:var(--white);font-size:13px;cursor:pointer;transition:all 0.2s}
-.destiny-act-btn:hover{border-color:#9b59b6;color:#9b59b6}
-.destiny-act-btn.selected{border-color:#9b59b6;background:rgba(155,89,182,0.15)}
+.destiny-act-btn:hover{border-color:var(--witch);color:var(--witch)}
+.destiny-act-btn.selected{border-color:var(--witch);background:rgba(155,89,182,0.15)}
 .destiny-target-list{display:none;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1)}
 .destiny-target-card{padding:6px;border:2px solid rgba(255,255,255,0.15);border-radius:10px;background:transparent;color:var(--white);font-size:11px;cursor:pointer;transition:all 0.2s;text-align:center}
-.destiny-target-card:hover{border-color:#9b59b6;background:rgba(155,89,182,0.15);transform:scale(1.05)}
+.destiny-target-card:hover{border-color:var(--witch);background:rgba(155,89,182,0.15);transform:scale(1.05)}
 .destiny-target-card img{width:36px;height:36px;border-radius:50%;margin-bottom:4px;object-fit:cover}
 .destiny-target-card div{font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -971,6 +971,45 @@ body.action-suspended .sh-content{padding-bottom:100px}
 @media(max-width:680px){#titleScreen{padding:16px 18px calc(16px + var(--safe-bottom))}.lobby-header{gap:10px}.lobby-brand{font-size:14px;gap:9px}.brand-seal{width:30px;height:35px;font-size:11px}.lobby-brand small{font-size:9px}.lobby-collection{font-size:11px}.lobby-collection span{margin-left:7px}.lobby-layout{display:block;margin-top:12px}.lobby-hero{min-height:290px}.hero-copy{padding:20px 0 0 6px}.hero-eyebrow{font-size:9px;letter-spacing:3px}.lobby-hero .title-logo{font-size:83px;margin:13px 0 5px;line-height:1.2;gap:12px}.title-logo>span{font-size:18px;padding-left:10px;letter-spacing:5px}.hero-tagline{font-size:18px;line-height:1.65;letter-spacing:3px}.lobby-hero .title-subtitle{font-size:10px;line-height:1.8;letter-spacing:1px;margin-top:10px}.hero-art{inset:-38px -48px -80px 22%;opacity:.8}.hero-art svg{height:100%;width:100%}.hero-bottom{display:none}.lobby-launch{padding:20px;margin-top:2px}.launch-heading{margin-bottom:20px}.launch-heading h2{font-size:21px}.launch-eyebrow{font-size:9px;letter-spacing:2px}.lobby-launch .match-order label{min-height:116px;padding:12px}.lobby-launch .order-main>b{font-size:31px}.lobby-launch .order-main{gap:10px}.lobby-launch .order-main>span{font-size:16px;letter-spacing:2px}.lobby-launch .title-btns{margin-top:16px;gap:10px}.lobby-launch .title-btn{min-height:112px;padding:14px}.lobby-launch .title-btn.primary{min-height:86px;padding:16px}.mode-copy b{font-size:22px}.mode-seal{width:36px;height:40px}.lobby-launch .career-home-goal{margin-top:16px}.lobby-footer{margin-top:18px;padding-top:6px;font-size:9px;letter-spacing:1px}}
 @media(max-width:360px){#titleScreen{padding-left:12px;padding-right:12px}.lobby-hero{min-height:267px}.hero-copy{padding-top:15px}.lobby-hero .title-logo{font-size:75px}.hero-art{inset:-25px -40px -70px 20%}.lobby-launch{padding:16px}.launch-heading h2{font-size:19px}.lobby-launch .match-orders{gap:8px}.lobby-launch .match-order label{padding:11px 9px}.lobby-launch .order-main{gap:8px}.lobby-launch .order-main>b{font-size:28px}.lobby-launch .order-seal{font-size:9px;top:6px;right:6px}.lobby-launch .primary small{font-size:9px}.mode-copy b{font-size:20px}.mode-arrow{font-size:22px}.lobby-launch .title-btn small{font-size:9px}}
 
+/* 月下孤城：全局组件统一主题，保留身份与操作的语义色。 */
+:root{--bg:#101718;--bg2:#192221;--card:#232d28;--gold:#ccb17b;--red:#d78e7b;--blue:#9ab8b5;--green:#acbf94;--purple:#baa9c5;--white:#e8e1d0;--gray:#a5ae9f;--dark:#2a352e;--wolf:#d78e7b;--seer:#9ab8b5;--witch:#baa9c5;--hunter:#d3ad7e;--guard:#acbf94;--villager:#b4bdac;--border:#b5a57933;--ink-serif:'Songti SC','STSong','Noto Serif SC',serif;--ink-line:#b5a57933;--ink-paper:linear-gradient(135deg,#242d26,#172120 75%);--ink-gold:linear-gradient(110deg,#d0b77e,#b1935c)}
+body{background:radial-gradient(ellipse at 15% 0,#48513b24,transparent 48%),radial-gradient(ellipse at 95% 70%,#70522d12,transparent 50%),var(--bg);color:var(--white);line-height:1.6;scrollbar-color:#7d7659 #17201d}
+*{scrollbar-width:thin}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#17201d}::-webkit-scrollbar-thumb{background:#7d7659;border-radius:2px}
+button,input,select{font-family:inherit}button:focus-visible,[tabindex]:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #e4c993;outline-offset:3px}
+.header{position:relative;background:linear-gradient(120deg,#202920,#131d1c);padding:28px 24px 23px;border-bottom:1px solid var(--ink-line);overflow:hidden}.header::before{content:'';position:absolute;width:240px;height:240px;border:1px solid #ccb17b13;border-radius:50%;left:calc(50% - 120px);top:-180px;pointer-events:none}.header h1{font-family:var(--ink-serif);font-size:30px;letter-spacing:7px;font-weight:500;color:#dfcca1;text-shadow:none}.header p{font-size:11px;letter-spacing:2px;margin-top:7px;color:var(--gray)}.table-kicker{font-size:10px;letter-spacing:4px;color:#a89470;display:block;margin-bottom:9px}
+.phase-bar{padding:13px 16px;background:#111a18;border-bottom:1px solid #b5a5791c}.phase-bar .phase-dot{width:6px;height:6px;border-radius:0;transform:rotate(45deg);box-shadow:none}.phase-bar>span{letter-spacing:2px;font-size:12px!important}
+.game-area{max-width:1160px;padding:24px;gap:24px}.players-panel{flex-basis:332px}.card{position:relative;border:1px solid var(--ink-line);border-radius:3px;padding:18px;background:linear-gradient(135deg,#202921cc,#172120);box-shadow:0 12px 35px #0001;margin-bottom:16px}.card::before{content:'';position:absolute;width:13px;height:13px;top:-1px;left:-1px;border-top:1px solid #bca16a;border-left:1px solid #bca16a;pointer-events:none}.card>h3{font-family:var(--ink-serif);color:#dbcca9;font-size:16px;font-weight:500;letter-spacing:3px;border-bottom:1px solid var(--ink-line);padding-bottom:12px;margin-bottom:16px}.card>h3::after{content:'◆';font-family:serif;font-size:7px;color:#9d895e;margin-left:auto}.player-grid{gap:10px}.p-card{background:linear-gradient(150deg,#2c362d55,#121c1b88);border:1px solid #88907540;border-radius:2px;padding:12px 5px;transition:border-color .2s,background .2s,transform .2s;min-height:112px}.p-card .avatar{border-radius:3px;width:46px;height:46px;border:1px solid #b8a67b66;background:#2c362d;margin-bottom:7px}.p-card .avatar img{border-radius:2px;filter:saturate(.75)}.p-card .name{font-family:var(--ink-serif);font-size:13px;letter-spacing:1px;color:#e0dccd}.p-card .faction{font-size:10px;color:#a0aa98;margin-top:2px}.p-card.dead{opacity:.45;filter:grayscale(.8)}.p-card.selected{border-color:var(--gold);box-shadow:inset 0 0 0 2px #ccb17b16}.p-card.wolf-glow{border-color:var(--wolf);box-shadow:inset 0 0 0 2px #d78e7b14}.p-card .player-tag{border-radius:1px;right:2px;top:2px;padding:2px 4px;font-size:9px;border:1px solid #ffffff30;color:#15201b}.p-card .role-badge{border-radius:2px;color:#15201b}.p-card .status-icon{font-size:12px;top:5px;left:7px}
+.info-bar{border:1px solid var(--ink-line);border-radius:2px;background:#111c19;padding:12px;font-size:12px}.info-bar .num{font-family:var(--ink-serif);font-size:15px;font-weight:500;color:#dcc390}.log-area{max-height:clamp(360px,60dvh,640px);min-height:320px;padding:0 3px}.log-entry{font-size:13px;line-height:1.95;border-bottom:1px solid #9b9c7520;padding:12px 0;color:#d7dbcb}.speaker{font-size:13px;letter-spacing:.5px}.speaker img{border-radius:2px;border:1px solid #b7a47155;filter:saturate(.7)}.log-entry .system-text{color:#b9ac88;font-weight:500;letter-spacing:1px}.log-entry .death-text{color:var(--red)}.log-entry .night-text{color:#a0aa98;font-style:normal}.log-entry .vote-text{color:var(--blue)}.speech-reaction,.match-recap{border:1px solid var(--ink-line);border-left:2px solid #b59a63;border-radius:2px;background:#b59a6309;padding:14px;font-size:13px;line-height:1.9}.speech-reaction h4,.match-recap h3{font-family:var(--ink-serif);font-weight:500;letter-spacing:2px;font-size:16px}.speech-reaction small{margin-top:8px;color:var(--gray)}.match-recap summary{color:#d6c49f}.match-recap .recap-insight{color:#cbb787}.tag-break,.tag-claim,.tag-info{text-shadow:none}
+/* 主操作为金色军令，危险操作使用暗红。 */
+.action-bar{padding:4px 0 20px}.action-bar button,.btn-primary,.btn-blue,.btn-green,.btn-purple{min-height:44px;padding:12px 24px;border:1px solid #d4b87c;border-radius:2px;background:var(--ink-gold);color:#19221b;font-weight:600;letter-spacing:1px}.btn-danger{background:#643d33;color:#f0c3ad;border:1px solid #b8785f;border-radius:2px}.action-bar button:hover{transform:translateY(-1px)}
+.btn-pause,.btn-settings,.btn-favor,.speech-history-btn{min-height:44px;border:1px solid var(--ink-line);border-radius:2px;background:#16201df5;color:#c6ba97;box-shadow:0 4px 20px #0002;font-size:12px;font-weight:500;letter-spacing:1px;backdrop-filter:blur(12px)}.btn-favor,.speech-history-btn{color:#c6ba97;border-color:var(--ink-line)}.btn-pause.paused{color:#dfac94;border-color:#b8785f}.btn-pause:hover,.btn-settings:hover,.btn-favor:hover,.speech-history-btn:hover{background:#293329;color:#ecd8ae;transform:none;border-color:#b69c68}.mobile-toolbar{background:#14201df5;border-color:var(--ink-line)}#resumeAction{background:#263126;color:#e2c994;border:1px solid #bba16c;border-radius:2px;box-shadow:0 8px 30px #0006;font-size:13px;letter-spacing:1px}#jumpLogs{border:1px solid var(--ink-line);border-radius:2px;background:#273127;color:#dfc797;font-size:12px}
+/* 一套卷册容器覆盖角色、决策、成长、设置、成就和结算。 */
+:is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card){position:relative;background:var(--ink-paper);border:1px solid #9d8d625c;border-radius:3px;box-shadow:0 26px 100px #0008,inset 0 0 0 5px #b6a27306;padding:28px;color:var(--white)}
+:is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card)::before{content:'';position:absolute;left:-1px;top:-1px;width:20px;height:20px;border-top:1px solid #d0b57e;border-left:1px solid #d0b57e;pointer-events:none}
+:is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card) h2{font-family:var(--ink-serif);font-size:24px;font-weight:500;letter-spacing:3px;color:#dfc99b;text-shadow:none;line-height:1.6}.modal p{font-size:13px;line-height:1.9;color:#c5cbb9}.modal .highlight{font-weight:500}.pms-card,.char-card{border-color:#9d8d625c}.pms-hint,.speech-hint,.vote-hint,.night-hint,.dp-hint,.destiny-hint{line-height:1.8;color:#a8b09f}.confirm-card h2{color:#e1ae97}.confirm-card{border-color:#a56952}.panel-actions{background:#1c2621;padding:0 0 12px;border-bottom:1px solid var(--ink-line);gap:8px;margin-bottom:20px}.panel-actions button{padding:8px 12px;border:1px solid #9a9c7b44;border-radius:2px;font-size:11px;color:#c3c9b7;min-height:44px}.panel-actions button:hover{color:#e3c995;border-color:#bba16a}
+:is(.pms-btn,.char-start,.speech-confirm,.vote-confirm,.night-confirm,.destiny-confirm,.growth-confirm,.achievement-close,.endscreen-btns button){min-height:44px;border-radius:2px;letter-spacing:1px;font-weight:600;transform:none}.pms-btn{border:1px solid var(--ink-line);background:#101b1844;font-size:15px}.pms-btn.primary,.char-start,.speech-confirm,.vote-confirm,.night-confirm,.destiny-confirm,.growth-confirm,.endscreen-btns .es-retry{background:var(--ink-gold);border:1px solid #d4b87c;color:#19221b}.pms-btn.primary:hover,.char-start:hover,.speech-confirm:hover,.vote-confirm:hover,.night-confirm:hover,.destiny-confirm:hover,.growth-confirm:hover{background:linear-gradient(110deg,#e0c992,#c1a36b);transform:none}.achievement-close,.endscreen-btns .es-title{background:#ccb17b08;border:1px solid #ad9564;color:#dfc492}.pms-back{min-height:44px;color:#aeb69f;font-size:12px;letter-spacing:1px}.confirm-yes,.confirm-no{min-height:44px;padding:11px 24px;border:1px solid #b8785f;border-radius:2px;font:inherit;font-size:13px;cursor:pointer}.confirm-yes{background:#683f34;color:#f2ccb5}.confirm-no{background:transparent;color:#c7cdbb;border-color:var(--ink-line)}
+/* 角色名录与选择牌共用金边选中态。 */
+:is(.speech-type-btn,.vote-opt-btn,.vote-player-card,.night-player-card,.night-action-btn,.destiny-player-card,.destiny-target-card,.destiny-act-btn,.settings-btn,.claim-role-btn,.info-act-btn,.fs-btn,.speed-btn){border:1px solid #929c784a;border-radius:2px;background:#101b1844;color:#d5ddc8;box-shadow:none;transition:border-color .18s,background .18s,transform .18s;min-height:44px}
+:is(.speech-type-btn,.vote-opt-btn,.vote-player-card,.night-player-card,.night-action-btn,.destiny-player-card,.destiny-target-card,.destiny-act-btn,.settings-btn,.claim-role-btn,.info-act-btn,.fs-btn,.speed-btn):hover{background:#bd9d5b0e;border-color:#b59e6e;color:#e4d4b0;box-shadow:none;transform:none}
+:is(.speech-type-btn,.vote-opt-btn,.vote-player-card,.night-player-card,.night-action-btn,.destiny-player-card,.destiny-target-card,.destiny-act-btn,.claim-role-btn,.info-act-btn).selected,.speed-btn.active{border-color:#cbb17a;background:#cbb17a16;color:#e5d1a8;box-shadow:inset 0 0 0 2px #cbb17a0c}.speed-btn.active{background:#cbb17a;color:#1b251c}.settings-btn{font-size:13px;letter-spacing:1px;padding:13px 22px}.settings-btn.danger{border-color:#a76c555c;color:#d4a188}.settings-btn.cancel{border-color:var(--ink-line);color:#bac3ae}.settings-section{border-color:var(--ink-line)}.settings-section h4{font-family:var(--ink-serif);font-size:15px;font-weight:500;letter-spacing:2px;color:#cfc09d}
+.speech-type-btn{padding:16px 10px}.speech-type-btn .st-icon{font-family:var(--ink-serif);display:grid;place-items:center;width:32px;height:34px;font-size:20px;line-height:1;margin:0 auto 8px;border:1px solid #ac956359;color:#c5b083}.speech-type-btn .st-label{font-family:var(--ink-serif);font-size:15px;font-weight:500;letter-spacing:2px}.speech-preview,.night-info,.attr-row,.growth-attr-row{background:#0e191755;border:1px solid var(--ink-line);border-radius:2px}.speech-preview{line-height:1.9;padding:14px;color:#d1d8c3}.speech-fragments{gap:7px}.frag-item{border-radius:2px;font-size:11px;font-weight:500;background:#b7a77d10!important;border-color:#b7a77d40!important}.frag-item.frag-attack{color:var(--red)}.frag-item.frag-shield{color:var(--green)}.frag-item.frag-claim{color:var(--purple)}.frag-item.frag-info{color:var(--blue)}.frag-remove{min-width:24px;min-height:24px;display:inline-grid;place-items:center}.claim-role-btn,.info-act-btn{padding:9px 12px;font-size:12px}.char-card input[type=text],.speech-target-row select{min-height:44px;border:1px solid #9a9c7b55;border-radius:2px;background:#111d19;color:#e6ddc7;font-size:15px}.char-card input[type=text]::placeholder{color:#929e8a}.speech-target-row select{width:100%;font-size:14px}.attr-row,.growth-attr-row{padding:9px 12px}.attr-row .attr-name,.growth-attr-row .ga-name{font-family:var(--ink-serif);font-size:14px;letter-spacing:2px}.attr-btn-plus,.attr-btn-minus,.growth-attr-row .ga-btn{border:1px solid #ad996866;border-radius:2px;background:#b5a06d0a;color:#ddc597;min-width:32px;min-height:32px}.fs-btn{font-size:12px;padding:9px 20px}.avatar-opt,.avatar-opt img{border-radius:3px}.avatar-opt{border-color:var(--ink-line);background:#1c2b22}.avatar-opt.selected{border-color:#d1b67b;box-shadow:inset 0 0 0 2px #d1b67b18}.avatar-opt:hover{transform:none}.avatar-name{color:var(--gray)}
+.vote-player-card,.night-player-card,.destiny-player-card,.destiny-target-card{padding:10px 5px;min-height:84px}.vote-player-card img,.night-player-card img,.destiny-player-card img,.destiny-target-card img{border-radius:2px;filter:saturate(.75);border:1px solid #a6997359}.vote-player-card div,.night-player-card div,.destiny-player-card div,.destiny-target-card div{font-family:var(--ink-serif);font-size:12px;font-weight:500}.vote-players{gap:8px}.potion-state{background:#bd9d5b06;border-color:var(--ink-line);border-radius:2px;padding:14px}.potion-state h4{font-family:var(--ink-serif);font-weight:500;letter-spacing:1px;font-size:16px}.potion-state h4 span{font-family:inherit;color:#c0c9b3;font-size:12px}.potion-state p{color:#a8b29e}.night-info{font-size:13px;line-height:1.8}.destiny-act-btn{font-size:12px;padding:12px}.growth-pts{padding:12px;margin:14px 0;background:#cbb17a0b;border:1px solid var(--ink-line);font-size:12px;color:#c9c9ac}.growth-pts span{font-family:var(--ink-serif);font-size:22px;color:#dfc38a}
+/* 历史卷册与人心回应。 */
+.speech-history-panel{background:linear-gradient(140deg,#222c24,#131f1b);border-right:1px solid #a28d5e;box-shadow:20px 0 70px #0005}.sh-header{padding:20px 18px;border-color:var(--ink-line)}.sh-header h2{font-family:var(--ink-serif);font-size:21px;font-weight:500;letter-spacing:3px;color:#dac79e}.sh-content{padding:18px}.sh-close,.sh-sort-btn{min-height:44px;border-radius:2px;border-color:var(--ink-line);background:#142019;color:#c5cbb7}.sh-close{width:44px;height:44px}.sh-day-label{font-family:var(--ink-serif);font-size:15px;font-weight:500;letter-spacing:2px;border-color:var(--ink-line);padding-bottom:12px;margin-bottom:12px}.sh-item{padding:10px 0;line-height:1.9;border-color:#b5a57920}.sh-speaker-name{font-family:var(--ink-serif);font-size:14px;font-weight:500}.sh-text{color:#b3bda7}.speech-fulltext{font-size:13px}.speech-fulltext summary{color:#bfab7b;font-size:11px}.speech-fulltext p{background:#0e191755;border:1px solid #b5a57926;border-radius:2px;line-height:1.9}.sh-vote-section{background:#ccb17b08;border-radius:2px;border-left:1px solid #bfa571;padding:12px}.sh-vote-item{font-size:12px;line-height:1.8}.favor-panel{background:#19251ff5;border:1px solid #a18e62;border-radius:3px;box-shadow:0 18px 60px #0006;padding:18px}.favor-panel h4{font-family:var(--ink-serif);font-size:17px;font-weight:500;color:#d1bd92;letter-spacing:2px}.favor-panel .fp-hint{color:#a4ae99}.favor-cell{border-radius:1px;color:#101a14}.favor-cell:hover{transform:none;outline:1px solid #ddc695;box-shadow:none}
+/* 生涯图鉴：书册、印章和行军进度。 */
+.achievement-card{background:var(--ink-paper);box-shadow:0 26px 100px #0008}.achievement-card h2{font-size:27px;font-family:var(--ink-serif);font-weight:500;letter-spacing:4px}.achievement-info{padding:18px 0;background:#101b1855;border:1px solid var(--ink-line);gap:48px}.ap-label,.ar-label{font-size:11px;letter-spacing:2px;color:#a4ad97}.ap-value{font-family:var(--ink-serif);font-size:38px;font-weight:500;color:#dec696;text-shadow:none}.ar-value{font-family:var(--ink-serif);font-size:25px;font-weight:500;border:1px solid #bda06b66;border-radius:1px;background:#bd9d5b0b;padding:4px 16px;letter-spacing:2px}.ap-bar,.ap-bar-fill,.career-meter,.career-meter span{border-radius:0}.ap-bar{height:4px;background:#d4c09319}.ap-bar-fill,.career-meter span{background:linear-gradient(90deg,#9f8656,#d1b881)}.achievement-stats{padding:14px 0;border-bottom:1px solid var(--ink-line);font-size:11px;gap:20px}.achievement-stats b{font-family:var(--ink-serif);font-size:16px;font-weight:500}.career-section{border-color:var(--ink-line);padding:22px 0}.career-section h3{font-family:var(--ink-serif);font-weight:500;letter-spacing:2px;font-size:18px;color:#d2c09b}.career-chapter-count{background:#cbb17a0a;border:1px solid var(--ink-line);border-radius:2px;line-height:1.9;font-size:13px}.career-goal,.career-role,.career-title,.ach-badge,.achievement-rank-item{border-radius:2px;background:#111c1844;border:1px solid var(--ink-line);box-shadow:none}.career-goal{padding:16px}.career-goal b,.career-role b,.career-title b,.ach-name{font-family:var(--ink-serif);font-weight:500;letter-spacing:1px;font-size:14px}.career-role.explored,.career-title.equipped,.ach-badge.earned,.achievement-rank-item.achieved{border-color:#b8a16c88;background:#b8a16c0a;box-shadow:none}.career-role{border-style:dashed;min-height:82px;padding:14px 6px}.career-title{min-height:80px}.career-title small{margin-top:5px}.career-open,.career-track,.career-goal button{border:1px solid #aa9565;border-radius:2px;color:#d0bc8f;background:#cbb17a08;font-size:11px}.career-open:hover,.career-track:hover,.career-goal button:hover{border-color:#e0c68e;background:#cbb17a14}.ach-badge{padding:18px 12px;gap:7px}.ach-icon{font-size:26px;filter:saturate(.65)}.ach-desc{font-size:11px;color:#a7b19c;line-height:1.8}.ach-badge.earned .ach-name{color:#dfca9d}.achievement-rank-item.current{border-color:#adbc8e;background:#adbc8e13;box-shadow:none}.career-rank-list summary{font-size:12px;color:#b8c1aa}.rank-up-toast{background:var(--ink-paper);border:1px solid #cbb17a;border-radius:3px;box-shadow:0 24px 80px #0008}.rank-up-toast .rut-icon{filter:saturate(.65)}.rank-up-toast .rut-title{font-family:var(--ink-serif);font-weight:500;color:#d9bd88}.rank-up-toast .rut-rank{font-family:var(--ink-serif);color:#ede1c5;letter-spacing:3px}.toast{background:#263126;border:1px solid #b5a06b;border-radius:2px;color:#e2d4b5;box-shadow:0 10px 40px #0005}.tag-modal{border-color:#a99464}.tag-option-btn{border-radius:2px!important;background:#17231c!important;color:#d4ddc5!important;min-height:44px}.tag-option-btn.tag-selected{background:#b59a631c!important;border-color:#cbb17a!important;color:#e6c990!important}
+@media(min-width:769px){.header{padding-top:35px}.speech-card,.night-card{width:490px;min-width:0}.vote-card,.destiny-card,.destiny-panel-card,.growth-card{width:460px;min-width:0}.modal{max-width:590px}.char-card{width:500px;min-width:0}.pms-card{min-width:380px}.log-area{min-height:380px}}
+@media(max-width:768px){.header{padding:calc(78px + var(--safe-top)) 14px 22px}.header h1{font-size:25px;letter-spacing:4px}.header p{font-size:10px;letter-spacing:1px;line-height:1.9}.table-kicker{font-size:9px;margin-bottom:8px;letter-spacing:3px}.phase-bar{padding:12px}.game-area{padding:16px 12px calc(20px + var(--safe-bottom));gap:4px}.players-panel{flex-basis:auto}.card{padding:14px;margin-bottom:14px}.card>h3{font-size:15px;padding-bottom:10px;margin-bottom:12px;letter-spacing:2px}.player-grid{gap:9px 5px}.p-card{padding:9px 2px;min-height:90px}.p-card .avatar{width:34px;height:34px;margin-bottom:5px}.p-card .name{font-size:11px;letter-spacing:0}.p-card .faction{font-size:9px}.info-bar{padding:10px;font-size:11px}.info-bar .num{font-size:14px}.log-area{min-height:210px;max-height:52dvh}.log-entry{font-size:14px;line-height:1.95;padding:13px 0}.speaker{font-size:13px}.mobile-toolbar{padding:calc(8px + var(--safe-top)) 8px 8px;gap:6px;background:#14201df5;border-bottom:1px solid var(--ink-line)}.mobile-toolbar :is(.speech-history-btn,.btn-favor,.btn-settings,.btn-pause){border-radius:2px;font-size:11px;padding:9px 4px;min-height:44px;border-width:1px}.action-bar{padding-bottom:14px}.action-bar button{font-size:13px;padding:12px}.speech-history-panel{width:min(92vw,480px)}.sh-header{padding:16px 14px}.sh-content{padding:14px}.favor-panel{top:calc(68px + var(--safe-top));padding:14px}
+:is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card){padding:22px 18px;border-radius:3px;max-width:540px!important;min-width:0!important} :is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card) h2{font-size:22px;letter-spacing:2px}.panel-actions{gap:6px;margin-bottom:16px}.panel-actions button{font-size:10px;padding:8px 10px}.speech-type-btn{min-height:94px;padding:13px 8px}.speech-type-btn .st-label{font-size:14px}.night-player-card,.destiny-player-card,.destiny-target-card{min-height:80px}.vote-player-card{min-height:78px;width:58px}.attr-btn-plus,.attr-btn-minus,.growth-attr-row .ga-btn{min-width:44px;min-height:44px;width:44px;height:44px;border-radius:2px}.attr-grid,.growth-attr-grid{gap:8px}.achievement-info{gap:30px}.achievement-stats{gap:12px}.achievement-badges{gap:8px}.ach-badge{padding:15px 9px}.career-goal{padding:13px}.career-role b,.career-title b{font-size:12px}.career-role{min-height:80px;padding:12px 5px}.career-titles{gap:8px}.career-title{min-height:82px}.potion-state{padding:12px}.potion-state h4{font-size:15px}#resumeAction{bottom:calc(12px + var(--safe-bottom));min-height:48px;padding:12px 18px}}
+@media(max-width:360px){.game-area{padding-left:10px;padding-right:10px}.p-card .avatar{width:30px;height:30px}.p-card .name{font-size:10px}.player-grid{gap:8px 4px}.card{padding:12px}.panel-actions button{font-size:10px;padding:8px}.career-roles{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-eyebrow{font-size:9px}}
+@media(hover:hover){.p-card:hover{transform:translateY(-2px);border-color:#bfa571;background:#bfa5710c}.avatar-opt:hover{border-color:#bfa571}}
+
+.role-dossier,.role-roster,.end-roster{background:#101b1855!important;border-radius:2px!important;border-width:1px!important}.end-roster{border:1px solid var(--ink-line)}.end-reward{background:#b59a630b!important;border-radius:2px!important;border-left-width:1px!important}.end-roster img,.role-dossier img{border-radius:2px!important}.avatar-opt.selected{transform:none}
+#achieveToastContainer{position:fixed;top:calc(80px + var(--safe-top));right:16px;z-index:10030;display:flex;flex-direction:column;gap:8px;width:min(310px,calc(100vw - 32px));pointer-events:none}.achievement-toast{background:var(--ink-paper);border:1px solid #bca16a;border-radius:2px;padding:14px 16px;display:flex;align-items:center;gap:12px;animation:achieveSlide .3s ease;box-shadow:0 10px 40px #0005;overflow-wrap:anywhere}.achievement-toast>span{filter:saturate(.65)}
+
+.night-overlay.is-night{background:#060f0c66}.faction-wei .avatar{background:#2c3b39}.faction-shu .avatar{background:#303d2d}.faction-wu .avatar{background:#3b323b}.faction-qun .avatar{background:#3c3729}
+button:disabled{opacity:.42;filter:saturate(.6);transform:none!important}.char-card input[type=text]:focus-visible{outline:2px solid #e4c993;outline-offset:3px}
+.action-bar .btn-danger{background:#643d33;color:#f0c3ad;border-color:#b8785f}
 </style>
 </head>
 <body>
@@ -1108,23 +1147,23 @@ body.action-suspended .sh-content{padding-bottom:100px}
     <div class="speech-fragments" id="speechFragments"></div>
     <div class="speech-types" id="speechTypes">
       <button class="speech-type-btn" onclick="selectSpeechType('conservative')" id="st-conservative">
-        <span class="st-icon">😶</span>
+        <span class="st-icon" aria-hidden="true">隐</span>
         <span class="st-label">划水</span>
       </button>
       <button class="speech-type-btn" onclick="selectSpeechType('claim')" id="st-claim">
-        <span class="st-icon">📢</span>
+        <span class="st-icon" aria-hidden="true">亮</span>
         <span class="st-label">跳身份</span>
       </button>
       <button class="speech-type-btn" onclick="selectSpeechType('attack')" id="st-attack">
-        <span class="st-icon">⚔️</span>
+        <span class="st-icon" aria-hidden="true">疑</span>
         <span class="st-label">怀疑某人</span>
       </button>
       <button class="speech-type-btn" onclick="selectSpeechType('shield')" id="st-shield">
-        <span class="st-icon">🛡️</span>
+        <span class="st-icon" aria-hidden="true">护</span>
         <span class="st-label">袒护某人</span>
       </button>
       <button class="speech-type-btn" onclick="selectSpeechType('info')" id="st-info" style="display:none">
-        <span class="st-icon">📊</span>
+        <span class="st-icon" aria-hidden="true">报</span>
         <span class="st-label">告知信息</span>
       </button>
     </div>
@@ -1327,6 +1366,7 @@ body.action-suspended .sh-content{padding-bottom:100px}
   <div id="favorGrid" class="favor-grid"></div>
 </div>
 <div class="header">
+  <span class="table-kicker">月下孤城 · 群雄对席</span>
   <h1>三 国 狼 人 杀</h1>
   <p id="matchSubtitle">从219位三国豪杰中随机选拔，入局智谋对决</p>
 </div>
@@ -2207,7 +2247,7 @@ async function markDeath(player, day, cause) {
     if(option === 'god'){
       game.destiny = null; // 转为上帝视角，可见所有人身份
       game.destinyGodView = true; // 标记天意已转上帝视角
-      addLog('<span style="color:#9b59b6">【天意失败】你已转为上帝视角，继续观看游戏但无法干预。</span>');
+      addLog('<span style="color:var(--witch)">【天意失败】你已转为上帝视角，继续观看游戏但无法干预。</span>');
       renderPlayers();
       refreshLog();
     } else {
@@ -2756,11 +2796,11 @@ function closeFavorPanel(){
   document.getElementById('favorPanel').classList.remove('show');setPauseReason('favor',false);
 }
 function favorColor(v){
-  if(v>=70) return '#27ae60';
-  if(v>=55) return '#2ecc71';
-  if(v>=45) return '#e2b714';
-  if(v>=30) return '#e67e22';
-  return '#c0392b';
+  if(v>=70) return '#85a57f';
+  if(v>=55) return '#a4b68c';
+  if(v>=45) return '#cbb17a';
+  if(v>=30) return '#c5966c';
+  return '#be8572';
 }
 function favorBg(v){
   const c=favorColor(v);
@@ -3004,7 +3044,7 @@ function showStartModal(){
     <span class="highlight" style="color:var(--witch)">女巫</span>、
     <span class="highlight" style="color:var(--hunter)">猎人</span>、
     <span class="highlight" style="color:var(--guard)">守卫</span>。</p>
-    <div style="margin:16px 0;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:center;border:2px solid ${myRole.color}">
+    <div class="role-dossier" style="margin:16px 0;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:center;border:2px solid ${myRole.color}">
       <div style="font-size:13px;color:var(--gray);margin-bottom:6px">你的身份</div>
       <div style="font-size:22px;font-weight:700;color:${myRole.color}">${myRole.name}</div>
       <div style="margin:8px auto;width:60px;height:60px;border-radius:50%;overflow:hidden;border:2px solid ${myRole.color}">
@@ -3033,7 +3073,7 @@ function showStartModal(){
     <span class="highlight" style="color:var(--witch)">女巫</span>、
     <span class="highlight" style="color:var(--hunter)">猎人</span>、
     <span class="highlight" style="color:var(--guard)">守卫</span>。</p>
-    <div style="margin:16px 0;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:center;border:2px solid ${destinyRole.color}">
+    <div class="role-dossier" style="margin:16px 0;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:center;border:2px solid ${destinyRole.color}">
       <div style="font-size:13px;color:var(--gray);margin-bottom:6px">你附体的角色</div>
       <div style="font-size:22px;font-weight:700;color:${destinyRole.color}">${destinyRole.name}</div>
       <div style="font-size:14px;margin-top:4px">${destinyChar.name}（${destinyChar.faction}）</div>
@@ -3072,7 +3112,7 @@ function showStartModal(){
     <span class="highlight" style="color:var(--guard)">守卫</span>。<br><br>
     你作为<span class="highlight">上帝视角</span>，观看这场智谋对决。<br>
     点击"开始游戏"，狼人先行……</p>
-    <div style="margin:16px 0;padding:12px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:left;font-size:12px;color:var(--gray);max-height:260px;overflow-y:auto">
+    <div class="role-roster" style="margin:16px 0;padding:12px;background:rgba(0,0,0,0.3);border-radius:8px;text-align:left;font-size:12px;color:var(--gray);max-height:260px;overflow-y:auto">
       <div style="margin-bottom:6px;font-weight:700;color:var(--gold)">身份已分配（仅你可见）：</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <div style="color:var(--wolf)">狼人：${wolves.map(p=>p.name).join("、")}</div>
@@ -3141,7 +3181,7 @@ function renderPlayers(){
     const isMe = game.mode==='player' && p.id===game.playerId;
     const meBadge = isMe ? '<div style="font-size:9px;color:var(--gold);font-weight:700">★ 你 · '+safeText(equippedCareerTitle())+'</div>' : '';
     const isDestinyMe = game.mode==='destiny' && p.id===game.destiny;
-    const destinyBadge = isDestinyMe ? '<div style="font-size:9px;color:#9b59b6;font-weight:700">★ 附体</div>' : '';
+    const destinyBadge = isDestinyMe ? '<div style="font-size:9px;color:var(--witch);font-weight:700">★ 附体</div>' : '';
     // 玩家标签
     const tagMap = {'wolf':'狼人','seer':'预言家','witch':'女巫','hunter':'猎人','guard':'守卫','villager':'平民'};
     const tagClassMap = {'wolf':'tag-wolf','seer':'tag-seer','witch':'tag-witch','hunter':'tag-hunter','guard':'tag-guard','villager':'tag-villager'};
@@ -4162,7 +4202,7 @@ async function dayPhase(deaths){
   if(game.mode==='destiny' && game.destiny!==null){
     const destinyChar = game.players[game.destiny];
     if(destinyChar && destinyChar.alive){
-      addLog('<span class="system-text" style="color:#9b59b6">=== 天意干预 ===</span>');
+      addLog('<span class="system-text" style="color:var(--witch)">=== 天意干预 ===</span>');
       await delay(400);
       if(game.generation!==gen||game.ended)return;
       const result = await showDestinyPanel();
@@ -4171,7 +4211,7 @@ async function dayPhase(deaths){
         if(result.action === 'help' || result.action === 'harm'){
           game.destinyEffects[result.targetId] = result.action;
           const targetChar = game.players[result.targetId];
-          addLog(`<span style="color:#9b59b6">天意对 ${targetChar.name} 施加了「${result.action === 'help' ? '暗中相助' : '暗中加害'}」</span>`);
+          addLog(`<span style="color:var(--witch)">天意对 ${targetChar.name} 施加了「${result.action === 'help' ? '暗中相助' : '暗中加害'}」</span>`);
         }
       }
       await delay(400);
@@ -5735,7 +5775,7 @@ function endGame(winner){
   setPhase("游戏结束",color);
 
   let summary=`<h2 style="color:${color}">${title}</h2><p style="margin-bottom:16px">${isGood?"所有狼人已被铲除，三国重归太平！":"狼人控制了局势，黑暗笼罩大地！"}</p>`;
-  summary+=`<div style="text-align:left;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:13px">`;
+  summary+=`<div class="end-roster" style="text-align:left;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:13px">`;
   summary+=`<div style="margin-bottom:10px;color:var(--gold);font-weight:700">身份揭晓：</div>`;
   for(const p of game.players){
     const imgSrc = p.avatar ? p.avatar : (FACTION_DIR[p.faction] || "avatars/qun") + '/' + p.name + '.png';
@@ -5756,7 +5796,7 @@ function endGame(winner){
   // 声望明细
   const breakdown = getPrestigeBreakdown(winner, _gameAchievementsEarned);
   if(breakdown.total > 0){
-    summary += `<div style="text-align:left;padding:10px 14px;margin-top:12px;background:rgba(226,183,20,0.08);border-radius:8px;border-left:3px solid var(--gold);font-size:13px">`;
+    summary += `<div class="end-reward" style="text-align:left;padding:10px 14px;margin-top:12px;background:rgba(226,183,20,0.08);border-radius:8px;border-left:3px solid var(--gold);font-size:13px">`;
     summary += `<div style="color:var(--gold);font-weight:700;margin-bottom:6px">声望明细</div>`;
     const detailParts = breakdown.parts.map(p => `<span style="color:var(--gray)">${p.label} <span style="color:var(--gold)">+${p.amount}</span></span>`).join(' + ');
     summary += `<div>${detailParts} <span style="color:var(--white);font-weight:700">= +${breakdown.total}</span></div>`;
@@ -5765,7 +5805,7 @@ function endGame(winner){
   
   // 成就达成展示
   if(_gameAchievementsEarned.length > 0){
-    summary += `<div style="text-align:left;padding:10px 14px;margin-top:10px;background:rgba(46,204,113,0.08);border-radius:8px;border-left:3px solid var(--green);font-size:13px">`;
+    summary += `<div class="end-reward" style="text-align:left;padding:10px 14px;margin-top:10px;background:rgba(46,204,113,0.08);border-radius:8px;border-left:3px solid var(--green);font-size:13px">`;
     summary += `<div style="color:var(--green);font-weight:700;margin-bottom:6px">成就达成</div>`;
     for(const id of _gameAchievementsEarned){
       const def = ACHIEVEMENT_LIST.find(a => a.id === id);
@@ -7664,14 +7704,14 @@ function showAchievementToasts(achievements){
   if(!container){
     container = document.createElement('div');
     container.id = 'achieveToastContainer';
-    container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:10001;display:flex;flex-direction:column;gap:8px';
+
     document.body.appendChild(container);
   }
   for(const id of achievements){
     const def = ACHIEVEMENT_LIST.find(a => a.id === id);
     if(!def) continue;
     const toast = document.createElement('div');
-    toast.style.cssText = 'background:var(--bg2);border:2px solid var(--gold);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;animation:achieveSlide 0.3s ease;min-width:220px';
+    toast.className='achievement-toast';
     toast.innerHTML = `<span style="font-size:24px">${def.icon}</span><div><div style="color:var(--gold);font-size:13px;font-weight:700">成就达成！</div><div style="color:var(--white);font-size:14px">${def.name}</div><div style="color:var(--gray);font-size:11px">+${def.prestige} 声望</div></div>`;
     container.appendChild(toast);
     setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity 0.3s'; setTimeout(()=>toast.remove(),300); }, 3000);
@@ -8013,12 +8053,12 @@ function showTagPanel(playerId){
   // 六维属性
   const at = p.attr || p.attrs || {};
   const attrsHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;margin:8px 0 12px 0;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08)">
-    <span style="color:#c0392b;font-weight:700;font-size:12px">武力 ${getAttr(p,'武力')}</span>
-    <span style="color:#2980b9;font-weight:700;font-size:12px">智谋 ${getAttr(p,'智谋')}</span>
-    <span style="color:#27ae60;font-weight:700;font-size:12px">统帅 ${getAttr(p,'统帅')}</span>
-    <span style="color:#e67e22;font-weight:700;font-size:12px">政治 ${getAttr(p,'政治')}</span>
-    <span style="color:#8e44ad;font-weight:700;font-size:12px">魅力 ${getAttr(p,'魅力')}</span>
-    <span style="color:#f39c12;font-weight:700;font-size:12px">意志 ${getAttr(p,'意志')}</span>
+    <span style="color:var(--red);font-weight:700;font-size:12px">武力 ${getAttr(p,'武力')}</span>
+    <span style="color:var(--blue);font-weight:700;font-size:12px">智谋 ${getAttr(p,'智谋')}</span>
+    <span style="color:var(--green);font-weight:700;font-size:12px">统帅 ${getAttr(p,'统帅')}</span>
+    <span style="color:var(--hunter);font-weight:700;font-size:12px">政治 ${getAttr(p,'政治')}</span>
+    <span style="color:var(--purple);font-weight:700;font-size:12px">魅力 ${getAttr(p,'魅力')}</span>
+    <span style="color:var(--gold);font-weight:700;font-size:12px">意志 ${getAttr(p,'意志')}</span>
   </div>`;
 
   const tagMap = {'wolf':'狼人','seer':'预言家','witch':'女巫','hunter':'猎人','guard':'守卫','villager':'平民','none':'无'};
@@ -8419,14 +8459,14 @@ function renderSpeechHistory(){
 
 function getRoleColor(role){
   const colors = {
-    'wolf': '#e74c3c',
-    'seer': '#3498db',
-    'witch': '#9b59b6',
-    'hunter': '#e67e22',
-    'guard': '#2ecc71',
-    'villager': '#ecf0f1'
+    'wolf': 'var(--wolf)',
+    'seer': 'var(--seer)',
+    'witch': 'var(--witch)',
+    'hunter': 'var(--hunter)',
+    'guard': 'var(--guard)',
+    'villager': 'var(--white)'
   };
-  return colors[role] || '#ecf0f1';
+  return colors[role] || 'var(--white)';
 }
 
 function visibleActionPanel(){return Object.keys(ACTION_PANELS).find(id=>{const p=document.getElementById(id);return !p.classList.contains('hide')&&!p.classList.contains('action-collapsed');});}
