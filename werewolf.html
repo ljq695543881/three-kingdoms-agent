@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>三国狼人杀</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -817,6 +817,129 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 @media(max-width:768px){
   .speech-history-panel{width:85vw}
 }
+
+/* ===== 响应式最终覆盖：放在组件样式之后，避免移动端规则被覆盖 ===== */
+:root{--border:rgba(255,255,255,.18);--gray:#a1adbb;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+body{min-height:100svh;-webkit-text-size-adjust:100%}
+button,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:3px solid #f5cf52;outline-offset:4px}
+button:disabled{cursor:not-allowed}
+.log-entry,.sh-text,.night-info{overflow-wrap:anywhere}
+.mobile-toolbar{isolation:isolate}
+.speech-history-btn{z-index:800}
+.favor-panel{z-index:900}
+.speech-history-panel{height:100dvh;max-width:100vw;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom)}
+.sh-content{min-height:0;overscroll-behavior:contain}
+#titleScreen{overflow-y:auto;padding:32px 16px calc(24px + var(--safe-bottom));justify-content:safe center;gap:8px}
+.title-subtitle{color:var(--gray);font-size:14px;line-height:1.7;text-align:center}
+.title-btns{margin-top:24px;max-width:100%;flex-shrink:0}
+.title-btn{width:280px;max-width:100%}
+.title-btn small{display:block;font-size:11px;font-weight:400;letter-spacing:1px;color:var(--gray);margin-top:5px}
+#titleScreen .title-footer{position:relative;bottom:auto;margin-top:20px;color:var(--gray);flex-shrink:0}
+:is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card){max-height:calc(100vh - 32px);max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);overflow-y:auto;overscroll-behavior:contain}
+:is(#playerModeSelect,#charCreate,#speechPanel,#votePanel,#nightPanel,#destinySelect,#destinyPanel,#destinyDeathPanel,#growthPanel,#settingsOverlay,#confirmOverlay,#hunterShootPanel,#endScreen,#achievementPanel,.modal-overlay){padding:calc(16px + var(--safe-top)) 12px calc(16px + var(--safe-bottom))}
+@media(max-width:768px){
+  .mobile-toolbar{display:flex;position:fixed;inset:0 0 auto;z-index:800;gap:6px;padding:calc(6px + var(--safe-top)) max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left));background:rgba(10,25,47,.96);border-bottom:1px solid var(--border);backdrop-filter:blur(10px)}
+  .mobile-toolbar :is(.speech-history-btn,.btn-favor,.btn-settings,.btn-pause){position:static;flex:1;min-width:0;min-height:44px;padding:8px 4px;font-size:12px;border-radius:12px;transform:none}
+  .header{padding:calc(72px + var(--safe-top)) 12px 16px}
+  .header h1{font-size:22px;letter-spacing:2px}
+  .header p{font-size:12px;line-height:1.7}
+  .game-area{padding:12px 10px calc(16px + var(--safe-bottom));gap:4px}
+  .player-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 5px}
+  .p-card{min-width:0;min-height:76px;padding:6px 2px}
+  .p-card .name{font-size:11px;overflow-wrap:anywhere}
+  .p-card .faction{font-size:10px}
+  .p-card .avatar{width:32px;height:32px}
+  .log-area{max-height:50dvh;min-height:160px;padding:4px;overscroll-behavior:contain}
+  .log-entry{font-size:14px;line-height:1.8;padding:10px 0}
+  .card h3{font-size:14px}
+  .info-bar{gap:8px;flex-wrap:wrap;font-size:12px;line-height:1.6}
+  .action-bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:12px 0}
+  .action-bar button{min-height:44px;margin:0;flex:1 1 120px}
+  :is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card){min-width:0!important;width:100%;max-width:520px!important;padding:20px 16px;border-radius:16px}
+  .char-card input[type=text]{width:100%;font-size:16px;min-height:44px}
+  .avatar-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .avatar-opt{width:56px;height:56px}
+  .attr-grid,.growth-attr-grid{grid-template-columns:1fr;gap:8px}
+  .attr-row .attr-btns button,.attr-btn-minus,.attr-btn-plus,.growth-attr-row .ga-btn{width:44px;height:44px;font-size:20px;flex-shrink:0;border:1px solid var(--gold);border-radius:10px;background:transparent;color:var(--gold)}
+  :is(.fs-btn,.speed-btn,.sh-sort-btn,.char-start,.growth-confirm,.vote-confirm,.night-confirm,.destiny-confirm,.achievement-close,.pms-back,.witch-btn,.night-action-btn,.destiny-act-btn,.info-act-btn){min-height:44px}
+  .fs-btns,.speed-btns,.night-action-row,.destiny-actions,.endscreen-btns,.confirm-btns{flex-wrap:wrap}
+  .fs-btn{padding:8px 16px}
+  .night-player-grid,.destiny-target-list,.destiny-players{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .night-player-card,.destiny-player-card,.destiny-target-card{min-width:0;min-height:64px}
+  .vote-player-card{min-height:64px;width:56px}
+  .sh-close{width:44px;height:44px}
+  .speech-history-panel{width:min(92vw,420px)}
+  .favor-panel{--favor-label:56px;--favor-cell:36px;top:calc(64px + var(--safe-top));left:8px;right:8px;width:auto;max-width:calc(100vw - 16px);max-height:calc(100dvh - 88px - var(--safe-top) - var(--safe-bottom))}
+  .favor-grid-hdr,.favor-row{grid-template-columns:56px repeat(15,36px)}
+  .favor-grid-hdr span{width:36px}
+  .favor-grid-hdr span:first-child,.favor-row .fp-name{width:56px}
+  .favor-cell{width:36px;height:36px;min-width:36px;min-height:36px}
+  .favor-cell:hover{transform:none}
+  .achievement-info{gap:20px}
+  .achievement-ranks{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .toast{top:calc(72px + var(--safe-top));max-width:calc(100vw - 24px);overflow-wrap:anywhere;z-index:10001}
+}
+@media(max-height:500px){
+  #titleScreen{justify-content:flex-start;padding-top:20px}
+  .title-logo{font-size:28px;letter-spacing:4px;flex-shrink:0}
+  .title-btns{margin-top:12px;gap:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+
+.modal-overlay{z-index:10002}
+.match-setup{width:300px;max-width:100%;text-align:center;margin-top:10px;flex-shrink:0}
+.match-setup label{display:block;color:var(--gold);font-size:12px;margin-bottom:8px}
+.match-setup select{width:100%;min-height:44px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg2);color:var(--white);font:inherit;font-size:16px}
+.match-setup p{font-size:11px;color:var(--gray);line-height:1.7;margin-top:8px}
+.speech-reaction{margin:10px 0;padding:12px;border:1px solid var(--gold);border-radius:10px;background:rgba(226,183,20,.08);font-size:13px;line-height:1.8}
+.speech-reaction h4,.match-recap h3{color:var(--gold);font-size:14px;margin-bottom:6px}
+.speech-reaction small,.match-recap small{display:block;color:var(--gray);font-size:11px;line-height:1.7}
+.match-recap{text-align:left;margin:16px 0;padding:14px;background:rgba(226,183,20,.06);border:1px solid var(--border);border-radius:12px;font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+.match-recap details{border-top:1px solid var(--border);padding:8px 0}
+.match-recap summary{cursor:pointer;color:var(--white);min-height:44px;padding:8px 0}
+.match-recap ul{padding-left:18px;margin:6px 0}
+.match-recap .recap-insight{color:var(--gold);margin-bottom:8px}
+@media(max-height:700px){#titleScreen{justify-content:flex-start}.title-btns{margin-top:12px;gap:8px}}
+
+
+/* 决策期间可收起面板查阅历史；只切换显示，不结算操作。 */
+.panel-actions{position:sticky;top:0;z-index:2;background:var(--bg2);display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.panel-actions button{min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--white);font:inherit;font-size:12px;cursor:pointer}
+.panel-actions button:hover{border-color:var(--gold);color:var(--gold)}
+.action-collapsed{display:none!important}
+#resumeAction{position:fixed;bottom:calc(16px + var(--safe-bottom));left:50%;transform:translateX(-50%);z-index:10010;width:max-content;max-width:calc(100vw - 24px);min-height:48px;padding:12px 22px;border:2px solid var(--gold);border-radius:24px;background:var(--bg2);color:var(--gold);font:inherit;font-weight:700;cursor:pointer;box-shadow:0 8px 30px #0009}
+#resumeAction[hidden]{display:none}
+body.action-suspended{padding-bottom:88px}
+body.action-suspended .sh-content{padding-bottom:100px}
+
+
+.decision-confirm,.speech-confirm,.vote-confirm,.night-confirm{position:sticky;bottom:0;min-height:44px;max-width:100%;box-shadow:0 0 0 5px var(--bg2)}
+.destiny-target-card.selected{border-color:var(--gold);background:rgba(226,183,20,.15)}
+#jumpLogs{position:sticky;bottom:0;min-height:44px;width:100%;padding:8px;border:1px solid var(--gold);border-radius:10px;background:var(--bg2);color:var(--gold);cursor:pointer}
+#jumpLogs[hidden]{display:none}
+.speech-fulltext{margin-top:6px;font-size:13px;line-height:1.8;overflow-wrap:anywhere}.speech-fulltext summary{min-height:36px;color:var(--gold);cursor:pointer}.speech-fulltext p{padding:8px;background:rgba(255,255,255,.04);border-radius:8px}
+.speech-history-panel{width:min(520px,92vw)}
+.speech-history-panel:not(.show){visibility:hidden;pointer-events:none}
+
+
+#achievementPanel{z-index:10020}.achievement-card{max-width:620px}.achievement-card h2{margin-bottom:16px}
+.career-home-goal{max-width:300px;min-height:44px;padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:rgba(226,183,20,.05);color:var(--gold);font:inherit;font-size:12px;cursor:pointer;flex-shrink:0}
+.career-note{color:var(--gray);font-size:11px;line-height:1.7;margin-bottom:16px}
+.career-section{text-align:left;padding:14px 0;border-top:1px solid var(--border)}.career-section h3{color:var(--gold);font-size:15px;margin-bottom:10px}.career-section p{font-size:13px;line-height:1.7}.career-section small,.career-title small,.career-role small{display:block;color:var(--gray);font-size:11px;line-height:1.7}
+.career-chapter-count{padding:10px;margin:8px 0;background:rgba(226,183,20,.1);border-radius:8px;color:var(--gold);font-size:14px}
+.career-goal{padding:12px;background:rgba(255,255,255,.04);border-radius:10px;margin:8px 0}.career-goal b{font-size:13px}
+.career-meter{height:6px;width:100%;background:rgba(255,255,255,.1);border-radius:8px;overflow:hidden;margin:8px 0 4px}.career-meter span{display:block;height:100%;background:var(--gold);border-radius:8px}
+.career-roles,.career-titles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.career-role{padding:12px 6px;text-align:center;border:1px dashed var(--border);border-radius:8px;font-size:12px}.career-role.explored{border-style:solid;border-color:var(--gold);background:rgba(226,183,20,.07)}
+.career-title{min-height:64px;padding:8px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--white);font:inherit;font-size:12px;cursor:pointer}.career-title.equipped{border-color:var(--gold);background:rgba(226,183,20,.12)}.career-title:disabled{opacity:.6;cursor:not-allowed}
+.career-open,.career-track,.career-goal button{min-height:44px;padding:8px 12px;border:1px solid var(--gold);border-radius:8px;background:transparent;color:var(--gold);font:inherit;font-size:12px;cursor:pointer;margin-top:8px}
+.ach-badge.locked{opacity:1}.ach-badge .career-meter{margin-top:auto}.ach-badge .ach-desc{margin-bottom:8px;line-height:1.6}.achievement-badges{max-height:none;overflow:visible}.achievement-stats{flex-wrap:wrap}.career-report p{margin:6px 0}.career-rank-list{margin-bottom:12px;text-align:left;font-size:12px}.career-rank-list summary{min-height:44px;padding:12px 0;color:var(--gray);cursor:pointer}#badgeCollectionCount{font-size:12px;color:var(--gray);font-weight:400}
+@media(max-width:480px){.career-titles{grid-template-columns:repeat(2,minmax(0,1fr))}.achievement-info{gap:16px}.achievement-ranks{margin-bottom:12px}}
+
+.char-name-hint{font-size:11px;line-height:1.6;color:var(--gray);margin:-8px 0 12px}.char-name-hint.invalid{color:#ff9d91}
 </style>
 </head>
 <body>
@@ -828,7 +951,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
     <h2>📜 发言投票历史</h2>
     <div style="display:flex;gap:6px;align-items:center">
       <button class="sh-sort-btn" id="shSortBtn" onclick="toggleHistorySort()">倒序</button>
-      <button class="sh-close" onclick="toggleSpeechHistory()">✕</button>
+      <button class="sh-close" aria-label="关闭发言历史" onclick="toggleSpeechHistory()">✕</button>
     </div>
   </div>
   <div class="sh-content" id="speechHistoryContent">
@@ -839,10 +962,20 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 标题画面 ===== -->
 <div id="titleScreen">
   <div class="title-logo">三国·狼人杀</div>
+  <p class="title-subtitle">219 位三国豪杰 · 一局智谋对决<br>选择你的方式，入局三国</p>
+  <div class="match-setup">
+    <label for="matchSize">选择局型</label>
+    <select id="matchSize" onchange="updateMatchHint()">
+      <option value="quick">9 人短局 · 推荐先玩</option>
+      <option value="classic">15 人经典局</option>
+    </select>
+    <p id="matchHint">2 狼 · 预言家、女巫、猎人、守卫各 1 · 3 平民</p>
+  </div>
+  <button type="button" id="careerGoal" class="career-home-goal" onclick="openAchievement()">查看下一目标</button>
   <div class="title-btns">
-    <button class="title-btn primary" onclick="startPlayerMode()"><span class="btn-icon">🎮</span>玩 家 扮 演</button>
-    <button class="title-btn" onclick="startDestinyMode()"><span class="btn-icon">🎲</span>天 意 模 式</button>
-    <button class="title-btn" onclick="startGodMode()"><span class="btn-icon">👁️</span>上 帝 视 角</button>
+    <button class="title-btn primary" onclick="startPlayerMode()"><span class="btn-icon">🎮</span>玩家扮演<small>亲自发言与投票，积累角色成长</small></button>
+    <button class="title-btn" onclick="startDestinyMode()"><span class="btn-icon">🎲</span>天意模式<small>以天意之力，改变战局走向</small></button>
+    <button class="title-btn" onclick="startGodMode()"><span class="btn-icon">👁️</span>上帝视角<small>观看豪杰自动推演，洞察全局</small></button>
     <button class="title-btn" onclick="openAchievement()"><span class="btn-icon">🏆</span>成 就 系 统</button>
     <button class="title-btn danger" onclick="confirmQuitGame()"><span class="btn-icon">🚪</span>退 出 游 戏</button>
   </div>
@@ -865,8 +998,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 角色创建面板 ===== -->
 <div id="charCreate" class="hide">
   <div class="char-card">
+    <div class="panel-actions"><button type="button" onclick="document.getElementById('charCreate').classList.add('hide');document.getElementById('playerModeSelect').classList.remove('hide')">← 返回模式选择</button></div>
     <h2>创建角色</h2>
-    <input type="text" id="charNameInput" placeholder="请输入角色名" maxlength="6">
+    <input type="text" id="charNameInput" aria-label="角色名" aria-describedby="charNameHint" autocomplete="off" placeholder="请输入角色名" maxlength="6">
+    <p id="charNameHint" class="char-name-hint">1至6个字，可用文字、数字、空格、下划线或间隔号</p>
     <div class="avatar-select">
       <div class="as-label">选择头像</div>
       <div class="avatar-grid" id="avatarGrid">
@@ -907,6 +1042,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 发言选择面板 ===== -->
 <div id="speechPanel" class="hide">
   <div class="speech-card">
+    <div class="panel-actions">
+      <button type="button" onclick="collapseAction('speechPanel',false)">收起面板</button>
+      <button type="button" onclick="collapseAction('speechPanel',true)">查看发言历史</button>
+    </div>
     <h2>轮到你发言！</h2>
     <div class="speech-hint">已选发言片段 (<span id="fragmentCount">0</span>/3)</div>
     <div class="speech-fragments" id="speechFragments"></div>
@@ -949,6 +1088,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 投票选择面板 ===== -->
 <div id="votePanel" class="hide">
   <div class="vote-card">
+    <div class="panel-actions">
+      <button type="button" onclick="collapseAction('votePanel',false)">收起面板</button>
+      <button type="button" onclick="collapseAction('votePanel',true)">查看发言历史</button>
+    </div>
     <h2>投票放逐</h2>
     <div class="vote-hint">请选择要放逐的玩家</div>
     <div class="vote-players" id="voteOptions"></div>
@@ -959,6 +1102,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 夜晚行动面板 ===== -->
 <div id="nightPanel" class="hide">
   <div class="night-card">
+    <div class="panel-actions">
+      <button type="button" onclick="collapseAction('nightPanel',false)">收起面板</button>
+      <button type="button" onclick="collapseAction('nightPanel',true)">查看发言历史</button>
+    </div>
     <h2 id="nightTitle">夜晚行动</h2>
     <div class="night-hint" id="nightHint">请做出你的选择</div>
     <div class="night-info" id="nightInfo"></div>
@@ -980,6 +1127,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 天意干预面板 ===== -->
 <div id="destinyPanel" class="hide">
   <div class="destiny-panel-card">
+    <div class="panel-actions"><button type="button" onclick="collapseAction('destinyPanel',false)">收起面板</button><button type="button" onclick="collapseAction('destinyPanel',true)">查看发言历史</button></div>
     <h2>天意干预</h2>
     <div class="dp-hint" id="destinyPanelHint">每轮白天可使用一次干预</div>
     <div class="destiny-actions">
@@ -988,6 +1136,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
       <button class="destiny-act-btn" onclick="selectDestinyAction('wait')" id="da-wait">⏳ 静观其变</button>
     </div>
     <div class="destiny-target-list" id="destinyTargetList"></div>
+    <button class="night-confirm decision-confirm" id="destinyActionConfirm" onclick="confirmDestinyAction()" disabled>请先选择干预方式</button>
   </div>
 </div>
 
@@ -1038,6 +1187,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 猎人开枪面板 ===== -->
 <div id="hunterShootPanel" class="hide">
   <div class="settings-card" style="min-width:340px;max-width:95vw;box-sizing:border-box">
+    <div class="panel-actions"><button type="button" onclick="collapseAction('hunterShootPanel',false)">收起面板</button><button type="button" onclick="collapseAction('hunterShootPanel',true)">查看发言历史</button></div>
     <h2 style="color:var(--hunter)">⚔️ 猎人发动技能</h2>
     <p id="hunterShootDesc" style="color:var(--white);font-size:14px;margin:8px 0 16px">选择要带走的目标</p>
     <div id="hunterShootTargets" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto"></div>
@@ -1076,7 +1226,8 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 <!-- ===== 成就系统面板 ===== -->
 <div id="achievementPanel" class="hide">
   <div class="achievement-card">
-    <h2>🏆 成就系统</h2>
+    <div class="panel-actions"><button type="button" onclick="closeAchievement()">关闭成就 ✕</button></div>
+    <h2>🏆 生涯与成就</h2>
     <div class="achievement-info">
       <div class="achievement-prestige">
         <span class="ap-label">当前声望</span>
@@ -1094,8 +1245,13 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
       <div class="ap-text" id="prestigeText">距离下一级：还需 30 声望</div>
     </div>
     <div class="achievement-stats" id="achievementStats"></div>
-    <div class="achievement-ranks" id="achievementRanks"></div>
-    <h3 style="color:var(--gold);font-size:15px;margin:16px 0 8px;text-align:left">成就徽章</h3>
+    <details class="career-rank-list"><summary>查看官职路线</summary><div class="achievement-ranks" id="achievementRanks"></div></details>
+    <p class="career-note">玩家与天意模式完整结算计入生涯 · 上帝观战不计入<br>进度保存在当前浏览器，旧成就和声望保留。</p>
+    <section class="career-section" id="careerChapter"></section>
+    <section class="career-section"><h3>下一步做什么</h3><div id="careerGoals"></div></section>
+    <section class="career-section"><h3>身份图鉴</h3><div class="career-roles" id="careerRoles"></div><small>从本次更新起记录，随机分配身份，按自己的节奏探索。</small></section>
+    <section class="career-section"><h3>可佩戴称号</h3><div class="career-titles" id="careerTitles"></div><small>称号仅作展示，不影响游戏胜负。</small></section>
+    <h3 style="color:var(--gold);font-size:15px;margin:16px 0 8px;text-align:left">成就徽章 <span id="badgeCollectionCount"></span></h3>
     <div class="achievement-badges" id="achievementBadges"></div>
     <button class="achievement-close" onclick="closeAchievement()">关闭</button>
   </div>
@@ -1115,26 +1271,28 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg)
 </div>
 <div class="header">
   <h1>三 国 狼 人 杀</h1>
-  <p>从219位三国豪杰中随机选拔15人进行智谋对决</p>
+  <p id="matchSubtitle">从219位三国豪杰中随机选拔，入局智谋对决</p>
 </div>
 <div class="phase-bar" id="phaseBar"></div>
 <div class="game-area">
   <div class="players-panel">
     <div class="card">
-      <h3>Players</h3>
+      <h3>在场豪杰</h3>
       <div class="player-grid" id="playerGrid"></div>
     </div>
     <div class="info-bar" id="infoBar"></div>
   </div>
   <div class="game-main">
     <div class="card">
-      <h3>Game Log</h3>
-      <div class="log-area" id="logArea"></div>
+      <h3>战局实录</h3>
+      <div class="log-area" id="logArea" tabindex="0" aria-label="战局实录"></div>
+      <button type="button" id="jumpLogs" hidden onclick="scrollLatestLogs()">查看最新消息 ↓</button>
     </div>
     <div class="action-bar" id="actionBar"></div>
   </div>
 </div>
 <div id="modalArea"></div>
+<button type="button" id="resumeAction" hidden onclick="resumeAction()">返回待完成操作</button>
 
 <script src="characters_data.js"></script>
 <script>
@@ -1143,6 +1301,113 @@ const ALL_CHARS = typeof ALL_CHARACTERS !== 'undefined' ? ALL_CHARACTERS : [];
 
 // 人设特有发言索引：按角色名，运行时动态生成
 const PERSONAL_SPEECHES={};
+
+// 收起时保留 DOM、已选片段/目标和原有 Promise；等待玩家回来确认。
+let suspendedAction=null;
+const ACTION_PANELS={speechPanel:{label:'发言',pending:'pendingSpeechResolve'},nightPanel:{label:'夜晚行动',pending:'pendingNightResolve'},votePanel:{label:'投票',pending:'pendingVoteResolve'},hunterShootPanel:{label:'猎人行动',check:()=>!!hunterShootResolver},destinyPanel:{label:'天意干预',pending:'pendingDestinyResolve'}};
+function actionIsPending(config){return config.check?config.check():!!game[config.pending];}
+function clearSuspendedAction(){
+  if(suspendedAction)document.getElementById(suspendedAction.id)?.classList.remove('action-collapsed');
+  suspendedAction=null;
+  document.body.classList.remove('action-suspended');
+  document.getElementById('resumeAction').hidden=true;
+}
+function collapseAction(id,openHistory){
+  const config=ACTION_PANELS[id],panel=document.getElementById(id);
+  if(!config || !actionIsPending(config) || panel.classList.contains('hide'))return;
+  suspendedAction={id,generation:game.generation};
+  panel.classList.add('action-collapsed');
+  document.body.classList.add('action-suspended');
+  const button=document.getElementById('resumeAction');
+  button.textContent=`返回${config.label} · 尚未提交`;
+  button.hidden=false;
+  if(openHistory){
+    const history=document.getElementById('speechHistoryPanel');
+    if(!history.classList.contains('show'))toggleSpeechHistory();
+    history.querySelector('.sh-close').focus();
+  }else button.focus();
+}
+function resumeAction(){
+  const action=suspendedAction;
+  if(!action)return;
+  const panel=document.getElementById(action.id);
+  const valid=action.generation===game.generation && actionIsPending(ACTION_PANELS[action.id]) && !panel.classList.contains('hide');
+  clearSuspendedAction();
+  if(!valid)return;
+  const history=document.getElementById('speechHistoryPanel');
+  closeSpeechHistory();
+  panel.querySelector('.panel-actions button').focus();
+}
+
+// 局型配置不修改全局 ROLE_CFG，避免不同局型互相污染。
+const MATCH_CONFIGS = {
+  quick: {name:'9 人短局', size:9, roles:{wolf:2,seer:1,witch:1,hunter:1,guard:1,villager:3}},
+  classic: {name:'15 人经典局', size:15, roles:{wolf:4,seer:1,witch:1,hunter:1,guard:1,villager:7}}
+};
+function selectedMatch(){
+  return MATCH_CONFIGS[document.getElementById('matchSize').value] || MATCH_CONFIGS.quick;
+}
+function updateMatchHint(){
+  const config=selectedMatch();
+  document.getElementById('matchHint').textContent=`${config.roles.wolf} 狼 · 预言家、女巫、猎人、守卫各 1 · ${config.roles.villager} 平民`;
+}
+function safeText(value){
+  return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function applyPlayerSpeechEffect(speaker,speech,classified,listeners){
+  // 面板里的“袒护”和“报信息”沿用已有好感度规则，不单独抽一次随机数。
+  const effects=classified.map(c=>c.type==='shield'?{...c,type:'attack',subtype:'shield'}:c.type==='info'?{...c,type:'claim'}:c);
+  const before=new Map(listeners.map(p=>[p.id,getFavor(p,speaker.id)]));
+  applySpeechFavorEffect(speaker,speech,effects,listeners,false);
+  const reactions=listeners.filter(p=>p.id!==speaker.id).map(p=>({
+    listenerId:p.id, change:getFavor(p,speaker.id)-before.get(p.id)
+  })).filter(r=>r.change!==0).sort((a,b)=>Math.abs(b.change)-Math.abs(a.change));
+  // 同时展示支持与质疑；不展示精确分数、隐藏身份或内部关系。
+  const picks=[];
+  for(const sign of [1,-1]){const r=reactions.find(r=>Math.sign(r.change)===sign);if(r)picks.push(r);}
+  for(const r of reactions){if(picks.length===3)break;if(!picks.includes(r))picks.push(r);}
+  const targetIds=classified.flatMap(c=>(c.targets||[]).map(t=>t.id));
+  const lines=picks.map(r=>{
+    const p=game.players[r.listenerId];
+    const response=r.change>0?'点头回应，态度比刚才更友善。':targetIds.includes(p.id)?'对你的表态表示不满，神情更加戒备。':'对你的说法摇了摇头，显得更加戒备。';
+    return `${p.name}：${response}`;
+  });
+  if(!lines.length)lines.push('众人暂时没有明显表态，继续观察下一轮发言。');
+  game.reactions.push({day:game.day,speakerId:speaker.id,lines});
+  addLog(`<div class="speech-reaction" role="status"><h4>你的发言引起了回应</h4>${lines.map(safeText).join('<br>')}<small>态度只反映当下反应，不代表身份或投票承诺。</small></div>`);
+  return lines;
+}
+function buildMatchRecap(){
+  if(!game.ended)return '';
+  const records=game.voteRecords||[];
+  const results=records.filter(r=>r.type==='result');
+  const wolfExiles=results.filter(r=>game.players[r.targetId]?.role==='wolf').length;
+  const goodExiles=results.length-wolfExiles;
+  const me=game.players[game.playerId];
+  let html=`<section class="match-recap"><h3>关键回合复盘</h3><div class="recap-insight">${safeText(game.matchName)} · 共 ${game.day} 天<br>投票放逐 ${wolfExiles} 名狼人、${goodExiles} 名好人</div>`;
+  if(me){
+    const own=records.filter(r=>!r.type && r.voterId===me.id);
+    const hits=own.filter(r=>game.players[r.targetId]?.role==='wolf').length;
+    html+=`<p>你的身份：${safeText(ROLE_CFG[me.role].name)}。你投出 ${own.length} 票，其中 ${hits} 票指向狼人（含平票重投）。</p>`;
+  }
+  const days=[...new Set([...records.map(r=>r.day),...game.players.filter(p=>!p.alive).map(p=>p.deathDay),...(game.reactions||[]).map(r=>r.day)])].filter(Number.isFinite).sort((a,b)=>a-b);
+  if(!days.length)html+='<p>本局尚无已记录的回合事件。</p>';
+  for(const day of days){
+    const votes=records.filter(r=>r.day===day);
+    html+=`<details${day===days[days.length-1]?' open':''}><summary>第 ${day} 天 · ${votes.filter(r=>r.type==='result').map(r=>safeText(game.players[r.targetId]?.name||'未知')+'被放逐').join('、')||'未放逐角色'}</summary><ul>`;
+    for(const p of game.players.filter(p=>!p.alive && p.deathDay===day))html+=`<li>${safeText(p.name)}（${safeText(ROLE_CFG[p.role].name)}）：${safeText(deathInfoText(p))}</li>`;
+    for(const r of votes.filter(r=>['result','peaceful_vote','tie'].includes(r.type))){
+      if(r.type==='result'){
+        const target=game.players[r.targetId];
+        const voters=votes.filter(v=>!v.type && v.targetId===r.targetId && !!v.tieBreak===!!r.tieBreak).map(v=>safeText(game.players[v.voterId]?.name||'未知'));
+        html+=`<li>${r.tieBreak?'重投':'首轮'}：${safeText(target?.name)}获 ${r.votes} 票被放逐，身份为${safeText(ROLE_CFG[target?.role]?.name)}。投票者：${voters.join('、')||'无记录'}。</li>`;
+      }else html+=`<li>${r.type==='tie'?'首轮平票，进入重投':'重投仍平票，本日无人被放逐'}。</li>`;
+    }
+    for(const r of (game.reactions||[]).filter(r=>r.day===day))html+=`<li>你的发言回应：${r.lines.map(safeText).join('；')}</li>`;
+    html+='</ul></details>';
+  }
+  return html+'<small>复盘依据实际死亡、投票与发言回应记录；态度变化不等于投票原因。完整身份仅在结算时揭晓。</small></section>';
+}
 
 const ROLE_CFG={wolf:{name:"狼人",color:"var(--wolf)",icon:"W",desc:"每晚与同伴商议杀害一人",count:4},seer:{name:"预言家",color:"var(--seer)",icon:"P",desc:"每晚可查验一人的身份",count:1},witch:{name:"女巫",color:"var(--witch)",icon:"N",desc:"拥有一瓶解药和一瓶毒药",count:1},hunter:{name:"猎人",color:"var(--hunter)",icon:"L",desc:"死亡时可带走一人",count:1},guard:{name:"守卫",color:"var(--guard)",icon:"S",desc:"每晚可保护一人免死",count:1},villager:{name:"平民",color:"var(--villager)",icon:"M",desc:"白天投票放逐嫌疑人",count:7}};
 
@@ -1862,10 +2127,11 @@ function applyCharacterSpeech(player, charStyle, category, target){
 // ===== 死亡记录辅助函数 =====
 // 是否以上帝视角显示身份（上帝模式 / 玩家已死亡转上帝视角 / 天意已结束）
 function isGodView(){
-  return game.mode==='god' || game.playerDied || (game.mode==='destiny'&&game.destiny===null);
+  return game.mode==='god' || (game.playerDied&&!game.hunterDecisionPending) || (game.mode==='destiny'&&game.destiny===null);
 }
 
 async function markDeath(player, day, cause) {
+  const gen=game.generation;
   // 首先标记死亡状态
   player.deathDay = day;
   player.deathCause = cause;
@@ -1875,6 +2141,7 @@ async function markDeath(player, day, cause) {
   if(game.mode==='destiny' && player.id === game.destiny){
     // 等待玩家选择：是转上帝视角还是结束游戏
     const option = await showDestinyDeathPanel();
+    if(game.generation!==gen)return;
     if(option === 'god'){
       game.destiny = null; // 转为上帝视角，可见所有人身份
       game.destinyGodView = true; // 标记天意已转上帝视角
@@ -1894,7 +2161,8 @@ async function markDeath(player, day, cause) {
   // 检查是否是玩家角色死亡（玩家模式）
   if(game.mode==='player' && player.id === game.playerId){
     game.playerDied = true;
-    addLog('<span style="color:var(--gold)">【玩家死亡】你的角色已阵亡，现在转为上帝视角。</span>');
+    game.hunterDecisionPending=player.role==='hunter'&&cause!=='poison';
+    addLog(`<span style="color:var(--gold)">【玩家死亡】${game.hunterDecisionPending?'请先完成猎人行动，随后转为上帝视角。':'你的角色已阵亡，现在转为上帝视角。'}</span>`);
     renderPlayers();
     refreshLog();
   }
@@ -2335,29 +2603,11 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
 let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},wolfRoles:{},wolfRolesAnnounced:false,wolfFakeChecks:{},seerReportedChecks:[],claimedPlayers:new Set(),playerClaims:{},playerTags:{},destiny:null,speed:1};
 
 function openSettings(){
-  document.getElementById('settingsOverlay').classList.remove('hide');
-  // 打开设置时自动暂停游戏
-  if(!game.isPaused){
-    game.isPaused=true;
-    const btn=document.getElementById("pauseBtn");
-    btn.innerHTML='▶ <span class="btn-label">继续</span>';
-    btn.classList.add("paused");
-    game._pausedBySettings=true;
-  }
+  document.getElementById('settingsOverlay').classList.remove('hide');setPauseReason('settings',true);
 }
 
 function closeSettings(){
-  document.getElementById('settingsOverlay').classList.add('hide');
-  // 退出设置时如果之前是设置面板导致的暂停，则自动恢复
-  if(game._pausedBySettings){
-    game.isPaused=false;
-    const btn=document.getElementById("pauseBtn");
-    btn.innerHTML='⏸ <span class="btn-label">暂停</span>';
-    btn.classList.remove("paused");
-    game.pauseResolvers.forEach(r=>r());
-    game.pauseResolvers=[];
-    game._pausedBySettings=false;
-  }
+  document.getElementById('settingsOverlay').classList.add('hide');setPauseReason('settings',false);
 }
 
 // ===== 猎人开枪面板 =====
@@ -2378,7 +2628,7 @@ function showHunterShootPanel(player, cause){
     container.innerHTML = '<div style="color:var(--gray);font-size:13px">女巫毒杀会封印猎人的技能</div>';
     confirmBtn.textContent = '确定';
     confirmBtn.onclick = () => {
-      panel.classList.add('hide');
+      clearSuspendedAction();panel.classList.add('hide');
       if(hunterShootResolver) { hunterShootResolver(null); hunterShootResolver = null; }
     };
     confirmBtn.disabled = false;
@@ -2405,6 +2655,7 @@ function showHunterShootPanel(player, cause){
 
 function selectHunterTarget(el, id){
   if(hunterShootSelected === id) return;
+  document.getElementById('hunterShootConfirmBtn').textContent=`确认带走 ${game.players[id].name}`;
   // 取消之前选中
   document.querySelectorAll('[data-hunter-target]').forEach(e => e.style.outline = '');
   el.style.outline = '2px solid var(--hunter)';
@@ -2412,8 +2663,13 @@ function selectHunterTarget(el, id){
   document.getElementById('hunterShootConfirmBtn').disabled = false;
 }
 
+function completeHunterView(){
+  if(!game.hunterDecisionPending)return;
+  game.hunterDecisionPending=false;renderPlayers();refreshLog();
+}
 function confirmHunterShoot(){
-  if(!hunterShootSelected) return;
+  if(hunterShootSelected===null||!hunterShootResolver)return;
+  clearSuspendedAction();completeHunterView();
   const panel = document.getElementById('hunterShootPanel');
   panel.classList.add('hide');
   const target = game.players[hunterShootSelected];
@@ -2422,37 +2678,20 @@ function confirmHunterShoot(){
 }
 
 function skipHunterShoot(){
-  const panel = document.getElementById('hunterShootPanel');
-  panel.classList.add('hide');
-  if(hunterShootResolver) { hunterShootResolver(null); hunterShootResolver = null; }
-  hunterShootSelected = null;
+  requestGameConfirm('放弃猎人技能？','确认后本次开枪机会将放弃，你也可以取消并重新选择目标。',()=>{
+    clearSuspendedAction();completeHunterView();document.getElementById('hunterShootPanel').classList.add('hide');
+    if(hunterShootResolver){const resolve=hunterShootResolver;hunterShootResolver=null;resolve(null);}hunterShootSelected=null;
+  });
 }
 
 let hunterShootResolver = null;
 
 // ===== 好感度面板 =====
 function openFavorPanel(){
-  document.getElementById('favorPanel').classList.add('show');
-  renderFavorGrid();
-  if(!game.isPaused){
-    game.isPaused=true;
-    const btn=document.getElementById("pauseBtn");
-    btn.innerHTML='▶ <span class="btn-label">继续</span>';
-    btn.classList.add("paused");
-    game._pausedByFavor=true;
-  }
+  document.getElementById('favorPanel').classList.add('show');renderFavorGrid();setPauseReason('favor',true);
 }
 function closeFavorPanel(){
-  document.getElementById('favorPanel').classList.remove('show');
-  if(game._pausedByFavor){
-    game.isPaused=false;
-    const btn=document.getElementById("pauseBtn");
-    btn.innerHTML='⏸ <span class="btn-label">暂停</span>';
-    btn.classList.remove("paused");
-    game.pauseResolvers.forEach(r=>r());
-    game.pauseResolvers=[];
-    game._pausedByFavor=false;
-  }
+  document.getElementById('favorPanel').classList.remove('show');setPauseReason('favor',false);
 }
 function favorColor(v){
   if(v>=70) return '#27ae60';
@@ -2468,9 +2707,17 @@ function favorBg(v){
 function renderFavorGrid(){
   if(!game.players||!game.players.length)return;
   const container=document.getElementById('favorGrid');
+  const panel=document.getElementById('favorPanel');
+  panel.querySelector('h4').textContent=isGodView()?'好感度面板（上帝视角）':'可见的发言回应';
+  panel.querySelector('.fp-hint').textContent=isGodView()?'点击数值可手动修改 · 滚轮调整':'只显示可观察的态度，不揭示身份或精确好感度';
+  if(!isGodView()){
+    const recent=(game.reactions||[]).slice(-3);
+    container.innerHTML=recent.length?recent.map(r=>`<div class="speech-reaction"><h4>第 ${r.day} 天</h4>${r.lines.map(safeText).join('<br>')}</div>`).join(''):'发言后，可在这里回看众人的回应。';
+    return;
+  }
   const ps=game.players;
   const n=ps.length;
-  const colTemplate=`64px repeat(${n},28px)`;
+  const colTemplate=`var(--favor-label,64px) repeat(${n},var(--favor-cell,28px))`;
   let html=`<div class="favor-grid-hdr" style="grid-template-columns:${colTemplate}"><span></span>`;
   for(const p of ps) html+=`<span title="${p.name}">${p.name.slice(0,2)}</span>`;
   html+='</div>';
@@ -2534,19 +2781,24 @@ document.addEventListener('click',function(e){
   }
 });
 
+function syncPause(){
+  const reasons=game.pauseReasons||new Set();
+  const wasPaused=game.isPaused;
+  game.isPaused=!!game.manualPaused||reasons.size>0;
+  const button=document.getElementById('pauseBtn');
+  button.textContent=reasons.size?'阅读中':game.isPaused?'▶ 继续':'⏸ 暂停';
+  button.classList.toggle('paused',game.isPaused);button.disabled=reasons.size>0;
+  button.title=reasons.size?'关闭历史、设置或回应面板后恢复；手动暂停仍会保留':'';
+  if(wasPaused&&!game.isPaused){const waiting=game.pauseResolvers.splice(0);waiting.forEach(r=>r());}
+}
+function setPauseReason(reason,active){
+  game.pauseReasons ||= new Set();
+  if(active)game.pauseReasons.add(reason);else game.pauseReasons.delete(reason);
+  syncPause();
+}
 function togglePause(){
-  game.isPaused=!game.isPaused;
-  const btn=document.getElementById("pauseBtn");
-  if(game.isPaused){
-    btn.innerHTML='▶ <span class="btn-label">继续</span>';
-    btn.classList.add("paused");
-  } else {
-    btn.innerHTML='⏸ <span class="btn-label">暂停</span>';
-    btn.classList.remove("paused");
-    game._pausedByFavor=false;
-    game.pauseResolvers.forEach(r=>r());
-    game.pauseResolvers=[];
-  }
+  if(game.pauseReasons?.size)return;
+  game.manualPaused=!game.manualPaused;syncPause();
 }
 
 function delay(ms){
@@ -2565,6 +2817,10 @@ function delay(ms){
 }
 
 function init(optPlayer){
+  const staleWaiters=game.pauseResolvers.splice(0);
+  hunterShootResolver=null;_destinyDeathResolve=null;
+  clearSuspendedAction();closeSpeechHistory();
+  document.getElementById("jumpLogs").hidden=true;
   // 防御性清空：防止任何形式的旧数据残留
   if(game && game.playerClaims) { game.playerClaims = {}; console.log('[init] cleared old playerClaims'); }
   if(game && game.claimedPlayers && game.claimedPlayers.clear) { game.claimedPlayers.clear(); }
@@ -2598,6 +2854,7 @@ function init(optPlayer){
   // 完整重置游戏状态（用新对象替换，避免旧属性残留）
   const keepSpeed = game.speed;
   const keepMode = game.mode;
+  const config = selectedMatch();
   game={
     players:[], phase:"start", day:0, mode:keepMode, speed:keepSpeed,
     generation:(game.generation||0)+1, selectedPlayer:null, wolfTarget:null,
@@ -2605,28 +2862,31 @@ function init(optPlayer){
     guardTarget:null, lastGuardTarget:null, guardSaveCount:0, witchHasSave:true, witchHasPoison:true,
     witchUsedSaveLastNight:false, witchUsedPoisonLastNight:false, witchPoisonTarget:null,
     scriptMasterId:null, logs:[], speeches:[], isProcessing:false,
-    hunterCanShoot:false, isPaused:false, pauseResolvers:[], wolfScript:null,
+    hunterCanShoot:false, manualPaused:false, pauseReasons:new Set(), isPaused:false, pauseResolvers:[], wolfScript:null,
     wolfScriptCompliance:{}, wolfRoles:{}, wolfRolesAnnounced:false, wolfFakeChecks:{}, seerReportedChecks:[], claimedPlayers:new Set(), playerClaims:{}, playerTags:{}, destiny:null, destinyEffects:{}, destinyGodView:false,
     _confirmCallback:null, _pausedBySettings:false, _pausedByFavor:false,
     pendingSpeechResolve:null, pendingVoteResolve:null, pendingNightResolve:null,
     pendingDestinyResolve:null, player:null, playerId:null, playerDied:false,
     spokenToday:new Set(),
-    voteRecords:[]
+    voteRecords:[], reactions:[], ended:false, matchName:config.name, matchSize:config.size
   };
-  _activeGen=game.generation;
+  document.getElementById("matchSubtitle").textContent=`${config.name} · ${config.roles.wolf} 狼对阵 ${config.size-config.roles.wolf} 名好人`;
+  _activeGen=game.generation;staleWaiters.forEach(resolve=>resolve());
   // 重置暂停按钮外观
   const pauseBtn=document.getElementById("pauseBtn");
   pauseBtn.innerHTML='⏸ <span class="btn-label">暂停</span>';
-  pauseBtn.classList.remove("paused");
+  pauseBtn.classList.remove("paused");pauseBtn.disabled=false;
   // 从 219 人的角色库中随机抽取 15 人
   const pool = shuffle([...ALL_CHARS]);
-  let selected = pool.slice(0, 15);
+  let selected = pool.slice(0, config.size);
+  let customPlayerId=null;
 
   // 玩家扮演模式：将玩家角色替换到 15 人名单中
   if(optPlayer && game.mode==='player'){
-    const replaceIdx = Math.floor(Math.random()*15);
+    const replaceIdx = Math.floor(Math.random()*config.size);
+    customPlayerId=replaceIdx;
     selected[replaceIdx] = {
-      name: optPlayer.name,
+      name: normalizePlayerName(optPlayer.name),
       faction: optPlayer.faction || '群',
       attr: optPlayer.attr || {},
       growthPts: optPlayer.growthPts || 0,
@@ -2635,7 +2895,7 @@ function init(optPlayer){
   }
 
   let roles=[];
-  for(let r in ROLE_CFG) for(let i=0;i<ROLE_CFG[r].count;i++) roles.push(r);
+  for(let r in ROLE_CFG) for(let i=0;i<config.roles[r];i++) roles.push(r);
   shuffle(roles);
   game.players = selected.map((c,i) => ({
     ...c,
@@ -2647,7 +2907,7 @@ function init(optPlayer){
 
   // 设置 playerId
   if(game.mode==='player' && optPlayer){
-    game.playerId = game.players.findIndex(p => p.name === optPlayer.name);
+    game.playerId = customPlayerId;
     game.playerDied = false;
   }
 
@@ -2673,7 +2933,7 @@ function showStartModal(){
     document.getElementById("modalArea").innerHTML=`
   <div class="modal-overlay"><div class="modal">
     <h2>三国狼人杀</h2>
-    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">${game.players.length}人</span>，其中暗藏<span class="highlight">${game.players.filter(p=>p.role==='wolf').length}只狼人</span>。<br>
     好人阵营拥有：<span class="highlight" style="color:var(--seer)">预言家</span>、
     <span class="highlight" style="color:var(--witch)">女巫</span>、
     <span class="highlight" style="color:var(--hunter)">猎人</span>、
@@ -2702,7 +2962,7 @@ function showStartModal(){
       document.getElementById("modalArea").innerHTML=`
   <div class="modal-overlay"><div class="modal">
     <h2>三国狼人杀 · 天意模式</h2>
-    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">${game.players.length}人</span>，其中暗藏<span class="highlight">${game.players.filter(p=>p.role==='wolf').length}只狼人</span>。<br>
     好人阵营拥有：<span class="highlight" style="color:var(--seer)">预言家</span>、
     <span class="highlight" style="color:var(--witch)">女巫</span>、
     <span class="highlight" style="color:var(--hunter)">猎人</span>、
@@ -2720,7 +2980,7 @@ function showStartModal(){
       document.getElementById("modalArea").innerHTML=`
   <div class="modal-overlay"><div class="modal">
     <h2>三国狼人杀 · 天意模式</h2>
-    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">${game.players.length}人</span>，其中暗藏<span class="highlight">${game.players.filter(p=>p.role==='wolf').length}只狼人</span>。<br>
     你将以天意之力附体于一位角色，暗中助其获胜。<br>
     每轮白天可使用一次干预。</p>
     <button class="btn-primary" onclick="closeModal();showDestinySelect()">选择附体</button>
@@ -2739,7 +2999,7 @@ function showStartModal(){
   document.getElementById("modalArea").innerHTML=`
   <div class="modal-overlay"><div class="modal">
     <h2>三国狼人杀</h2>
-    <p>从219位三国豪杰中随机选拔<span class="highlight">15人</span>，其中暗藏<span class="highlight">4只狼人</span>。<br>
+    <p>从219位三国豪杰中随机选拔<span class="highlight">${game.players.length}人</span>，其中暗藏<span class="highlight">${game.players.filter(p=>p.role==='wolf').length}只狼人</span>。<br>
     好人阵营拥有：<span class="highlight" style="color:var(--seer)">预言家</span>、
     <span class="highlight" style="color:var(--witch)">女巫</span>、
     <span class="highlight" style="color:var(--hunter)">猎人</span>、
@@ -2764,13 +3024,14 @@ function showStartModal(){
 function closeModal(){document.getElementById("modalArea").innerHTML=""}
 
 function renderPlayers(){
+  document.getElementById('favorBtn').innerHTML=isGodView()?'♡ <span class="btn-label">好感度</span>':'💬 <span class="btn-label">回应</span>';
   const grid=document.getElementById("playerGrid");
   // 玩家模式下隐藏他人角色（玩家死亡后自动变为上帝视角）
   // 天意模式下只显示附体角色身份（如果附体狼人则显示其他狼人）
   let hideRoles = false;
   let visibleRoleIds = []; // 可以看到身份的角色ID列表
   
-  if(game.mode==='player' && !game.playerDied){
+  if(game.mode==='player' && (!game.playerDied||game.hunterDecisionPending)){
     hideRoles = true;
     visibleRoleIds = [game.playerId];
     // 如果玩家是狼人，显示所有狼人身份
@@ -2812,7 +3073,7 @@ function renderPlayers(){
     const showRole = !hideRoles || visibleRoleIds.includes(p.id);
     const roleDiv = showRole ? `<div style="font-size:10px;color:${rc};font-weight:700">${ROLE_CFG[p.role].name}</div>` : '';
     const isMe = game.mode==='player' && p.id===game.playerId;
-    const meBadge = isMe ? '<div style="font-size:9px;color:var(--gold);font-weight:700">★ 你</div>' : '';
+    const meBadge = isMe ? '<div style="font-size:9px;color:var(--gold);font-weight:700">★ 你 · '+safeText(equippedCareerTitle())+'</div>' : '';
     const isDestinyMe = game.mode==='destiny' && p.id===game.destiny;
     const destinyBadge = isDestinyMe ? '<div style="font-size:9px;color:#9b59b6;font-weight:700">★ 附体</div>' : '';
     // 玩家标签
@@ -2837,7 +3098,7 @@ function renderPlayers(){
 function renderInfoBar(){
   const alive=game.players.filter(p=>p.alive);
   document.getElementById("infoBar").innerHTML=`
-    <span>存活：<span class="num">${alive.length}</span>/15</span>
+    <span>存活：<span class="num">${alive.length}</span>/${game.players.length}</span>
     ${game.mode==='god'?`<span>好人：<span class="num" style="color:var(--green)">${alive.filter(p=>p.role!=='wolf').length}</span></span>
     <span>狼人：<span class="num" style="color:var(--red)">${alive.filter(p=>p.role==='wolf').length}</span>(隐藏)</span>`:''}
     <span>第 <span class="num">${game.day}</span> 天</span>`;
@@ -2858,11 +3119,11 @@ function canSeeLog(visibleTo){
   if(visibleTo==='all') return true;
   if(game.mode==='god') return true;
   // 死后上帝视角也能看一切
-  if(game.mode==='player'&&game.playerDied) return true;
-  if(game.mode==='destiny'&&!game.destiny) return true;
+  if(game.mode==='player'&&game.playerDied&&!game.hunterDecisionPending) return true;
+  if(game.mode==='destiny'&&game.destiny==null&&game.destinyGodView) return true;
   let role=null;
   if(game.mode==='player'&&game.playerId!=null) role=game.players[game.playerId]&&game.players[game.playerId].role;
-  else if(game.mode==='destiny'&&game.destiny) role=game.players[game.destiny]&&game.players[game.destiny].role;
+  else if(game.mode==='destiny'&&game.destiny!=null) role=game.players[game.destiny]&&game.players[game.destiny].role;
   if(!role)return false;
   if(visibleTo==='wolf')return role==='wolf';
   if(visibleTo==='seer')return role==='seer';
@@ -2877,11 +3138,17 @@ function addLog(html, visibleTo='all'){
   if(!canSeeLog(visibleTo))return;
   const area=document.getElementById("logArea");
   if(!area)return;
+  const follow=area.scrollHeight-area.scrollTop-area.clientHeight<48;
   const div=document.createElement("div");
   div.className="log-entry";
   div.innerHTML=html;
   area.appendChild(div);
-  area.scrollTop=area.scrollHeight;
+  if(follow){scrollLatestLogs();}else{
+    game.unreadLogs=(game.unreadLogs||0)+1;const button=document.getElementById('jumpLogs');button.hidden=false;button.textContent=`${game.unreadLogs} 条新消息 · 查看最新 ↓`;
+  }
+}
+function scrollLatestLogs(){
+  const area=document.getElementById("logArea");area.scrollTop=area.scrollHeight;game.unreadLogs=0;document.getElementById("jumpLogs").hidden=true;
 }
 function refreshLog(){
   if(!game.logs)return;
@@ -2952,7 +3219,7 @@ function pickTemplate(group,vars){
 async function startGame(){
   const gen=game.generation;
   game.day=0;
-  addLog('<span class="system-text">=== 游戏开始！15位三国豪杰入座 ===</span>');
+  addLog(`<span class="system-text">=== ${game.matchName}开始！${game.players.length}位三国豪杰入座 ===</span>`);
   await delay(800);
   if(game.generation!==gen)return;
   nightPhase();
@@ -2970,40 +3237,52 @@ async function nightPhase(){
   addLog(`<span class="system-text">--- 第${game.day}夜 · 天黑请闭眼 ---</span>`);
   clearSelection();
   await delay(1000);
+  if(game.generation!==gen)return;
 
   // Guard
   const guard=getAlive().find(p=>p.role==="guard"&&p.alive);
   if(game.mode==='player' && guard && guard.id===game.playerId){
     await player_guardAction();
+    if(game.generation!==gen)return;
   } else {
     await ai_guardAction();
+    if(game.generation!==gen)return;
   }
   await delay(600);
+  if(game.generation!==gen)return;
 
   // Wolves
   const wolves=getAliveWolves();
   if(game.mode==='player' && wolves.find(w=>w.id===game.playerId)){
     await player_wolfAction();
+    if(game.generation!==gen)return;
   } else {
     await ai_wolfAction();
+    if(game.generation!==gen)return;
   }
   await delay(600);
+  if(game.generation!==gen)return;
 
   // Seer
   const seer=getAlive().find(p=>p.role==="seer"&&p.alive);
   if(game.mode==='player' && seer && seer.id===game.playerId){
     await player_seerAction();
+    if(game.generation!==gen)return;
   } else {
     await ai_seerAction();
+    if(game.generation!==gen)return;
   }
   await delay(600);
+  if(game.generation!==gen)return;
 
   // Witch
   const witch=getAlive().find(p=>p.role=="witch"&&p.alive);
   if(game.mode==='player' && witch && witch.id===game.playerId){
     await player_witchAction();
+    if(game.generation!==gen)return;
   } else {
     await ai_witchAction();
+    if(game.generation!==gen)return;
   }
   await delay(600);
   if(game.generation!==gen)return;
@@ -3015,6 +3294,7 @@ async function nightPhase(){
     addLog(`<span style="color:var(--red)">[系统错误] ${e.message}</span>`);
     console.error('nightPhase error:',e);
     await delay(1000);
+    if(game.generation!==gen)return;
     resolveNight();
   }
 }
@@ -3128,10 +3408,12 @@ async function player_wolfAction(){
   if(!playerWolf) return;
     addLog('<span class="system-text">🐺 狼人密议开始……</span>','wolf');
   await delay(500);
+  if(game.generation!==gen)return;
   const teammates=wolves.filter(w=>w.id!==game.playerId);
   if(teammates.length>0){
     addLog(`<span style="color:var(--red)">你的同伴：${teammates.map(w=>w.name).join('、')}</span>`,'wolf');
     await delay(500);
+    if(game.generation!==gen)return;
   }
   // ===== 识别关键角色 =====
   // 武力最高 = 行动决策者
@@ -3144,6 +3426,7 @@ async function player_wolfAction(){
     assignWolfRoles(scriptMaster, wolves);
   }
   await delay(800);
+  if(game.generation!==gen)return;
 
   // 军师先提目标（狼人投票时可参考此目标）
   const masterProposal=wolfProposeTarget(scriptMaster, targets);
@@ -3154,6 +3437,7 @@ async function player_wolfAction(){
   const masterTpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,masterTarget.name).replace(/{faction}/g,masterTarget.faction);
       addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}`,'wolf');
   await delay(1000);
+  if(game.generation!==gen)return;
 
   // 军师宣布角色分配（只在第一次分配时）
   if (!game.wolfRolesAnnounced) {
@@ -3166,6 +3450,7 @@ async function player_wolfAction(){
   roleText = roleText.slice(0, -1);
   addLog(`${speakerHTML(scriptMaster, '<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${roleText}`,'wolf');
   await delay(800);
+  if(game.generation!==gen)return;
   game.wolfRolesAnnounced = true;
   }
 
@@ -3176,6 +3461,7 @@ async function player_wolfAction(){
     // 简单讨论：其他狼表态是否同意军师的目标
     for(const wolf of wolves){
       while(game.isPaused) await delay(100);
+      if(game.generation!==gen)return;
       if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
       let compliance=0.6 + getAttr(wolf,'政治')*0.05;
       const masterFavor = getFavor(wolf, scriptMaster.id);
@@ -3186,11 +3472,13 @@ async function player_wolfAction(){
       const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
       addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
       await delay(500);
+      if(game.generation!==gen)return;
     }
   } else {
   // ===== 第三步：其他狼表态是否服从角色分配 =====
   for(const wolf of wolves){
     while(game.isPaused) await delay(100);
+    if(game.generation!==gen)return;
     if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
     // 规则⑤：政治越高越服从剧本（适度调整，保留一定内讧增加趣味性）
     let compliance=0.6 + getAttr(wolf,'政治')*0.05;  // 政治1→0.65, 政治6→0.9
@@ -3216,6 +3504,7 @@ async function player_wolfAction(){
     const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
         addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
     await delay(500);
+    if(game.generation!==gen)return;
   }
 
 } // 第一天完整讨论结束
@@ -3245,6 +3534,7 @@ async function ai_wolfAction(){
   
   addLog('<span class="system-text">🐺 狼人密议开始……</span>','wolf');
   await delay(800);
+  if(game.generation!==gen)return;
 
   const proposals = [];
   // 军师先提目标
@@ -3258,6 +3548,7 @@ async function ai_wolfAction(){
   const masterTpl=pick(WOLF_DISCUSS.propose).replace(/{t}/g,masterTarget.name).replace(/{faction}/g,masterTarget.faction);
   addLog(`${speakerHTML(scriptMaster,'<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${masterTpl}`,'wolf');
   await delay(1000);
+  if(game.generation!==gen)return;
 
   // 军师宣布角色分配（只在第一次分配时）
   if (!game.wolfRolesAnnounced) {
@@ -3270,6 +3561,7 @@ async function ai_wolfAction(){
     roleText = roleText.slice(0, -1);
     addLog(`${speakerHTML(scriptMaster, '<span style="color:var(--red)">【军师】'+scriptMaster.name+'</span>')}${roleText}`,'wolf');
     await delay(800);
+    if(game.generation!==gen)return;
     game.wolfRolesAnnounced = true;
   }
 
@@ -3278,6 +3570,7 @@ async function ai_wolfAction(){
     // 简单讨论：其他狼表态是否同意军师的目标
     for(const wolf of wolves){
       while(game.isPaused) await delay(100);
+      if(game.generation!==gen)return;
       if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
       let compliance=0.6 + getAttr(wolf,'政治')*0.05;
       const masterFavor = getFavor(wolf, scriptMaster.id);
@@ -3288,11 +3581,13 @@ async function ai_wolfAction(){
       const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
       addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
       await delay(500);
+      if(game.generation!==gen)return;
     }
   } else {
     // ===== 第一天：完整讨论（角色分配 + 服从性）=====
     for(const wolf of wolves){
       while(game.isPaused) await delay(100);
+      if(game.generation!==gen)return;
       if(wolf.id===scriptMaster.id){ game.wolfScriptCompliance[wolf.id]=true; continue; }
       let compliance=0.6 + getAttr(wolf,'政治')*0.05;
       const masterFavor = getFavor(wolf, scriptMaster.id);
@@ -3314,6 +3609,7 @@ async function ai_wolfAction(){
       const tpl=follows?pick(WOLF_DISCUSS.script_accept):pick(WOLF_DISCUSS.script_reject);
       addLog(`${speakerHTML(wolf,'<span style="color:var(--red)">【狼人密议】'+wolf.name+'</span>')}${tpl}`,'wolf');
       await delay(500);
+      if(game.generation!==gen)return;
     }
   } // 第一天完整讨论结束
 
@@ -3325,6 +3621,7 @@ async function ai_wolfAction(){
   const killTpl=pick(WOLF_DISCUSS.kill_decide).replace(/{t}/g,finalTarget.name);
   addLog(`${speakerHTML(killMaster,'<span style="color:var(--red)">【武力裁决】'+killMaster.name+'</span>')}${killTpl}`,'wolf');
   await delay(600);
+  if(game.generation!==gen)return;
 
   addLog('<span class="system-text">🐺 狼人密议结束，目标已锁定。</span>','wolf');
 }
@@ -3727,11 +4024,13 @@ function resolveNight(){
 }
 
 async function dayPhase(deaths){
+  const gen=game.generation;
   try{
   setNight(false);
   setPhase(`第${game.day}天`,"var(--gold)");
   addLog(`<span class="system-text">--- 第${game.day}天 · 天亮了 ---</span>`);
   await delay(800);
+  if(game.generation!==gen)return;
 
   // Announce deaths
   if(deaths.length===0){
@@ -3740,6 +4039,7 @@ async function dayPhase(deaths){
     for(const d of deaths){
       const p=game.players[d.id];
       await markDeath(p, game.day, d.cause);
+      if(game.generation!==gen)return;
       const causeText=d.cause==="wolf"?"被狼人杀害":d.cause==="poison"?"被女巫毒杀":"死亡";
       const roleText = isGodView() ? `（${p.faction}·${ROLE_CFG[p.role].name}）` : '';
       addLog(`<span class="death-text">${p.name}${roleText}昨夜${causeText}了！</span>`);
@@ -3751,6 +4051,7 @@ async function dayPhase(deaths){
         let target = null;
         if(isPlayerHunter){
           target = await showHunterShootPanel(p, d.cause);
+          if(game.generation!==gen)return;
         } else {
           const candidates = getAlive().filter(t => t.id !== p.id);
           // 智谋≥4优先带走狼人
@@ -3758,6 +4059,7 @@ async function dayPhase(deaths){
         }
         if(target){
           await markDeath(target, game.day, "hunter");
+          if(game.generation!==gen)return;
           const targetRoleText = isGodView() ? `（${ROLE_CFG[target.role].name}）` : '';
           addLog(`<span class="death-text" style="color:var(--hunter)">${p.name}发动猎人技能，带走了${target.name}${targetRoleText}！</span>`);
           if(target.role==="hunter"&&getAlive().find(pp=>pp.role==="hunter"&&pp.id!==p.id)){/* chain handled */}
@@ -3768,6 +4070,7 @@ async function dayPhase(deaths){
 
   renderPlayers();
   await delay(300);
+  if(game.generation!==gen)return;
 
   // Check win
   if(checkWin())return;
@@ -3781,7 +4084,9 @@ async function dayPhase(deaths){
     if(destinyChar && destinyChar.alive){
       addLog('<span class="system-text" style="color:#9b59b6">=== 天意干预 ===</span>');
       await delay(400);
+      if(game.generation!==gen)return;
       const result = await showDestinyPanel();
+      if(game.generation!==gen)return;
       if(result && result.action){
         if(result.action === 'help' || result.action === 'harm'){
           game.destinyEffects[result.targetId] = result.action;
@@ -3790,20 +4095,25 @@ async function dayPhase(deaths){
         }
       }
       await delay(400);
+      if(game.generation!==gen)return;
     }
   }
 
   // Discussion
   addLog('<span class="system-text">=== 进入讨论环节 ===</span>');
   await delay(600);
+  if(game.generation!==gen)return;
   // 显示发言历史按钮
   document.getElementById('speechHistoryBtn').style.display = 'block';
   // Discussion
   await generateSpeeches();
+  if(game.generation!==gen)return;
   await delay(600);
+  if(game.generation!==gen)return;
 
   // Vote
   await votePhase();
+  if(game.generation!==gen)return;
   
   // 保存游戏进度（玩家模式）
   if(game.mode === 'player'){
@@ -3816,6 +4126,7 @@ async function dayPhase(deaths){
 }
 
 async function generateSpeeches(){
+  const gen=game.generation;
   const alive=getAlive();
   const wolves=getAliveWolves();
   const script=game.wolfScript;
@@ -3863,12 +4174,14 @@ async function generateSpeeches(){
 
   for(const p of speechOrder){
     while(game.isPaused) await delay(100);
+    if(game.generation!==gen)return;
     game.currentSpeakerId = p.id; // 记录当前发言人，供 generatePlayerSpeechText 对跳检测使用
     
     // ===== 玩家扮演模式：玩家角色手动输入发言 =====
     if(game.mode === 'player' && p.id === game.playerId){
       addLog(`<span style="color:var(--gold)">【你的发言】请在弹出的面板中输入发言内容...</span>`);
       const result = await showSpeechPanel();
+      if(game.generation!==gen)return;
       const speech = result.text || "";
       const fragments = result.fragments || [{type:'conservative'}];
       // 将 fragments 转为 classified 格式供 speechTypeLabel 使用
@@ -3899,7 +4212,7 @@ async function generateSpeeches(){
       addLog(`${speakerHTML(p)}${speech}${speechTypeLabel(classified)}`);
       // 好感度影响（用主要类型）
       const mainType = fragments[0].type === 'info' ? 'claim' : fragments[0].type;
-      applySpeechFavorEffect(p, speech, classified, alive, false);
+      applyPlayerSpeechEffect(p, speech, classified, alive);
       // 记录发言上下文
       const tmpFrag = fragments.find(f=>f.targetId);
       const mentionedTarget = tmpFrag ? game.players[tmpFrag.targetId] : null;
@@ -3911,6 +4224,7 @@ async function generateSpeeches(){
       game.spokenToday.add(p.id);
       game.speeches.push({speaker: p.role, about: null, text: speech, speakerId: p.id, speechType: mainType, classified, day: game.day});
       await delay(800+Math.random()*700);
+      if(game.generation!==gen)return;
       continue;
     }
     
@@ -3991,6 +4305,7 @@ async function generateSpeeches(){
     game.spokenToday.add(p.id);
     game.speeches.push({speaker:p.role,about:null,text:speech,speakerId:p.id,speechType:mainType,classified, day: game.day});
     await delay(800+Math.random()*700);
+    if(game.generation!==gen)return;
   }
 }
 
@@ -4680,14 +4995,17 @@ function generateLastWords(player) {
 }
 
 async function votePhase(){
+  const gen=game.generation;
   addLog('<span class="system-text">=== 投票环节 ===</span>');
   await delay(600);
+  if(game.generation!==gen)return;
 
   const alive=getAlive();
   const votes={};
 
   for(const p of alive){
     while(game.isPaused) await delay(100);
+    if(game.generation!==gen)return;
 
     // ===== 一人一票：好感度 + 发言综合决策 =====
     const suspectPool=alive.filter(x=>x.id!==p.id);
@@ -4939,6 +5257,7 @@ async function votePhase(){
     if(game.mode === 'player' && p.id === game.playerId){
       addLog(`<span style="color:var(--gold)">【你的投票】请选择要放逐的玩家...</span>`);
       const playerVoteTargetId = await showVotePanel();
+      if(game.generation!==gen)return;
       if(playerVoteTargetId !== null && game.players[playerVoteTargetId]){
         votes[playerVoteTargetId] = (votes[playerVoteTargetId] || 0) + 1;
         if(!game.voteRecords) game.voteRecords = [];
@@ -4949,6 +5268,7 @@ async function votePhase(){
         addLog(`${speakerHTML(p)}<span class="vote-text">→ 弃权</span>`);
       }
       await delay(400);
+      if(game.generation!==gen)return;
       continue;
     }
 
@@ -4988,9 +5308,11 @@ async function votePhase(){
       addLog(`${speakerHTML(p)}<span class="vote-text">→ ${target.name}</span>`);
     }
     await delay(400);
+    if(game.generation!==gen)return;
   }
 
   await delay(600);
+  if(game.generation!==gen)return;
   // Find max votes (handle ties)
   let maxVotes=0,maxIds=[];
   for(let id in votes){
@@ -5012,6 +5334,7 @@ async function votePhase(){
     if(!game.voteRecords) game.voteRecords = [];
     game.voteRecords.push({type:'tie', tiedIds: tiedIds, votes: maxVotes, day: game.day});
     await delay(800);
+    if(game.generation!==gen)return;
 
     // ① 平票玩家依次申辩发言（使用正常白天模板）
     addLog(`<span class="system-text">=== 平票申辩 ===</span>`);
@@ -5024,6 +5347,7 @@ async function votePhase(){
       if(game.mode === 'player' && tid === game.playerId && !game.playerDied){
         addLog(`<span style="color:var(--gold)">【你的申辩】请输入发言...</span>`);
         const result = await showSpeechPanel();
+        if(game.generation!==gen)return;
         speech = result.text || '';
         const fragments = result.fragments || [{type:'conservative'}];
         classified = fragments.map(f => {
@@ -5055,22 +5379,26 @@ async function votePhase(){
       game.speeches.push({speaker: tp.role, about: null, text: speech, speakerId: tp.id, speechType: mainType, classified, day: game.day, tieBreak: true});
       game.spokenToday.add(tp.id);
       await delay(800 + Math.random() * 700);
+      if(game.generation!==gen)return;
     }
 
     // ② 重投票：仅限平票玩家
     addLog(`<span class="system-text">=== 重新投票（仅限：${tiedNames}）===</span>`);
     await delay(600);
+    if(game.generation!==gen)return;
 
     const revoteAlive = getAlive();
     const revotes = {};
 
     for(const p of revoteAlive){
       while(game.isPaused) await delay(100);
+      if(game.generation!==gen)return;
 
       // 玩家手动投票
       if(game.mode === 'player' && p.id === game.playerId && !game.playerDied){
         addLog(`<span style="color:var(--gold)">【你的投票】请从平票玩家中选择...</span>`);
         const rvTargetId = await showVotePanel(tiedIds);
+        if(game.generation!==gen)return;
         if(rvTargetId !== null && game.players[rvTargetId]){
           revotes[rvTargetId] = (revotes[rvTargetId] || 0) + 1;
           addLog(`${speakerHTML(p)}<span class="vote-text">→ 我投给了 ${game.players[rvTargetId].name}</span>`);
@@ -5080,6 +5408,7 @@ async function votePhase(){
           addLog(`${speakerHTML(p)}<span class="vote-text">→ 弃权</span>`);
         }
         await delay(400);
+        if(game.generation!==gen)return;
         continue;
       }
 
@@ -5095,6 +5424,7 @@ async function votePhase(){
           addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[fallbackId].name}</span>`);
         }
         await delay(400);
+        if(game.generation!==gen)return;
         continue;
       }
 
@@ -5185,9 +5515,11 @@ async function votePhase(){
         addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[target].name}</span>`);
       }
       await delay(400);
+      if(game.generation!==gen)return;
     }
 
     await delay(600);
+    if(game.generation!==gen)return;
     // ③ 计算重投结果
     let rvMaxVotes = 0, rvMaxIds = [];
     for(let id in revotes){
@@ -5202,20 +5534,25 @@ async function votePhase(){
       addLog(`<span class="death-text" style="font-size:15px">重投结果：${exiled.name}以${rvMaxVotes}票被放逐！</span>`);
       game.voteRecords.push({type:'result', targetId: finalMaxId, votes: rvMaxVotes, day: game.day, tieBreak: true});
       await markDeath(exiled, game.day, "vote");
+      if(game.generation!==gen)return;
       await delay(500);
+      if(game.generation!==gen)return;
       addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled).text}"</span>`);
       await delay(500);
+      if(game.generation!==gen)return;
       if(exiled.role === 'hunter'){
         const isPlayerHunter = game.mode === 'player' && game.playerId === exiled.id;
         let ht = null;
         if(isPlayerHunter){
           ht = await showHunterShootPanel(exiled, 'vote');
+          if(game.generation!==gen)return;
         } else {
           const targets = getAlive().filter(p => p.id !== exiled.id);
           if(targets.length > 0) ht = getAttr(exiled,'智谋') >= 4 ? pickHunterTarget(exiled, targets) : pick(targets);
         }
         if(ht){
           await markDeath(ht, game.day, "hunter");
+          if(game.generation!==gen)return;
           const htRoleText = isGodView() ? `（${ROLE_CFG[ht.role].name}）` : '';
           addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}${htRoleText}！</span>`);
         }
@@ -5229,8 +5566,10 @@ async function votePhase(){
     // 平票流程已处理完毕，跳过后续常规放逐
     renderPlayers();
     await delay(500);
+    if(game.generation!==gen)return;
     if(!checkWin()){
       await delay(500);
+      if(game.generation!==gen)return;
       nightPhase();
     }
     return;
@@ -5242,10 +5581,13 @@ async function votePhase(){
     if(!game.voteRecords) game.voteRecords = [];
     game.voteRecords.push({type:'result', targetId: finalMaxId, votes: finalMaxVotes, day: game.day});
     await markDeath(exiled, game.day, "vote");
+    if(game.generation!==gen)return;
     addLog(`<span class="death-text" style="font-size:15px">${exiled.name}以${finalMaxVotes}票被放逐！</span>`);
     await delay(500);
+    if(game.generation!==gen)return;
     addLog(`<span class="death-text" style="color:var(--gray);font-style:italic">"${exiled.name}遗言：${generateLastWords(exiled).text}"</span>`);
     await delay(500);
+    if(game.generation!==gen)return;
 
     // Hunter
     if(exiled.role==="hunter"){
@@ -5253,6 +5595,7 @@ async function votePhase(){
       let ht = null;
       if(isPlayerHunter){
         ht = await showHunterShootPanel(exiled, 'vote');
+        if(game.generation!==gen)return;
       } else {
         const targets=getAlive().filter(p=>p.id!==exiled.id);
         if(targets.length>0){
@@ -5261,6 +5604,7 @@ async function votePhase(){
       }
       if(ht){
         await markDeath(ht, game.day, "hunter");
+        if(game.generation!==gen)return;
         const htRoleText = isGodView() ? `（${ROLE_CFG[ht.role].name}）` : '';
         addLog(`<span class="death-text" style="color:var(--hunter)">${exiled.name}发动猎人技能，带走了${ht.name}${htRoleText}！</span>`);
       }
@@ -5269,9 +5613,11 @@ async function votePhase(){
 
   renderPlayers();
   await delay(500);
+  if(game.generation!==gen)return;
 
   if(!checkWin()){
     await delay(500);
+    if(game.generation!==gen)return;
     nightPhase();
   }
 }
@@ -5290,6 +5636,9 @@ function checkWin(){
 }
 
 function endGame(winner){
+  clearSuspendedAction();
+  if(game.ended)return;
+  game.ended=true;
   const isGood=winner==="good";
   const title=isGood?"好人阵营胜利！":"狼人阵营胜利！";
   const color=isGood?"var(--green)":"var(--red)";
@@ -5320,6 +5669,9 @@ function endGame(winner){
   }
   summary+=`</div>`;
   
+  summary+=buildCareerReport();
+  summary+=buildMatchRecap();
+
   // 声望明细
   const breakdown = getPrestigeBreakdown(winner, _gameAchievementsEarned);
   if(breakdown.total > 0){
@@ -5382,7 +5734,7 @@ function clearSelection(){
 
 // ===== 标题画面控制 =====
 function showTitle(){
-  document.getElementById('titleScreen').classList.remove('hide');
+  document.getElementById('titleScreen').classList.remove('hide');renderCareerGoal();
 }
 function hideTitle(){
   document.getElementById('titleScreen').classList.add('hide');
@@ -5414,7 +5766,7 @@ function startPlayerMode(){
 function startNewGame(){
   document.getElementById('playerModeSelect').classList.add('hide');
   document.getElementById('charCreate').classList.remove('hide');
-  renderCharAttrGrid();
+  if(!document.getElementById('attrGrid').children.length)renderCharAttrGrid();
 }
 function continueGame(){
   const savedChar = localStorage.getItem('playerCharacter');
@@ -5443,6 +5795,7 @@ function savePlayerGame(){
       playerId: game.playerId,
       playerDied: game.playerDied,
       destiny: game.destiny,
+      careerPlayerId: game.careerPlayerId,
       destinyEnded: game.destinyEnded,
       destinyGodView: game.destinyGodView,
       destinyEffects: game.destinyEffects,
@@ -5465,6 +5818,8 @@ function savePlayerGame(){
       wolfScriptCompliance: game.wolfScriptCompliance,
       speeches: game.speeches,
       voteRecords: game.voteRecords || [],
+      reactions: game.reactions || [],
+      matchSize: game.matchSize, matchName: game.matchName,
       logs: game.logs,
       spokenToday: [...game.spokenToday],
       claimedPlayers: [...game.claimedPlayers],
@@ -5530,10 +5885,16 @@ function updateAttrLeft(){
   }
   document.getElementById('attrLeft').textContent = 3 - used;
 }
+function normalizePlayerName(value){
+  return String(value||'').replace(/[^\p{L}\p{N}_· -]/gu,'').trim().slice(0,6)||'无名豪杰';
+}
+function validPlayerName(value){return /^[\p{L}\p{N}_· -]{1,6}$/u.test(value)&&value.trim().length>0;}
 function checkCharReady(){
   const name = document.getElementById('charNameInput').value.trim();
   const left = parseInt(document.getElementById('attrLeft').textContent);
-  document.getElementById('charStartBtn').disabled = !(name.length>0 && left===0);
+  document.getElementById('charNameInput').setCustomValidity(name&&!validPlayerName(name)?'角色名限1至6个字，可使用文字、数字、空格、下划线或间隔号。':'');
+  const hint=document.getElementById('charNameHint');hint.textContent=name&&!validPlayerName(name)?'请用1至6个文字或数字，不能含引号、尖括号等符号。':'1至6个字，可用文字、数字、空格、下划线或间隔号';hint.classList.toggle('invalid',!!name&&!validPlayerName(name));
+  document.getElementById('charStartBtn').disabled = !(validPlayerName(name) && left===0);
 }
 function selectFaction(fac){
   _selectedFaction = fac;
@@ -5552,7 +5913,7 @@ function selectAvatar(avatarName){
 
 function confirmCharCreate(){
   const name = document.getElementById('charNameInput').value.trim();
-  if(!name) return;
+  if(!validPlayerName(name)){checkCharReady();document.getElementById('charNameInput').reportValidity();return;}
   const attrs = ['武力','智谋','统帅','政治','魅力','意志'];
   let attr = {};
   for(const a of attrs) attr[a] = parseInt(document.getElementById('attr-val-'+a).textContent);
@@ -5577,6 +5938,8 @@ function showDestinyDeathPanel(){
   });
 }
 function showDestinySelect(){
+  _destinySelected=null;
+  const confirm=document.getElementById('destinyConfirmBtn');confirm.disabled=true;confirm.textContent='请先选择附体角色';
   const container = document.getElementById('destinyPlayers');
   container.innerHTML = game.players.map(p => {
     const imgSrc = (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
@@ -5592,11 +5955,11 @@ function selectDestinyPlayer(id){
   document.querySelectorAll('.destiny-player-card').forEach(c=>{
     c.classList.toggle('selected', parseInt(c.dataset.id)===id);
   });
-  document.getElementById('destinyConfirmBtn').disabled = false;
+  const button=document.getElementById('destinyConfirmBtn');button.disabled=false;button.textContent=`确认附体 ${game.players[id].name}`;
 }
 function confirmDestinySelect(){
-  if(_destinySelected===null) return;
-  game.destiny = _destinySelected;
+  if(_destinySelected===null||!game.players[_destinySelected]) return;
+  game.destiny = _destinySelected;game.careerPlayerId=_destinySelected;
   document.getElementById('destinySelect').classList.add('hide');
   renderPlayers();
   showStartModal();
@@ -6835,6 +7198,8 @@ function updateSpeechPreview(){
 
 // ===== 确认发言 =====
 function confirmPlayerSpeech(){
+  clearSuspendedAction();
+  if(!_speechFragments.length||!game.pendingSpeechResolve)return;
   const text = generatePlayerSpeechText(_speechFragments);
   document.getElementById('speechPanel').classList.add('hide');
   const fragments = _speechFragments.slice(); // copy
@@ -6848,8 +7213,10 @@ function confirmPlayerSpeech(){
 
 // ===== 发言面板显示（实际定义在下方） =====
 function confirmPlayerVote(){
+  clearSuspendedAction();
   const selected = document.querySelector('#voteOptions .vote-player-card.selected');
-  const targetId = selected ? parseInt(selected.dataset.id) : null;
+  if(!selected||!game.pendingVoteResolve)return;
+  const targetId = parseInt(selected.dataset.id);
   
   document.getElementById('votePanel').classList.add('hide');
   
@@ -6862,7 +7229,9 @@ function confirmPlayerVote(){
 // ===== 夜晚行动面板 =====
 let _nightResult = null;
 function confirmNightAction(){
+  clearSuspendedAction();
   const action = _nightResult;
+  if(!action||!game.pendingNightResolve)return;
   document.getElementById('nightPanel').classList.add('hide');
   _nightResult = null;
   
@@ -6881,49 +7250,37 @@ function showDestinyPanel(){
     game.pendingDestinyResolve = resolve;
     document.getElementById('destinyPanel').classList.remove('hide');
     document.getElementById('destinyPanelHint').textContent = `每轮白天可使用一次干预（第${game.day}天）`;
-    _destinyAction = null;
+    _destinyAction = null;_destinyTarget=null;
+    document.getElementById('destinyActionConfirm').disabled=true;
+    document.getElementById('destinyActionConfirm').textContent='请先选择干预方式';
     document.querySelectorAll('.destiny-act-btn').forEach(b=>b.classList.remove('selected'));
     document.getElementById('destinyTargetList').style.display = 'none';
   });
 }
 
 function selectDestinyAction(action){
-  if(action==='wait'){
-    // 静观其变，直接确认
-    document.querySelectorAll('.destiny-act-btn').forEach(b=>{
-      b.classList.remove('selected');
-      if(b.id==='da-wait') b.classList.add('selected');
-    });
-    document.getElementById('destinyPanel').classList.add('hide');
-    if(game.pendingDestinyResolve){
-      game.pendingDestinyResolve({action:'wait',targetId:null});
-      game.pendingDestinyResolve=null;
-    }
-    return;
-  }
-  _destinyAction = action;
-  document.querySelectorAll('.destiny-act-btn').forEach(b=>{
-    b.classList.remove('selected');
-    if(b.id==='da-'+action) b.classList.add('selected');
-  });
-  // 显示角色选择列表
-  const container = document.getElementById('destinyTargetList');
-  const alive = getAlive();
-  container.innerHTML = alive.map(p=>{
-    const imgSrc = p.avatar ? p.avatar : (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
-    return `<div class="destiny-target-card" data-id="${p.id}" onclick="selectDestinyTarget(${p.id})">
-      <img src="${imgSrc}" onerror="this.style.display='none'">
-      <div>${p.name}</div>
-    </div>`;
-  }).join('');
-  container.style.display = 'grid';
+  if(!['help','harm','wait'].includes(action))return;
+  _destinyAction=action;_destinyTarget=null;
+  document.querySelectorAll('.destiny-act-btn').forEach(b=>b.classList.toggle('selected',b.id==='da-'+action));
+  const container=document.getElementById('destinyTargetList');
+  const button=document.getElementById('destinyActionConfirm');
+  button.disabled=action!=='wait';button.textContent=action==='wait'?'确认本轮不干预':'请选择干预目标';
+  if(action==='wait'){container.style.display='none';return;}
+  container.innerHTML=getAlive().map(p=>`<button type="button" class="destiny-target-card" data-id="${p.id}" onclick="selectDestinyTarget(${p.id})"><img src="${p.avatar||(FACTION_DIR[p.faction]||'avatars/qun')+'/'+p.name+'.png'}" alt=""><div>${safeText(p.name)}</div></button>`).join('');
+  container.style.display='grid';
 }
 function selectDestinyTarget(id){
-  document.getElementById('destinyPanel').classList.add('hide');
-  if(game.pendingDestinyResolve){
-    game.pendingDestinyResolve({action:_destinyAction,targetId:id});
-    game.pendingDestinyResolve=null;
-  }
+  if(!['help','harm'].includes(_destinyAction)||!game.players[id]?.alive)return;
+  _destinyTarget=id;
+  document.querySelectorAll('#destinyTargetList [data-id]').forEach(el=>el.classList.toggle('selected',Number(el.dataset.id)===id));
+  const button=document.getElementById('destinyActionConfirm');button.disabled=false;
+  button.textContent=`确认${_destinyAction==='help'?'帮助':'干扰'} ${game.players[id].name}`;
+}
+function confirmDestinyAction(){
+  if(!game.pendingDestinyResolve||!_destinyAction||(_destinyAction!=='wait'&&_destinyTarget===null))return;
+  clearSuspendedAction();document.getElementById('destinyPanel').classList.add('hide');
+  const resolve=game.pendingDestinyResolve;game.pendingDestinyResolve=null;
+  resolve({action:_destinyAction,targetId:_destinyTarget});
 }
 function selectDestinyDeathOption(option){
   document.getElementById('destinyDeathPanel').classList.add('hide');
@@ -7055,21 +7412,90 @@ function confirmGrowth(){
 
 // ===== 成就徽章系统 =====
 const ACHIEVEMENT_LIST = [
+  {id:'first_game',name:'初入乱世',desc:'完成首场玩家或天意对局',prestige:15,icon:'🌱',metric:'gamesPlayed',target:1,category:'历程'},
+  {id:'three_games',name:'渐入佳境',desc:'累计完成3局',prestige:20,icon:'🧭',metric:'gamesPlayed',target:3,category:'历程'},
+  {id:'ten_games',name:'久经沙场',desc:'累计完成10局',prestige:35,icon:'🏕️',metric:'gamesPlayed',target:10,category:'历程'},
+  {id:'fifty_games',name:'百炼成钢',desc:'累计完成50局',prestige:100,icon:'🏔️',metric:'gamesPlayed',target:50,category:'历程'},
+  {id:'first_win',name:'首战告捷',desc:'获得首场阵营胜利',prestige:20,icon:'🏳️',metric:'wins',target:1,category:'胜利'},
+  {id:'five_wins',name:'常胜之师',desc:'累计获得5场阵营胜利',prestige:50,icon:'🏆',metric:'wins',target:5,category:'胜利'},
+  {id:'three_roles',name:'三路历练',desc:'结算时体验过3种不同身份',prestige:30,icon:'🎭',metric:'roles',target:3,category:'探索'},
+  {id:'all_roles',name:'六韬通才',desc:'结算时体验过全部6种身份',prestige:80,icon:'📚',metric:'roles',target:6,category:'探索'},
+  {id:'both_formats',name:'纵横两局',desc:'分别完成9人短局和15人经典局',prestige:25,icon:'🗺️',metric:'formats',target:2,category:'探索'},
+  {id:'first_vote',name:'明辨是非',desc:'作为好人，在决定放逐的投票中投中狼人1次',prestige:20,icon:'🔎',metric:'correctVotes',target:1,category:'谋略'},
   {id:'empty_fort', name:'空城计', desc:'作为预言家被投票出局，最终阵营仍获胜', prestige:50, icon:'🏯'},
   {id:'borrow_arrows', name:'草船借箭', desc:'作为狼人悍跳预言家且活到游戏结束', prestige:60, icon:'🚢'},
   {id:'borrow_sword', name:'借刀杀人', desc:'作为猎人被投票出局时开枪带走一只狼', prestige:30, icon:'⚔️'},
-  {id:'lone_rescue', name:'单骑救主', desc:'作为守卫在一局中成功救下3人', prestige:40, icon:'🛡️'},
-  {id:'seven_captures', name:'七擒七纵', desc:'累计投对7次（投票目标为狼人并被流放）', prestige:40, icon:'🎯', target:7},
-  {id:'burning_camps', name:'火烧连营', desc:'狼人阵营连续赢3局', prestige:80, icon:'🔥', target:3},
-  {id:'peach_garden', name:'桃园结义', desc:'作为好人存活且≥3个好人活到最后', prestige:30, icon:'🌸'},
-  {id:'devotion', name:'鞠躬尽瘁', desc:'累计玩满20局', prestige:50, icon:'📜', target:20}
+  {id:'lone_rescue', name:'单骑救主', desc:'作为守卫在一局中成功守护3次，适合经典局', prestige:40, icon:'🛡️'},
+  {id:'seven_captures',metric:'correctVotes',category:'谋略', name:'七擒七纵', desc:'累计投对7次（决定放逐的投票投中狼人，旧进度保留）', prestige:40, icon:'🎯', target:7},
+  {id:'burning_camps',metric:'wolfWinStreak',category:'胜利', name:'火烧连营', desc:'狼人阵营连续赢3局', prestige:80, icon:'🔥', target:3},
+  {id:'peach_garden', name:'桃园结义', desc:'好人阵营获胜，且自己与至少2名好人存活', prestige:30, icon:'🌸'},
+  {id:'devotion',metric:'gamesPlayed',category:'历程', name:'鞠躬尽瘁', desc:'累计玩满20局', prestige:50, icon:'📜', target:20}
 ];
+
+
+const CAREER_TITLES=[
+  {id:'newcomer',name:'初出茅庐',desc:'踏入三国即可佩戴',unlock:()=>true},
+  {id:'victor',name:'破局新秀',desc:'解锁「首战告捷」',unlock:s=>s.earned.includes('first_win')},
+  {id:'reader',name:'识局者',desc:'解锁「七擒七纵」',unlock:s=>s.earned.includes('seven_captures')},
+  {id:'master',name:'六韬通才',desc:'体验全部六种身份',unlock:s=>s.earned.includes('all_roles')},
+  {id:'veteran',name:'百炼之士',desc:'累计完成50局',unlock:s=>s.earned.includes('fifty_games')}
+];
+function achievementValue(def,stats){
+  if(stats.earned.includes(def.id))return def.target||1;
+  if(def.metric==='roles')return Object.keys(ROLE_CFG).filter(r=>Number(stats.roleGames[r])>0).length;
+  if(def.metric==='formats')return new Set(stats.formats).size;
+  return def.metric?Math.min(def.target,Number(stats[def.metric])||0):0;
+}
+function careerGoals(stats){
+  const remaining=ACHIEVEMENT_LIST.filter(d=>!stats.earned.includes(d.id));
+  return remaining.sort((a,b)=>(b.id===stats.tracked?1:0)-(a.id===stats.tracked?1:0)||(achievementValue(b,stats)/(b.target||1)-achievementValue(a,stats)/(a.target||1))||(a.target||99)-(b.target||99)).slice(0,3);
+}
+function equippedCareerTitle(stats=getAchievementStats()){
+  return (CAREER_TITLES.find(t=>t.id===stats.title&&t.unlock(stats))||CAREER_TITLES[0]).name;
+}
+function equipCareerTitle(id){
+  const stats=getAchievementStats(),title=CAREER_TITLES.find(t=>t.id===id);
+  if(!title||!title.unlock(stats))return;
+  stats.title=id;saveAchievementStats(stats);updateAchievementDisplay();renderCareerGoal();
+  if(game.players.length)renderPlayers();
+}
+function trackAchievement(id){
+  const stats=getAchievementStats();
+  if(!ACHIEVEMENT_LIST.some(d=>d.id===id)||stats.earned.includes(id))return;
+  stats.tracked=stats.tracked===id?null:id;saveAchievementStats(stats);updateAchievementDisplay();renderCareerGoal();
+}
+function careerProgress(def,stats){const value=achievementValue(def,stats),target=def.target||1;return `<div class="career-meter" role="progressbar" aria-label="${safeText(def.name)}进度" aria-valuenow="${value}" aria-valuemin="0" aria-valuemax="${target}"><span style="width:${Math.min(100,value/target*100)}%"></span></div><small>${value} / ${target}</small>`;}
+function renderCareerGoal(){
+  const el=document.getElementById('careerGoal');if(!el)return;
+  const stats=getAchievementStats(),goal=careerGoals(stats)[0];
+  el.textContent=goal?`下一目标：${goal.name} · ${achievementValue(goal,stats)}/${goal.target||1}`:`全成就达成 · 继续第 ${stats.chaptersCompleted+1} 篇历练`;
+}
+function renderCareerSections(stats){
+  const chapter=document.getElementById('careerChapter');
+  chapter.innerHTML=`<h3>行军篇章 · 第 ${stats.chaptersCompleted+1} 篇</h3><p>完成3局，并取得1场胜利 · 完成后 +40 声望</p><div class="career-chapter-count">完成对局 ${stats.chapterGames}/3 · 胜利 ${stats.chapterWins}/1</div><small>玩家或天意对局计入，无日期限制，失败也会累计局数。</small>`;
+  document.getElementById('careerGoals').innerHTML=careerGoals(stats).map(def=>`<div class="career-goal"><b>${def.icon} ${safeText(def.name)}</b><p>${safeText(def.desc)}</p>${careerProgress(def,stats)}<button type="button" onclick="trackAchievement('${def.id}')" aria-pressed="${stats.tracked===def.id}">${stats.tracked===def.id?'取消追踪':'追踪目标'}</button></div>`).join('')||'<p>所有徽章已收集！可以继续完成篇章，或尝试新的角色策略。</p>';
+  document.getElementById('careerRoles').innerHTML=Object.entries(ROLE_CFG).map(([id,role])=>{const n=Number(stats.roleGames[id])||0;return `<div class="career-role ${n?'explored':''}"><b>${role.name}</b><small>${n?'已体验 '+n+' 局':'尚未体验'}</small></div>`;}).join('');
+  document.getElementById('careerTitles').innerHTML=CAREER_TITLES.map(title=>{const unlocked=title.unlock(stats),selected=unlocked&&equippedCareerTitle(stats)===title.name;return `<button type="button" class="career-title ${selected?'equipped':''}" ${unlocked?'':'disabled'} onclick="equipCareerTitle('${title.id}')" aria-pressed="${selected}"><b>${selected?'✓ ':unlocked?'':'🔒 '}${title.name}</b><small>${unlocked?selected?'佩戴中':'点击佩戴':title.desc}</small></button>`;}).join('');
+}
+function buildCareerReport(){
+  const report=game.achievementReport;if(!report)return '';
+  const {before,after}=report;
+  const advanced=ACHIEVEMENT_LIST.filter(d=>!after.earned.includes(d.id)&&achievementValue(d,after)>achievementValue(d,before)).slice(0,3);
+  const titles=CAREER_TITLES.filter(t=>t.unlock(after)&&!t.unlock(before));
+  const next=careerGoals(after)[0];
+  return `<section class="match-recap career-report"><h3>本局成长</h3><p>完成对局 +1${report.isWin?' · 胜场 +1':''}${report.correct?' · 准确放逐票 +'+report.correct:''}</p>${report.fresh.length?`<p>新获徽章：${report.fresh.map(id=>safeText(ACHIEVEMENT_LIST.find(d=>d.id===id).name)).join('、')}</p>`:'<p>本局积累已计入生涯，下一目标正在接近。</p>'}${titles.length?`<p>新称号：${titles.map(t=>t.name).join('、')}（可在成就中佩戴）</p>`:''}${game.chapterReward?`<p class="recap-insight">第 ${after.chaptersCompleted} 篇完成！+40 声望 · 新篇章已开启</p>`:`<p>篇章进度：对局 ${after.chapterGames}/3 · 胜利 ${after.chapterWins}/1</p>`}${advanced.map(d=>`<p>${safeText(d.name)}：${achievementValue(d,before)} → ${achievementValue(d,after)} / ${d.target||1}</p>`).join('')}${next?`<p class="recap-insight">下局目标：${safeText(next.name)} · ${achievementValue(next,after)}/${next.target||1}</p>`:''}<button type="button" class="career-open" onclick="openAchievement()">查看目标与称号</button></section>`;
+}
 
 let _gameAchievementsEarned = []; // 本局结算时获得的成就
 
 function getAchievementStats(){
-  try { return JSON.parse(localStorage.getItem('threeKingdomsAchievements') || '{}'); }
-  catch(e){ return {}; }
+  let raw;try{raw=JSON.parse(localStorage.getItem('threeKingdomsAchievements')||'{}');}catch(e){}
+  const stats=raw&&typeof raw==='object'&&!Array.isArray(raw)?{...raw}:{};
+  for(const key of ['gamesPlayed','wins','correctVotes','wolfWinStreak','chapterGames','chapterWins','chaptersCompleted'])stats[key]=Number.isFinite(stats[key])?Math.max(0,Math.floor(stats[key])):0;
+  stats.earned=Array.isArray(stats.earned)?[...new Set(stats.earned.filter(id=>typeof id==='string'))]:[];
+  stats.roleGames=stats.roleGames&&typeof stats.roleGames==='object'?stats.roleGames:{};
+  stats.formats=Array.isArray(stats.formats)?stats.formats.filter(n=>n===9||n===15):[];
+  return stats;
 }
 function saveAchievementStats(stats){
   localStorage.setItem('threeKingdomsAchievements', JSON.stringify(stats));
@@ -7078,13 +7504,15 @@ function saveAchievementStats(stats){
 // 游戏结束时检测成就
 function checkAchievements(winner){
   const earned = [];
+  if(game.achievementRecorded)return earned;
   if(game.mode !== 'player' && game.mode !== 'destiny') return earned;
-  const pid = game.mode === 'player' ? game.playerId : game.destiny;
+  const pid = game.mode === 'player' ? game.playerId : (game.destiny ?? game.careerPlayerId);
   if(pid == null) return earned;
   const me = game.players[pid];
   if(!me) return earned;
   const playerTeam = me.role === 'wolf' ? 'wolf' : 'good';
-  const isWin = (winner === playerTeam);
+  const isWin = winner === playerTeam && !(game.mode==='destiny'&&game.destinyEnded);
+  game.achievementRecorded=true;
   const stats = getAchievementStats();
 
   // ─── 单局成就 ───
@@ -7111,45 +7539,29 @@ function checkAchievements(winner){
     if(goodAlive >= 3) earned.push('peach_garden');
   }
 
-  // ─── 跨局统计 ───
-  stats.gamesPlayed = (stats.gamesPlayed || 0) + 1;
-  stats.wins = (stats.wins || 0) + (isWin ? 1 : 0);
-
-  // 狼连胜
-  if(me.role === 'wolf' && isWin){
-    stats.wolfWinStreak = (stats.wolfWinStreak || 0) + 1;
-  } else {
-    stats.wolfWinStreak = 0;
+  // 累计目标、角色图鉴和不限日期的篇章。
+  const before=JSON.parse(JSON.stringify(stats));
+  stats.gamesPlayed++;stats.wins+=isWin?1:0;
+  stats.wolfWinStreak=me.role==='wolf'&&isWin?stats.wolfWinStreak+1:0;
+  stats.roleGames[me.role]=(Number(stats.roleGames[me.role])||0)+1;
+  const size=game.matchSize||game.players.length;
+  if([9,15].includes(size)&&!stats.formats.includes(size))stats.formats.push(size);
+  // 每个放逐日只计算决定放逐的那一轮，避免首投和重投重复计数。
+  const correctDays=new Set();
+  if(me.role!=='wolf')for(const result of (game.voteRecords||[]).filter(r=>r.type==='result')){
+    if(game.players[result.targetId]?.role==='wolf'&&(game.voteRecords||[]).some(v=>!v.type&&v.voterId===pid&&v.day===result.day&&v.targetId===result.targetId&&!!v.tieBreak===!!result.tieBreak))correctDays.add(result.day);
   }
-
-  // 火烧连营
-  if(stats.wolfWinStreak >= 3) earned.push('burning_camps');
-
-  // 投对次数（投票目标是狼且被流放）
-  stats.correctVotes = stats.correctVotes || 0;
-  const myVotes = (game.voteRecords || []).filter(r =>
-    r.voterId === pid && !r.tieBreak
-  );
-  const exileResults = (game.voteRecords || []).filter(r => r.type === 'result');
-  for(const v of myVotes){
-    const result = exileResults.find(r => r.day === v.day && r.targetId === v.targetId);
-    if(result && game.players[v.targetId] && game.players[v.targetId].role === 'wolf'){
-      stats.correctVotes++;
-    }
-  }
-  // 七擒七纵
-  if(stats.correctVotes >= 7) earned.push('seven_captures');
-
-  // 鞠躬尽瘁
-  if(stats.gamesPlayed >= 20) earned.push('devotion');
-
-  // 记录已获得
-  stats.earned = stats.earned || [];
-  for(const id of earned){
-    if(!stats.earned.includes(id)) stats.earned.push(id);
-  }
+  stats.correctVotes+=correctDays.size;
+  stats.chapterGames=Math.min(3,stats.chapterGames+1);stats.chapterWins=Math.min(1,stats.chapterWins+(isWin?1:0));
+  game.chapterReward=0;
+  if(stats.chapterGames>=3&&stats.chapterWins>=1){stats.chaptersCompleted++;stats.chapterGames=0;stats.chapterWins=0;game.chapterReward=40;}
+  for(const def of ACHIEVEMENT_LIST)if(def.metric&&achievementValue(def,stats)>=def.target)earned.push(def.id);
+  const fresh=[...new Set(earned)].filter(id=>!stats.earned.includes(id));
+  stats.earned.push(...fresh);
+  if(stats.tracked&&stats.earned.includes(stats.tracked))stats.tracked=null;
+  game.achievementReport={before,after:JSON.parse(JSON.stringify(stats)),fresh,correct:correctDays.size,isWin};
   saveAchievementStats(stats);
-  return earned;
+  return fresh;
 }
 
 // 成就 toast 通知
@@ -7185,10 +7597,10 @@ function getPrestigeBreakdown(winner, achievements){
     isWin = (winner === playerTeam);
     baseAmount = isWin ? 30 : 15;
     parts.push({label: isWin ? '胜利' : '败北', amount: baseAmount});
-  } else if(game.mode === 'destiny' && game.destiny != null){
-    const me = game.players[game.destiny];
+  } else if(game.mode === 'destiny' && (game.destiny ?? game.careerPlayerId) != null){
+    const me = game.players[game.destiny ?? game.careerPlayerId];
     const team = me && me.role === 'wolf' ? 'wolf' : 'good';
-    isWin = (winner === team);
+    isWin = winner === team && !game.destinyEnded;
     baseAmount = isWin ? 15 : 5;
     parts.push({label: isWin ? '胜利' : '败北', amount: baseAmount});
   } else {
@@ -7196,6 +7608,7 @@ function getPrestigeBreakdown(winner, achievements){
     parts.push({label: '观战', amount: baseAmount});
   }
 
+  if(game.chapterReward){parts.push({label:'篇章完成',amount:game.chapterReward});}
   let achieveAmount = 0;
   if(achievements && achievements.length){
     for(const id of achievements){
@@ -7206,7 +7619,7 @@ function getPrestigeBreakdown(winner, achievements){
       }
     }
   }
-  return {parts, total: baseAmount + achieveAmount};
+  return {parts, total: baseAmount + achieveAmount + (game.chapterReward||0)};
 }
 
 // ===== 确认弹窗 =====
@@ -7215,33 +7628,34 @@ function executeConfirm(){
   closeConfirm();
   if(callback) callback();
 }
+function requestGameConfirm(title,message,callback){
+  document.getElementById('confirmTitle').textContent=title;document.getElementById('confirmMsg').textContent=message;
+  game._confirmCallback=callback;document.getElementById('confirmOverlay').classList.remove('hide');
+  document.querySelector('#confirmOverlay .confirm-no').focus();
+}
 function closeConfirm(){
-  document.getElementById('confirmOverlay').classList.add('hide');
+  document.getElementById('confirmOverlay').classList.add('hide');game._confirmCallback=null;
 }
 
 // ===== 设置面板操作 =====
 function confirmRestart(){
-  game.playerClaims = {};  // 清空跳身份记录（防止再来一局时残留）
-  executeConfirm();
-  document.getElementById('settingsOverlay').classList.add('hide');
-  // 保存玩家信息，用于重新初始化
-  let keepPlayer = null;
-  if(game.mode==='player' && game.playerId!=null){
-    const p = game.players[game.playerId];
-    if(p){
-      keepPlayer = {name:p.name, faction:p.faction, attr:p.attr, growthPts:p.growthPts, avatar:p.avatar};
-    }
-  }
-  init(keepPlayer);
+  requestGameConfirm('重新开始本局？','当前这局的发言和投票进度会清除，已创建的角色会保留。',()=>{
+    let keepPlayer=null;
+    if(game.mode==='player'&&game.playerId!=null){const p=game.players[game.playerId];if(p)keepPlayer={name:p.name,faction:p.faction,attr:p.attr,growthPts:p.growthPts,avatar:p.avatar};}
+    closeSettings();init(keepPlayer);
+  });
 }
 function confirmBackToTitle(){
-  executeConfirm();
-  document.getElementById('settingsOverlay').classList.add('hide');
-  backToTitle();
+  requestGameConfirm('返回标题？','当前对局将结束，角色资料仍会保留。',()=>{closeSettings();backToTitle();});
 }
 
 // ===== 返回标题/重试 =====
 function backToTitle(){
+  game.generation=(game.generation||0)+1;
+  game.manualPaused=false;game.pauseReasons?.clear();syncPause();
+  for(const config of Object.values(ACTION_PANELS)){if(config.pending)game[config.pending]=null;}
+  hunterShootResolver=null;_destinyDeathResolve=null;
+  clearSuspendedAction();closeSpeechHistory();
   // 返回标题时不弹成长面板，但未分配的属性点要存到角色上
   if(game.mode === 'player' && game.playerId != null && _lastGameWinner){
     const me = game.players[game.playerId];
@@ -7322,7 +7736,9 @@ function retryGame(){
   document.getElementById('endScreen').classList.remove('show');
   init(keepPlayer);
   // 强制修复按钮状态（绕过 playerClaims 残留问题）
+  const retryGeneration=game.generation;
   setTimeout(()=>{
+    if(game.generation!==retryGeneration)return;
     const stClaim = document.getElementById('st-claim');
     const stInfo = document.getElementById('st-info');
     if(stClaim) stClaim.style.display = '';
@@ -7348,7 +7764,7 @@ function showNightPanel(type, data){
     const confirmBtn = document.getElementById('nightConfirmBtn');
 
     _nightResult = null;
-    confirmBtn.disabled = true;
+    confirmBtn.disabled = true;confirmBtn.textContent='请先选择行动';
 
     const getImgSrc = (p) => p.avatar ? p.avatar : (FACTION_DIR[p.faction]||"avatars/qun") + '/' + p.name + '.png';
 
@@ -7454,7 +7870,8 @@ function selectNightTarget(id, subId){
   } else {
     _nightResult = { target: id };
   }
-  document.getElementById('nightConfirmBtn').disabled = false;
+  const button=document.getElementById('nightConfirmBtn');button.disabled=false;
+  button.textContent=id==='skip'?'确认按兵不动':id==='save'?'确认使用解药':id==='poison'?`确认毒杀 ${game.players[subId].name}`:`确认选择 ${game.players[id].name}`;
 }
 
 
@@ -7487,7 +7904,7 @@ function showVotePanel(candidateIds){
         <div>${p.name}</div>
       </div>`
     ).join('') + `</div>`;
-    document.getElementById('voteConfirmBtn').disabled = true;
+    document.getElementById('voteConfirmBtn').disabled = true;document.getElementById('voteConfirmBtn').textContent='请先选择投票目标';
     document.getElementById('votePanel').classList.remove('hide');
   });
 }
@@ -7497,7 +7914,7 @@ function selectVoteTarget(id){
   document.querySelectorAll('.vote-player-card').forEach(o => o.classList.remove('selected'));
   const targetOpt = document.querySelector(`#voteOptions .vote-player-card[data-id="${id}"]`);
   if(targetOpt) targetOpt.classList.add('selected');
-  document.getElementById('voteConfirmBtn').disabled = false;
+  const button=document.getElementById('voteConfirmBtn');button.disabled=false;button.textContent=`确认投给 ${game.players[id].name}`;
 }
 
 
@@ -7584,7 +8001,7 @@ const RANK_SYSTEM = [
 ];
 
 function getPrestige(){
-  return parseInt(localStorage.getItem('threeKingdomsPrestige') || '0');
+  const value=Number(localStorage.getItem('threeKingdomsPrestige')||0);return Number.isFinite(value)?Math.max(0,Math.floor(value)):0;
 }
 
 function savePrestige(val){
@@ -7609,11 +8026,11 @@ function getNextRank(prestige){
 
 function openAchievement(){
   document.getElementById('achievementPanel').classList.remove('hide');
-  updateAchievementDisplay();
+  updateAchievementDisplay();if(game.mode&&!game.ended)setPauseReason('achievements',true);
 }
 
 function closeAchievement(){
-  document.getElementById('achievementPanel').classList.add('hide');
+  document.getElementById('achievementPanel').classList.add('hide');setPauseReason('achievements',false);
 }
 
 function updateAchievementDisplay(){
@@ -7662,29 +8079,13 @@ function updateAchievementDisplay(){
     statsDiv.innerHTML = `<span>总局数 <b>${gp}</b></span><span>胜场 <b>${wins}</b></span><span>投对 <b>${cv}</b></span><span>狼连胜 <b>${ws}</b></span>`;
   }
   
-  // 更新成就徽章
-  const badgesDiv = document.getElementById('achievementBadges');
-  if(badgesDiv){
-    const earnedIds = stats.earned || [];
-    let html = '';
-    for(const def of ACHIEVEMENT_LIST){
-      const isEarned = earnedIds.includes(def.id);
-      let progressText = '';
-      if(def.target && !isEarned){
-        let current = 0;
-        if(def.id === 'seven_captures') current = stats.correctVotes || 0;
-        else if(def.id === 'burning_camps') current = stats.wolfWinStreak || 0;
-        else if(def.id === 'devotion') current = stats.gamesPlayed || 0;
-        progressText = ` (${current}/${def.target})`;
-      }
-      html += `<div class="ach-badge ${isEarned?'earned':'locked'}" title="${def.desc}${progressText}">
-        <span class="ach-icon">${def.icon}</span>
-        <span class="ach-name">${def.name}</span>
-        <span class="ach-desc">${isEarned ? '+'+def.prestige+'声望' : def.desc + progressText}</span>
-      </div>`;
-    }
-    badgesDiv.innerHTML = html;
-  }
+  document.getElementById('badgeCollectionCount').textContent=`${ACHIEVEMENT_LIST.filter(d=>stats.earned.includes(d.id)).length}/${ACHIEVEMENT_LIST.length}`;
+  renderCareerSections(stats);
+  const badgesDiv=document.getElementById('achievementBadges');
+  badgesDiv.innerHTML=ACHIEVEMENT_LIST.map(def=>{
+    const earned=stats.earned.includes(def.id);
+    return `<div class="ach-badge ${earned?'earned':'locked'}"><span class="ach-icon">${def.icon}</span><span class="ach-name">${safeText(def.name)}</span><span class="ach-desc">${safeText(def.desc)} · +${def.prestige} 声望${earned?' · 已达成':''}</span>${careerProgress(def,stats)}${earned?'':`<button type="button" class="career-track" onclick="trackAchievement('${def.id}')" aria-pressed="${stats.tracked===def.id}">${stats.tracked===def.id?'已追踪 · 取消':'追踪'}</button>`}</div>`;
+  }).join('');
 }
 
 function addPrestige(amount, mode){
@@ -7732,16 +8133,20 @@ function toggleHistorySort(){
   renderSpeechHistory();
 }
 
+function closeSpeechHistory(){
+  const panel=document.getElementById('speechHistoryPanel');const restoreFocus=panel.contains(document.activeElement);
+  panel.classList.remove('show');panel.classList.add('hide');setPauseReason('history',false);
+  if(restoreFocus){const target=document.getElementById(suspendedAction?'resumeAction':'speechHistoryBtn');(target.getClientRects().length?target:document.getElementById('pauseBtn')).focus();}
+}
 function toggleSpeechHistory(){
-  const panel = document.getElementById('speechHistoryPanel');
-  if(panel.classList.contains('show')){
-    panel.classList.remove('show');
-    panel.classList.add('hide');
-  } else {
-    panel.classList.add('show');
-    panel.classList.remove('hide');
-    renderSpeechHistory();
+  const panel=document.getElementById('speechHistoryPanel');
+  if(panel.classList.contains('show')){closeSpeechHistory();return;}
+  for(const [id,config] of Object.entries(ACTION_PANELS)){
+    const action=document.getElementById(id);
+    if(actionIsPending(config)&&!action.classList.contains('hide')&&!action.classList.contains('action-collapsed')){collapseAction(id,false);break;}
   }
+  panel.classList.add('show');panel.classList.remove('hide');renderSpeechHistory();
+  if(game.mode&&!game.ended)setPauseReason('history',true);
 }
 
 function getSpeechSummary(classified, speechType){
@@ -7831,6 +8236,7 @@ function renderVoteSection(voteList, label){
   return html;
 }
 
+function speechHistoryDetail(s){return `<details class="speech-fulltext"><summary>查看原话</summary><p>${safeText(plainText(s.text||''))}</p></details>`;}
 function renderSpeechHistory(){
   const content = document.getElementById('speechHistoryContent');
   if(!game || (!game.speeches?.length && !game.voteRecords?.length)){
@@ -7882,7 +8288,7 @@ function renderSpeechHistory(){
       const nameColor = isGodView() ? getRoleColor(speaker.role) : '#ecf0f1';
       const summary = getSpeechSummary(s.classified || [], s.speechType || '');
       
-      html += '<div class="sh-item"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + '</div>';
+      html += '<div class="sh-item"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + speechHistoryDetail(s) + '</div>';
     }
     
     // 分离常规投票和平票重投
@@ -7909,7 +8315,7 @@ function renderSpeechHistory(){
           if(!speaker) continue;
           const nameColor = isGodView() ? getRoleColor(speaker.role) : '#ecf0f1';
           const summary = getSpeechSummary(s.classified || [], s.speechType || '');
-          html += '<div class="sh-item" style="padding:3px 6px"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + '</div>';
+          html += '<div class="sh-item" style="padding:3px 6px"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + speechHistoryDetail(s) + '</div>';
         }
       }
       
@@ -7946,6 +8352,46 @@ function getRoleColor(role){
   };
   return colors[role] || '#ecf0f1';
 }
+
+function visibleActionPanel(){return Object.keys(ACTION_PANELS).find(id=>{const p=document.getElementById(id);return !p.classList.contains('hide')&&!p.classList.contains('action-collapsed');});}
+document.addEventListener('keydown',event=>{
+  if(event.isComposing)return;
+  const shown=id=>!document.getElementById(id).classList.contains('hide');
+  if(event.key==='Escape'){
+    if(shown('confirmOverlay'))closeConfirm();
+    else if(shown('achievementPanel'))closeAchievement();
+    else if(document.getElementById('speechHistoryPanel').classList.contains('show'))closeSpeechHistory();
+    else if(shown('settingsOverlay'))closeSettings();
+    else if(document.getElementById('favorPanel').classList.contains('show'))closeFavorPanel();
+    else {const id=visibleActionPanel();if(id)collapseAction(id,false);else return;}
+    event.preventDefault();return;
+  }
+  if(event.key==='Tab'){
+    const layers=[...document.querySelectorAll('.modal-overlay,#confirmOverlay,#settingsOverlay,#achievementPanel,#speechPanel,#votePanel,#nightPanel,#hunterShootPanel,#destinyPanel,#destinySelect,#charCreate,#playerModeSelect,#growthPanel,#speechHistoryPanel')]
+      .filter(el=>!el.classList.contains('hide')&&!el.classList.contains('action-collapsed')&&getComputedStyle(el).display!=='none')
+      .sort((a,b)=>Number(getComputedStyle(b).zIndex)-Number(getComputedStyle(a).zIndex));
+    const top=layers[0];
+    if(top){
+      const items=[...top.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary,[tabindex="0"]')].filter(el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden');
+      const dock=document.getElementById('resumeAction');if(top.id==='speechHistoryPanel'&&!dock.hidden)items.push(dock);
+      if(items.length){const first=items[0],last=items[items.length-1];
+        if(!items.includes(document.activeElement)){event.preventDefault();(event.shiftKey?last:first).focus();}
+        else if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+      }
+    }
+  }
+  if((event.key==='Enter'||event.key===' ')&&event.target.matches('[role="button"][onclick]')){event.preventDefault();event.target.click();}
+});
+const CHOICE_SELECTOR='div[onclick]:is(.p-card,.avatar-opt,.vote-player-card,.night-player-card,.night-action-btn,.destiny-player-card,.destiny-target-card,[data-hunter-target])';
+function enhanceChoices(root){
+  const nodes=[...(root.matches?.(CHOICE_SELECTOR)?[root]:[]),...(root.querySelectorAll?.(CHOICE_SELECTOR)||[])];
+  nodes.forEach(el=>{el.setAttribute('role','button');el.tabIndex=0;});
+}
+enhanceChoices(document.body);
+new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)enhanceChoices(node);}))).observe(document.body,{childList:true,subtree:true});
+document.getElementById('logArea').addEventListener('scroll',()=>{const area=document.getElementById('logArea');if(area.scrollHeight-area.scrollTop-area.clientHeight<24){game.unreadLogs=0;document.getElementById('jumpLogs').hidden=true;}},{passive:true});
+
 </script>
 </body>
 </html>
