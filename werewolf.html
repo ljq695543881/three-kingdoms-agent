@@ -940,6 +940,18 @@ body.action-suspended .sh-content{padding-bottom:100px}
 @media(max-width:480px){.career-titles{grid-template-columns:repeat(2,minmax(0,1fr))}.achievement-info{gap:16px}.achievement-ranks{margin-bottom:12px}}
 
 .char-name-hint{font-size:11px;line-height:1.6;color:var(--gray);margin:-8px 0 12px}.char-name-hint.invalid{color:#ff9d91}
+
+/* 两封军令：保留原生单选的触控、Tab 与方向键操作。 */
+.match-setup{width:360px}.match-caption{display:flex;align-items:center;justify-content:center;gap:10px;color:#b6a77e;font-size:11px;letter-spacing:4px;margin-bottom:12px}.match-caption span{height:1px;width:28px;background:linear-gradient(90deg,transparent,#b6a77e80)}.match-caption span:last-child{transform:rotate(180deg)}
+.match-orders{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 3px 7px}.match-order{position:relative;min-width:0}
+.match-order input{position:absolute;width:1px;height:1px;opacity:0;left:20px;top:20px}
+.match-order label{display:block;position:relative;text-align:left;min-height:146px;margin:0;padding:14px 14px 18px;border:1px solid #5a5d6680;border-radius:4px 14px 4px 14px;background:linear-gradient(150deg,#202637,#111724);color:#afb7c6;cursor:pointer;transition:border-color .2s,background .2s,transform .2s,box-shadow .2s;overflow:hidden}
+.match-order label::after{content:'';position:absolute;width:24px;height:24px;right:-13px;bottom:-13px;transform:rotate(45deg);background:#0d1422;border-left:1px solid #5a5d6680}
+.order-kicker{display:block;font-size:10px;letter-spacing:1px;color:#95a1b6}.order-main{display:flex;align-items:center;gap:12px;margin:12px 0 10px}.order-main>b{font-family:'Songti SC','STSong',serif;font-size:36px;font-weight:500;line-height:1;letter-spacing:-3px;color:#c5cbd5}.order-main>span{font-size:18px;font-weight:700;letter-spacing:3px}.order-main small{display:block;font-size:10px;font-weight:400;letter-spacing:0;margin-top:5px;color:#a1adbb}.order-detail{font-size:10px;letter-spacing:.5px;color:#9ca8ba}.order-seal{position:absolute;right:9px;top:9px;writing-mode:vertical-rl;font-family:serif;font-size:10px;letter-spacing:2px;border:1px solid currentColor;padding:3px 2px;color:#d7b44f;transform:rotate(9deg);opacity:0}
+.match-order input:checked+label{border-color:#dfbe68;background:radial-gradient(ellipse at 0 0,#cfa74a25,transparent 80%),linear-gradient(150deg,#302c22,#1c2029);box-shadow:0 3px 20px #d5ac4215,inset 0 0 0 3px #e2b71408}.match-order input:checked+label .order-main>b{color:#f2d887;text-shadow:0 1px 16px #d4ae4833}.match-order input:checked+label .order-main>span{color:#f3dfac}.match-order input:checked+label .order-seal{opacity:1}.match-order input:checked+label::after{border-color:#dfbe68}.match-order input:focus-visible+label{outline:3px solid #f5cf52;outline-offset:4px}
+@media(hover:hover){.match-order label:hover{border-color:#dfbe68;transform:translateY(-2px)}}
+@media(max-width:360px){.match-orders{gap:8px}.match-order label{padding:12px 10px 16px;min-height:138px}.order-main{gap:8px}.order-main>b{font-size:31px}.order-main>span{font-size:16px}.order-seal{right:6px;top:7px}}
+
 </style>
 </head>
 <body>
@@ -964,11 +976,18 @@ body.action-suspended .sh-content{padding-bottom:100px}
   <div class="title-logo">三国·狼人杀</div>
   <p class="title-subtitle">219 位三国豪杰 · 一局智谋对决<br>选择你的方式，入局三国</p>
   <div class="match-setup">
-    <label for="matchSize">选择局型</label>
-    <select id="matchSize" onchange="updateMatchHint()">
-      <option value="quick">9 人短局 · 推荐先玩</option>
-      <option value="classic">15 人经典局</option>
-    </select>
+    <div class="match-caption"><span></span> 领令入局 <span></span></div>
+    <input type="hidden" id="matchSize" value="quick">
+    <div class="match-orders" role="radiogroup" aria-label="选择局型">
+      <div class="match-order">
+        <input type="radio" name="match-format" id="format-quick" aria-label="先锋令：速战，9人短局" value="quick" checked onchange="selectMatch(this.value)">
+        <label for="format-quick"><span class="order-kicker">先锋令 · 快节奏</span><span class="order-main"><b>九</b><span>速战<small>9 人短局</small></span></span><span class="order-detail">2 狼 · 4 神 · 3 民</span><span class="order-seal" aria-hidden="true">已领</span></label>
+      </div>
+      <div class="match-order">
+        <input type="radio" name="match-format" id="format-classic" aria-label="群雄令：群雄，15人经典局" value="classic" onchange="selectMatch(this.value)">
+        <label for="format-classic"><span class="order-kicker">群雄令 · 深谋局</span><span class="order-main"><b>十五</b><span>群雄<small>15 人经典局</small></span></span><span class="order-detail">4 狼 · 4 神 · 7 民</span><span class="order-seal" aria-hidden="true">已领</span></label>
+      </div>
+    </div>
     <p id="matchHint">2 狼 · 预言家、女巫、猎人、守卫各 1 · 3 平民</p>
   </div>
   <button type="button" id="careerGoal" class="career-home-goal" onclick="openAchievement()">查看下一目标</button>
@@ -1346,6 +1365,10 @@ const MATCH_CONFIGS = {
 };
 function selectedMatch(){
   return MATCH_CONFIGS[document.getElementById('matchSize').value] || MATCH_CONFIGS.quick;
+}
+function selectMatch(mode){
+  if(!MATCH_CONFIGS[mode])return;
+  document.getElementById('matchSize').value=mode;updateMatchHint();
 }
 function updateMatchHint(){
   const config=selectedMatch();

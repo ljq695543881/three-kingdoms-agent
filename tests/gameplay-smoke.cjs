@@ -42,7 +42,7 @@ const assert=require('node:assert/strict');
  console.log('Player speech integration, hidden-role boundaries, favor clamp, recap escaping, duplicate settlement: passed');
  await page.reload();await page.close();
  for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,height:390},{width:1440,height:900}]){
-  const page=await browser.newPage({viewport});await page.goto('file://'+process.cwd()+'/werewolf.html');await page.getByRole('combobox').selectOption('quick');await page.getByRole('button',{name:/上帝视角/}).click();
+  const page=await browser.newPage({viewport});await page.goto('file://'+process.cwd()+'/werewolf.html');await page.locator('label[for="format-quick"]').click();await page.getByRole('button',{name:/上帝视角/}).click();
   assert.equal(await page.locator('.p-card').count(),9);assert((await page.locator('#modalArea').textContent()).includes('9人'));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.evaluate(()=>{closeModal();game.day=1;endGame('wolf')});const bounds=await page.locator('#modalArea .modal').boundingBox();assert(bounds.x>=0&&bounds.y>=0&&bounds.x+bounds.width<=viewport.width&&bounds.y+bounds.height<=viewport.height);await page.close();
  }console.log('Responsive setup and recap: passed');
