@@ -1055,6 +1055,14 @@ body[data-appearance="light"] :is(.sh-header,.sh-day-label,.sh-item){border-colo
 
 body[data-appearance="light"] .growth-pts span{color:#6c5428}body[data-appearance="light"] .p-card .avatar{background:#d5dac5;color:#304934}
 body[data-appearance="light"] .settings-section h4{color:#6c5428}body[data-appearance="light"] :is(.settings-btn.danger,.char-name-hint.invalid){color:#9c4436}body[data-appearance="light"] .confirm-no{color:#304934}body[data-appearance="light"] .p-card.dead{opacity:.7}body[data-appearance="light"] :is(button,input,select,[tabindex]):focus-visible,body[data-appearance="light"] .char-card input[type=text]:focus-visible{outline-color:#70582b}
+
+/* 速度选择：保留勾选标记和文字反馈，明暗主题均清晰可辨。 */
+.speed-btn{min-width:65px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.speed-btn::before{content:"✓";visibility:hidden;font-weight:800}
+.speed-btn.active::before{visibility:visible}
+.speed-btn:focus-visible{outline:3px solid #9b7839;outline-offset:3px}
+body[data-appearance="light"] .speed-btn.active{background:#365440;border-color:#365440;color:#fff7e6;box-shadow:inset 0 0 0 1px #fff7e633}
+body[data-appearance="night"] .speed-btn.active{background:#cbb17a;border-color:#e5d1a8;color:#1b251c;box-shadow:inset 0 0 0 1px #1b251c33}
 </style>
 </head>
 <body data-appearance="light">
@@ -1311,11 +1319,12 @@ body[data-appearance="light"] .settings-section h4{color:#6c5428}body[data-appea
     <div class="settings-section"><h4>界面亮度</h4><div class="appearance-options"><button type="button" class="appearance-option" data-appearance-option="light" aria-pressed="true" onclick="setAppearance('light')">明亮卷册</button><button type="button" class="appearance-option" data-appearance-option="night" aria-pressed="false" onclick="setAppearance('night')">月下夜色</button></div><p class="appearance-note">默认使用明亮卷册，选择会保存在当前浏览器。</p></div>
     <div class="settings-section">
       <h4>游戏速度</h4>
-      <div class="speed-btns">
-        <button class="speed-btn" onclick="setSpeed(0.5)">0.5x</button>
-        <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
-        <button class="speed-btn" onclick="setSpeed(2)">2x</button>
-        <button class="speed-btn" onclick="setSpeed(10)">10x</button>
+      <p class="appearance-note" id="speedStatus" role="status" aria-live="polite">当前速度：1x</p>
+      <div class="speed-btns" role="group" aria-label="游戏速度">
+        <button type="button" class="speed-btn" data-speed="0.5" aria-pressed="false" onclick="setSpeed(0.5)">0.5x</button>
+        <button type="button" class="speed-btn active" data-speed="1" aria-pressed="true" onclick="setSpeed(1)">1x</button>
+        <button type="button" class="speed-btn" data-speed="2" aria-pressed="false" onclick="setSpeed(2)">2x</button>
+        <button type="button" class="speed-btn" data-speed="10" aria-pressed="false" onclick="setSpeed(10)">10x</button>
       </div>
     </div>
     <div class="settings-btns">
@@ -2761,6 +2770,7 @@ function loadAppearance(){
   setAppearance(mode,false);
 }
 function openSettings(){
+  syncSpeedControls();
   document.getElementById('settingsOverlay').classList.remove('hide');setPauseReason('settings',true);
 }
 
@@ -2923,11 +2933,18 @@ function renderFavorGrid(){
   });
 }
 
-function setSpeed(s){
-  game.speed=s;
+function syncSpeedControls(){
   document.querySelectorAll('.speed-btn').forEach(b=>{
-    b.classList.toggle('active', parseFloat(b.textContent)===s);
+    const selected=Number(b.dataset.speed)===game.speed;
+    b.classList.toggle('active',selected);
+    b.setAttribute('aria-pressed',String(selected));
   });
+  document.getElementById('speedStatus').textContent=`当前速度：${game.speed}x`;
+}
+function setSpeed(s){
+  if(![0.5,1,2,10].includes(s))return;
+  game.speed=s;
+  syncSpeedControls();
 }
 
 // 点击面板外部关闭
