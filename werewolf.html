@@ -5170,6 +5170,44 @@ function generateLastWords(player) {
   return { fragments, text };
 }
 
+// 私有查验只约束预言家本人；其他角色只能参考公开发言。
+function getAIVoteCandidates(voter, candidates){
+  if(voter.role !== 'seer') return candidates;
+  const checks = game.seerChecks || [];
+  const wolves = candidates.filter(p => checks.some(c => c.targetId === p.id && c.isWolf));
+  return wolves.length ? wolves : candidates.filter(p => !checks.some(c => c.targetId === p.id && !c.isWolf));
+}
+function getOwnPublicSeerResult(voterId, targetId){
+  let result = null;
+  for(const s of game.speeches || []){
+    if(s.speakerId !== voterId) continue;
+    for(const c of s.classified || []){
+      if(c.role === 'seer' && c.infoResult && c.targets?.some(t => t.id === targetId)) result = c.infoResult;
+    }
+  }
+  return result;
+}
+function getPersonalVoteBias(voter, targetId){
+  const report = getOwnPublicSeerResult(voter.id, targetId);
+  let bias = report === 'wolf' ? 35 : report === 'good' ? -25 : 0;
+  for(const s of game.speeches || []){
+    if(s.speakerId !== voter.id || s.day !== game.day) continue;
+    for(const c of s.classified || []){
+      if(c.type === 'attack' && c.targets?.some(t => t.id === targetId))
+        bias += c.subtype === 'suspect' ? 10 : c.subtype === 'shield' || c.subtype === 'protect' ? -10 : 0;
+    }
+  }
+  return bias;
+}
+function getAIVoteReason(voter, targetId){
+  if(getOwnPublicSeerResult(voter.id, targetId) === 'wolf') return '依据自己公开的查杀。';
+  const attacks = (game.speeches || []).filter(s => s.speakerId === voter.id && s.day === game.day)
+    .flatMap(s => s.classified || []).filter(c => c.type === 'attack' && c.subtype === 'suspect');
+  if(attacks.some(c => c.targets?.some(t => t.id === targetId))) return '延续本轮公开的怀疑。';
+  if(attacks.length || getOwnPublicSeerResult(voter.id, targetId) === 'good') return '综合本轮发言，调整投票判断。';
+  return '综合公开发言与个人判断。';
+}
+
 async function votePhase(){
   const gen=game.generation;
   addLog('<span class="system-text">=== 投票环节 ===</span>');
@@ -5184,7 +5222,8 @@ async function votePhase(){
     if(game.generation!==gen||game.ended)return;
 
     // ===== 一人一票：好感度 + 发言综合决策 =====
-    const suspectPool=alive.filter(x=>x.id!==p.id);
+    const candidates=alive.filter(x=>x.id!==p.id);
+    const suspectPool=(game.mode==='player' && p.id===game.playerId && !game.playerDied) ? candidates : getAIVoteCandidates(p,candidates);
     const suspectScores={};
 
     for(const x of suspectPool){
@@ -5366,22 +5405,7 @@ async function votePhase(){
         }
       }
       
-      // 预言家自己：铁定投所有查到的狼（不只是最后一次）
-      if(p.role==="seer" && game.seerChecks && game.seerChecks.length > 0){
-        for(const check of game.seerChecks){
-          if(x.id === check.targetId && check.isWolf && game.players[check.targetId] && game.players[check.targetId].alive){
-            score += 60;
-          }
-        }
-      }
-      // 狼人跳预言家：铁定投所有假查到的目标
-      if(game.wolfRoles[p.id] === 'chantJump' && game.wolfFakeChecks && game.wolfFakeChecks[p.id]){
-        for(const fakeTarget of game.wolfFakeChecks[p.id]){
-          if(x.id === fakeTarget && game.players[fakeTarget] && game.players[fakeTarget].alive){
-            score += 55;
-          }
-        }
-      }
+      score += getPersonalVoteBias(p, x.id);
       
       // 4) 狼人投票差异化（不再固定+8，而是根据剧本服从度和好感度变化）
       if(p.role==="wolf" && x.role!=="wolf"){
@@ -5480,8 +5504,11 @@ async function votePhase(){
     if(target){
       votes[target.id]=(votes[target.id]||0)+1;
       if(!game.voteRecords) game.voteRecords = [];
-      game.voteRecords.push({voterId: p.id, targetId: target.id, day: game.day});
-      addLog(`${speakerHTML(p)}<span class="vote-text">→ ${target.name}</span>`);
+      const reason = getAIVoteReason(p, target.id);
+      game.voteRecords.push({voterId: p.id, targetId: target.id, day: game.day, reason});
+      addLog(`${speakerHTML(p)}<span class="vote-text">→ ${safeText(target.name)} · ${safeText(reason)}</span>`);
+    } else {
+      addLog(`${speakerHTML(p)}<span class="vote-text">→ 弃权</span>`);
     }
     await delay(400);
     if(game.generation!==gen||game.ended)return;
@@ -5590,16 +5617,9 @@ async function votePhase(){
       }
 
       // AI 投票：只对平票候选人评分
-      const suspectPool = tiedIds.filter(x => x !== p.id);
+      const suspectPool = getAIVoteCandidates(p, tiedIds.filter(id => id !== p.id).map(id => game.players[id])).map(p => p.id);
       if(suspectPool.length === 0){
-        // 投票者自己就是唯一平票者（不应该发生，但兜底）
-        const fallbackId = tiedIds.find(x => x !== p.id) || tiedIds[0];
-        if(fallbackId != null){
-          revotes[fallbackId] = (revotes[fallbackId] || 0) + 1;
-          if(!game.voteRecords) game.voteRecords = [];
-          game.voteRecords.push({voterId: p.id, targetId: fallbackId, day: game.day, tieBreak: true});
-          addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[fallbackId].name}</span>`);
-        }
+        addLog(`${speakerHTML(p)}<span class="vote-text">→ 弃权</span>`);
         await delay(400);
         if(game.generation!==gen||game.ended)return;
         continue;
@@ -5679,7 +5699,7 @@ async function votePhase(){
           score -= 25;
         }
 
-        suspectScores[xId] = score + (Math.random() - 0.5) * 12;
+        suspectScores[xId] = score + getPersonalVoteBias(p, xId) + (Math.random() - 0.5) * 12;
       }
 
       // 从平票候选人中选最高分
@@ -5688,8 +5708,9 @@ async function votePhase(){
       if(target != null){
         revotes[target] = (revotes[target] || 0) + 1;
         if(!game.voteRecords) game.voteRecords = [];
-        game.voteRecords.push({voterId: p.id, targetId: target, day: game.day, tieBreak: true});
-        addLog(`${speakerHTML(p)}<span class="vote-text">→ ${game.players[target].name}</span>`);
+        const reason = getAIVoteReason(p, target);
+        game.voteRecords.push({voterId: p.id, targetId: target, day: game.day, tieBreak: true, reason});
+        addLog(`${speakerHTML(p)}<span class="vote-text">→ ${safeText(game.players[target].name)} · ${safeText(reason)}</span>`);
       }
       await delay(400);
       if(game.generation!==gen||game.ended)return;
@@ -6849,10 +6870,11 @@ function buildChantJumpFragments(wolf, alive, ctx, spokenSet) {
         const q = pick(questioners);
         if (q) {
           const qId = q.speakerId ?? getAlive().find(p => p.name === q.speakerName)?.id;
-          if (qId!=null) fragments.push({ type: 'attack', targetId: qId });
+          if (qId!=null && !fragments.some(f => f.type === 'info' && f.infoResult === 'good' && f.infoTargetId === qId)) fragments.push({ type: 'attack', targetId: qId });
         }
       } else if (Math.random() < 0.5 && goodAlive.length > 0 && fragments.length < 3) {
-        fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
+        const targets = goodAlive.filter(p => !fragments.some(f => f.type === 'info' && f.infoResult === 'good' && f.infoTargetId === p.id));
+        if(targets.length) fragments.push({ type: 'attack', targetId: pick(targets).id });
       }
     }
     if (fragments.length === 0) fragments.push({ type: 'conservative' });
@@ -6886,7 +6908,8 @@ function buildChantJumpFragments(wolf, alive, ctx, spokenSet) {
   }
   // 顺带攻击一个可疑目标（只剩片段槽才加，确保不超过3个）
   if (fragments.length < 3 && Math.random() < 0.6 && goodAlive.length > 0) {
-    fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
+    const targets = goodAlive.filter(p => !fragments.some(f => f.type === 'info' && f.infoResult === 'good' && f.infoTargetId === p.id));
+    if(targets.length) fragments.push({ type: 'attack', targetId: pick(targets).id });
   }
   return fragments;
 }
@@ -6984,102 +7007,33 @@ function buildHookFragments(wolf, alive, ctx, spokenSet) {
 
 // ===== 预言家多片段发言构建 =====
 function buildSeerFragments(seer, suspectPool, ctx, spokenSet) {
-  const fragments = [];
-  const intel = getAttr(seer, '智谋');
-  const alive = getAlive();
-  const goodCount = alive.filter(p => p.role !== "wolf").length;
-
-  // 检测"A说B是好人，B后对跳"的矛盾（A肯定是狼）
-  const contradiction = detectSeerContradiction();
-  if(contradiction && fragments.length < 3){
-    // 攻击那个狼人（A）
-    fragments.push({ type: 'attack', targetId: contradiction.wolfId });
-  }
-
-  // 查验结果
   const checks = game.seerChecks || [];
-  const foundWolf = checks.some(c => c.isWolf);
-
-  // 被质疑？
-  const isQuestioned = ctx.some(s =>
-    s.text && s.text.includes(seer.name) &&
-    (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))
-  );
-
-  // 有人对跳预言家？（检查当天 ctx + 全部历史 game.speeches，防止跨天遗漏）
-  const someoneClaimedSeer = ctx.some(s =>
-    s.classified && s.classified.some(c => c.type === 'claim' && c.role === 'seer') && s.speakerId !== seer.id
-  ) || (game.speeches || []).some(s =>
-    s && s.classified && s.classified.some(c => c.type === 'claim' && c.role === 'seer') && s.speakerId !== seer.id
-  );
-
-  // 应该跳身份？
-  // 额外条件：Day2+ 且有≥2次查验 → 即使没人对跳也应主动跳（防止带信息死亡）
-  const shouldReveal = isQuestioned || foundWolf || someoneClaimedSeer || goodCount <= 5
-    || (game.day >= 2 && checks.length >= 2);
-
-  // ① 已跳过身份 → 报未报过的查验（最多2个，优先查杀）
-  if (game.claimedPlayers.has(seer.id)) {
-    // 不重复推 claim
-    if (!game.seerReportedChecks) game.seerReportedChecks = [];
-    // 未报过的查验
-    const unreported = checks.filter(c => !game.seerReportedChecks.includes(c.targetId));
-    // 优先查杀（狼）
-    unreported.sort((a, b) => {
-      if (a.isWolf && !b.isWolf) return -1;
-      if (!a.isWolf && b.isWolf) return 1;
-      return 0;
-    });
-    // 最多报2个
-    const toReport = unreported.slice(0, 2);
-    for (const check of toReport) {
-      const target = game.players[check.targetId];
-      if (target) {
-        fragments.push({ type: 'info', role: 'seer', infoTargetId: check.targetId, infoResult: check.isWolf ? 'wolf' : 'good' });
-        game.seerReportedChecks.push(check.targetId);
-      }
-    }
-    // 查验到狼人 → 攻击
-    if (foundWolf) {
-      const wolfCheck = checks.find(c => c.isWolf);
-      if (wolfCheck) fragments.push({ type: 'attack', targetId: wolfCheck.targetId });
-    } else if (suspectPool.length > 0 && Math.random() < 0.5) {
-      fragments.push({ type: 'attack', targetId: pick(suspectPool).id });
-    }
-    if (fragments.length === 0) fragments.push({ type: 'conservative' });
-    return fragments;
+  const goodIds = new Set(checks.filter(c => !c.isWolf).map(c => c.targetId));
+  const suspects = suspectPool.filter(p => p.alive && p.id !== seer.id && !goodIds.has(p.id));
+  const livingWolf = checks.find(c => c.isWolf && suspects.some(p => p.id === c.targetId));
+  const claimed = game.claimedPlayers.has(seer.id);
+  const isQuestioned = ctx.some(s => s.text && s.text.includes(seer.name) && /可疑|投|狼/.test(s.text));
+  const someoneClaimedSeer = [...ctx, ...(game.speeches || [])].some(s =>
+    s && s.speakerId !== seer.id && s.classified?.some(c => c.type === 'claim' && c.role === 'seer'));
+  // 只使用自己的查验和公开局势，不读取其他玩家的真实身份数量。
+  if (!claimed && !(isQuestioned || livingWolf || someoneClaimedSeer || getAlive().length <= 6
+      || (game.day >= 2 && checks.length >= 2))) return [{type: 'conservative'}];
+  const fragments = claimed ? [] : [{type: 'claim', role: 'seer'}];
+  const contradiction = detectSeerContradiction();
+  let target = livingWolf ? game.players[livingWolf.targetId] :
+    suspects.find(p => p.id === contradiction?.wolfId);
+  if (!target && claimed && suspects.length && Math.random() < 0.5) target = pick(suspects);
+  if (!game.seerReportedChecks) game.seerReportedChecks = [];
+  const unreported = checks.filter(c => game.players[c.targetId] && !game.seerReportedChecks.includes(c.targetId))
+    .sort((a,b) => Number(b.isWolf && game.players[b.targetId].alive) - Number(a.isWolf && game.players[a.targetId].alive));
+  // 为明确的投票主张留一个槽位，只把实际说出的查验标记为已报告。
+  const budget = Math.min(2, 3 - fragments.length - (target ? 1 : 0));
+  for (const check of unreported.slice(0, budget)) {
+    fragments.push({type: 'info', role: 'seer', infoTargetId: check.targetId, infoResult: check.isWolf ? 'wolf' : 'good'});
+    game.seerReportedChecks.push(check.targetId);
   }
-
-  // ② 应该跳身份（第一次跳，最多3个片段）
-  if (shouldReveal) {
-    fragments.push({ type: 'claim', role: 'seer' });
-    if (!game.seerReportedChecks) game.seerReportedChecks = [];
-    // 优先查杀（狼）
-    const sortedChecks = [...checks].sort((a, b) => {
-      if (a.isWolf && !b.isWolf) return -1;
-      if (!a.isWolf && b.isWolf) return 1;
-      return 0;
-    });
-    // 最多报2个（claim 占1槽，最多3片段）
-    const toReport = sortedChecks.slice(0, 2);
-    for (const check of toReport) {
-      const target = game.players[check.targetId];
-      if (target) {
-        fragments.push({ type: 'info', role: 'seer', infoTargetId: check.targetId, infoResult: check.isWolf ? 'wolf' : 'good' });
-        game.seerReportedChecks.push(check.targetId);
-      }
-    }
-    // 查验到狼人 → 攻击
-    if (foundWolf) {
-      const wolfCheck = checks.find(c => c.isWolf);
-      if (wolfCheck) fragments.push({ type: 'attack', targetId: wolfCheck.targetId });
-    }
-    return fragments;
-  }
-
-  // ③ 不跳：划水（预言家不跳时要低调）
-  fragments.push({ type: 'conservative' });
-  return fragments;
+  if (target) fragments.push({type: 'attack', targetId: target.id});
+  return fragments.length ? fragments : [{type: 'conservative'}];
 }
 
 // ===== 女巫多片段发言构建 =====
@@ -7256,6 +7210,7 @@ function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
   // ===== 平民跳身份策略 =====
   // 平民勇于亮身份可以压缩狼人空间，让悍跳狼更难藏身
   const alive = getAlive();
+  const hasClaimed = game.claimedPlayers.has(villager.id);
   let shouldClaim = false;
   if (game.day >= 3 || alive.length <= 6) {
     // 后期/残局：必须跳，帮助好人阵营缩小范围
@@ -7267,6 +7222,7 @@ function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
     // 中期
     shouldClaim = Math.random() < 0.6;
   }
+  shouldClaim = shouldClaim && !hasClaimed;
   if (shouldClaim) {
     fragments.push({ type: 'claim', role: 'villager' });
   }
@@ -7277,7 +7233,7 @@ function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
     (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))
   );
   if (isQuestioned) {
-    if (!shouldClaim) {
+    if (!shouldClaim && !hasClaimed) {
       fragments.push({ type: 'claim', role: 'villager' });
     }
     // 质疑者也可疑
@@ -7292,17 +7248,17 @@ function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
   }
 
   // ② 有人跳身份
-  const claimers = ctx.filter(s => s.speechType && s.speechType.includes("claim"));
+  const claimers = ctx.filter(s => s.classified?.some(c => c.type === 'claim' || (c.type === 'info' && c.role === 'seer')));
   if (claimers.length > 0) {
     if (intel <= 3) {
       // 低智商：相信跳身份的人，跟着他们走
       const claimer = claimers[claimers.length - 1];
-      if (claimer.text) {
-        const mentioned = suspectPool.find(t => claimer.text.includes(t.name));
-        if (mentioned) {
-          fragments.push({ type: 'attack', targetId: mentioned.id });
-          return fragments;
-        }
+      const report = (claimer.classified || []).find(c => c.role === 'seer' && c.infoResult
+        && c.targets?.some(t => suspectPool.some(p => p.id === t.id)));
+      if (report) {
+        const target = report.targets.find(t => suspectPool.some(p => p.id === t.id));
+        fragments.push({type: report.infoResult === 'good' ? 'shield' : 'attack', targetId: target.id});
+        return fragments;
       }
       // 没找到具体目标，随便跟一个
       if (suspectPool.length > 0) {
@@ -8393,19 +8349,22 @@ function renderVoteSection(voteList, label){
     const target = game.players[parseInt(targetId)];
     if(!target) continue;
     const voters = voteDetails.filter(v => v.targetId === parseInt(targetId))
-      .map(v => game.players[v.voterId]?.name || '?')
+      .map(v => safeText(game.players[v.voterId]?.name || '?'))
       .join('、');
-    html += '<div class="sh-vote-item">' + target.name + '（' + voteCounts[targetId] + '票）← ' + voters + '</div>';
+    html += '<div class="sh-vote-item">' + safeText(target.name) + '（' + voteCounts[targetId] + '票）← ' + voters + '</div>';
   }
   
   const resultRecord = voteList.find(v => v.type === 'result');
   if(resultRecord){
     const exiled = game.players[resultRecord.targetId];
     if(exiled){
-      html += '<div class="sh-vote-result">→ ' + exiled.name + ' 以' + resultRecord.votes + '票被放逐</div>';
+      html += '<div class="sh-vote-result">→ ' + safeText(exiled.name) + ' 以' + resultRecord.votes + '票被放逐</div>';
     }
   }
   
+  const reasons = voteDetails.filter(v => v.reason);
+  if(reasons.length) html += '<details class="speech-fulltext"><summary>查看投票依据</summary>' + reasons.map(v =>
+    '<p>' + safeText(game.players[v.voterId]?.name || '?') + '：' + safeText(v.reason) + '</p>').join('') + '</details>';
   html += '</div>';
   return html;
 }
