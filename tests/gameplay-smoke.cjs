@@ -35,10 +35,10 @@ const assert=require('node:assert/strict');
   applyPlayerSpeechEffect(game.players[game.playerId],'',[{type:'conservative'}],game.players);
   actual.clampLine=game.reactions.at(-1).lines.some(l=>l.includes(target.name));actual.injected=!!document.querySelector('.speech-reaction img');
   game.voteRecords=[{day:1,voterId:game.playerId,targetId:target.id},{day:1,type:'result',targetId:target.id,votes:1}];
-  endGame('good');actual.recap=buildMatchRecap();const before=getPrestige();endGame('good');actual.duplicateAward=getPrestige()!==before;
+  endGame('good');actual.summaryInjected=!!document.querySelector('#modalArea img[src="x"]');actual.recap=buildMatchRecap();const before=getPrestige();endGame('good');actual.duplicateAward=getPrestige()!==before;
   return actual;
  });
- assert.equal(feedback.mixed,true);assert.equal(feedback.reactions,1);assert.equal(feedback.hiddenRecap,'');assert(feedback.text.includes('态度只反映'));assert.equal(feedback.clampLine,false);assert.equal(feedback.injected,false);assert(feedback.recap.includes('&lt;img'));assert.equal(feedback.duplicateAward,false);
+ assert.equal(feedback.mixed,true);assert.equal(feedback.reactions,1);assert.equal(feedback.hiddenRecap,'');assert(feedback.text.includes('态度只反映'));assert.equal(feedback.clampLine,false);assert.equal(feedback.injected,false);assert.equal(feedback.summaryInjected,false);assert(feedback.recap.includes('&lt;img'));assert.equal(feedback.duplicateAward,false);
  console.log('Player speech integration, hidden-role boundaries, favor clamp, recap escaping, duplicate settlement: passed');
  await page.reload();await page.close();
  for(const viewport of [{width:320,height:568},{width:390,height:844},{width:844,height:390},{width:1440,height:900}]){
