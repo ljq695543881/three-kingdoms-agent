@@ -1447,7 +1447,7 @@ const PERSONAL_SPEECHES={};
 
 // 收起时保留 DOM、已选片段/目标和原有 Promise；等待玩家回来确认。
 let suspendedAction=null;
-const ACTION_PANELS={speechPanel:{label:'发言',pending:'pendingSpeechResolve'},nightPanel:{label:'夜晚行动',pending:'pendingNightResolve'},votePanel:{label:'投票',pending:'pendingVoteResolve'},hunterShootPanel:{label:'猎人行动',check:()=>!!hunterShootResolver},destinyPanel:{label:'天意干预',pending:'pendingDestinyResolve'}};
+const ACTION_PANELS={speechPanel:{label:'发言',pending:'pendingSpeechResolve'},nightPanel:{label:'夜晚行动',pending:'pendingNightResolve'},votePanel:{label:'投票',pending:'pendingVoteResolve'},hunterShootPanel:{label:'猎人行动',check:()=>!!hunterShootResolver},destinyPanel:{label:'天意干预',pending:'pendingDestinyResolve'},resultPanel:{label:'结算',resumeLabel:'返回结算 · 奖励与再来一局',check:()=>!!game.ended&&!!document.getElementById('resultPanel')}};
 function actionIsPending(config){return config.check?config.check():!!game[config.pending];}
 function clearSuspendedAction(){
   if(suspendedAction)document.getElementById(suspendedAction.id)?.classList.remove('action-collapsed');
@@ -1457,12 +1457,12 @@ function clearSuspendedAction(){
 }
 function collapseAction(id,openHistory){
   const config=ACTION_PANELS[id],panel=document.getElementById(id);
-  if(!config || !actionIsPending(config) || panel.classList.contains('hide'))return;
+  if(!config || !panel || !actionIsPending(config) || panel.classList.contains('hide'))return;
   suspendedAction={id,generation:game.generation};
   panel.classList.add('action-collapsed');
   document.body.classList.add('action-suspended');
   const button=document.getElementById('resumeAction');
-  button.textContent=`返回${config.label} · 尚未提交`;
+  button.textContent=config.resumeLabel||`返回${config.label} · 尚未提交`;
   button.hidden=false;
   if(openHistory){
     const history=document.getElementById('speechHistoryPanel');
@@ -1474,12 +1474,12 @@ function resumeAction(){
   const action=suspendedAction;
   if(!action)return;
   const panel=document.getElementById(action.id);
-  const valid=action.generation===game.generation && actionIsPending(ACTION_PANELS[action.id]) && !panel.classList.contains('hide');
+  const valid=!!panel && action.generation===game.generation && actionIsPending(ACTION_PANELS[action.id]) && !panel.classList.contains('hide');
   clearSuspendedAction();
   if(!valid)return;
   const history=document.getElementById('speechHistoryPanel');
   closeSpeechHistory();
-  panel.querySelector('.panel-actions button').focus();
+  panel.querySelector('.panel-actions button').focus({preventScroll:true});
 }
 
 // 局型配置不修改全局 ROLE_CFG，避免不同局型互相污染。
@@ -3183,7 +3183,7 @@ function showStartModal(){
   </div></div>`;
 }
 
-function closeModal(){document.getElementById("modalArea").innerHTML=""}
+function closeModal(){if(suspendedAction?.id==='resultPanel')clearSuspendedAction();document.getElementById("modalArea").innerHTML=""}
 
 function renderPlayers(){
   document.getElementById('favorBtn').innerHTML=isGodView()?'♡ <span class="btn-label">好感度</span>':'💬 <span class="btn-label">回应</span>';
@@ -5813,8 +5813,8 @@ function checkWin(){
 }
 
 function endGame(winner){
-  clearSuspendedAction();
   if(game.ended)return;
+  clearSuspendedAction();
   game.ended=true;
   const isGood=winner==="good";
   const title=isGood?"好人阵营胜利！":"狼人阵营胜利！";
@@ -5830,7 +5830,7 @@ function endGame(winner){
   
   setPhase("游戏结束",color);
 
-  let summary=`<h2 style="color:${color}">${title}</h2><p style="margin-bottom:16px">${isGood?"所有狼人已被铲除，三国重归太平！":"狼人控制了局势，黑暗笼罩大地！"}</p>`;
+  let summary=`<div class="panel-actions"><button type="button" onclick="collapseAction('resultPanel',false)">收起查看战局</button><button type="button" onclick="collapseAction('resultPanel',true)">查看发言历史</button></div><h2 style="color:${color}">${title}</h2><p style="margin-bottom:16px">${isGood?"所有狼人已被铲除，三国重归太平！":"狼人控制了局势，黑暗笼罩大地！"}</p>`;
   summary+=`<div class="end-roster" style="text-align:left;padding:14px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:13px">`;
   summary+=`<div style="margin-bottom:10px;color:var(--gold);font-weight:700">身份揭晓：</div>`;
   for(const p of game.players){
@@ -5872,7 +5872,8 @@ function endGame(winner){
   
   summary+=`<br><div style="display:flex;gap:12px;justify-content:center"><button class="btn-primary" onclick="retryGame()">🔄 再来一局</button><button class="btn-primary" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:var(--white)" onclick="backToTitle()">🏠 返回标题</button></div>`;
 
-  document.getElementById("modalArea").innerHTML=`<div class="modal-overlay"><div class="modal">${summary}</div></div>`;
+  document.getElementById("modalArea").innerHTML=`<div id="resultPanel" class="modal-overlay"><div class="modal">${summary}</div></div>`;
+  document.getElementById('speechHistoryBtn').style.display='block';
   
   // 清除存档（玩家模式）
   if(game.mode === 'player'){
@@ -8526,7 +8527,7 @@ function getRoleColor(role){
   return colors[role] || 'var(--white)';
 }
 
-function visibleActionPanel(){return Object.keys(ACTION_PANELS).find(id=>{const p=document.getElementById(id);return !p.classList.contains('hide')&&!p.classList.contains('action-collapsed');});}
+function visibleActionPanel(){return Object.keys(ACTION_PANELS).find(id=>{const p=document.getElementById(id);return !!p&&!p.classList.contains('hide')&&!p.classList.contains('action-collapsed');});}
 document.addEventListener('keydown',event=>{
   if(event.isComposing)return;
   const shown=id=>!document.getElementById(id).classList.contains('hide');
