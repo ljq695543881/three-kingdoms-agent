@@ -952,6 +952,10 @@ body.action-suspended .sh-content{padding-bottom:100px}
 @media(hover:hover){.match-order label:hover{border-color:#dfbe68;transform:translateY(-2px)}}
 @media(max-width:360px){.match-orders{gap:8px}.match-order label{padding:12px 10px 16px;min-height:138px}.order-main{gap:8px}.order-main>b{font-size:31px}.order-main>span{font-size:16px}.order-seal{right:6px;top:7px}}
 
+
+.night-info:empty{display:none}
+.potion-state{text-align:left;padding:12px;margin:10px 0;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.035)}.potion-state h4{font-size:14px;color:var(--gold);display:flex;justify-content:space-between;gap:8px}.potion-state h4 span{font-size:12px;color:var(--white);font-weight:400}.potion-state p{font-size:12px;line-height:1.7;color:#c6cfdb;margin:8px 0}.potion-state.exhausted{opacity:.7}.potion-state .night-action-btn{min-height:44px;width:100%}
+
 </style>
 </head>
 <body>
@@ -3249,8 +3253,8 @@ async function startGame(){
 }
 
 async function nightPhase(){
-  try{
   const gen=game.generation;
+  try{
   game.day++;
   game.isProcessing=true;
   game.wolfTarget=null;game.seerTarget=null;game.witchSave=false;game.witchPoison=null;game.guardTarget=null; game.witchUsedSaveLastNight=false; game.witchUsedPoisonLastNight=false; game.witchPoisonTarget=null;
@@ -3346,12 +3350,12 @@ async function ai_guardAction(){
   const politic=getAttr(guard,'政治');
   
   // ===== 只基于已跳身份判断（不使用隐藏信息 p.role）=====
-  const exposedSeer = getAlive().find(p => 
+  const exposedSeer = targets.find(p =>
     (game.playerClaims[p.id] === 'seer') || 
      game.speeches.some(s => s && s.speakerId === p.id && s.classified && s.classified.some(c => c.type === 'claim' && c.role === 'seer'))
   );
   
-  const exposedWitch = getAlive().find(p => 
+  const exposedWitch = targets.find(p =>
     (game.playerClaims[p.id] === 'witch') || 
      game.speeches.some(s => s && s.speakerId === p.id && s.classified && s.classified.some(c => c.type === 'claim' && c.role === 'witch'))
   );
@@ -3906,30 +3910,32 @@ async function ai_seerAction(){
   addLog(`${speakerHTML(seer,"【预言家】"+seer.name)}查验了${target.name}——身份是：<b style="color:${isWolf?"var(--red)":"var(--green)"}">${isWolf?"狼人":"好人"}</b>`,'seer');
 }
 
+// 库存与当晚是否可用分开计算，玩家和AI共用同一套技能限制。
+function getWitchActionState(witch){
+  const hasSave=game.witchHasSave===true,hasPoison=game.witchHasPoison===true;
+  const attacked=game.wolfTarget!=null?game.players[game.wolfTarget]:null;
+  const victim=attacked?.alive?attacked:null;
+  const canSave=!!(hasSave&&victim&&victim.id!==witch.id);
+  const poisonTargets=hasPoison&&game.day>=2?getAlive().filter(p=>p.id!==witch.id):[];
+  const saveReason=!hasSave?'解药已用完':!victim?'今夜暂无可救目标，解药仍保留':victim.id===witch.id?'本局不可自救，解药仍保留':'今夜可使用解药救人';
+  const poisonReason=!hasPoison?'毒药已用完':game.day<2?'首夜禁毒，毒药仍保留，第2夜起可用':!poisonTargets.length?'暂无可用毒目标，毒药仍保留':'今夜可使用毒药';
+  return {hasSave,hasPoison,canSave,victim,victimName:canSave?victim.name:'',poisonTargets,saveReason,poisonReason};
+}
+
 async function player_witchAction(){
   const gen=game.generation;
   const witch=getAlive().find(p=>p.role==="witch");
   if(!witch)return;
-  const victim = game.wolfTarget!=null ? game.players[game.wolfTarget] : null;
-  const canSave = game.witchHasSave && victim && victim.id!=witch.id && victim.role!="witch";
-  const poisonTargets = game.witchHasPoison && game.day>=2 ? getAlive().filter(p=>p.id!=witch.id) : [];
-  const hintParts = [];
-  if(canSave) hintParts.push(`今晚 <b style="color:var(--red)">${victim.name}</b> 被狼人杀害了`);
-  if(!game.witchHasSave) hintParts.push('解药已用完');
-  if(poisonTargets.length>0) hintParts.push('毒药可用');
-  else if(!game.witchHasPoison) hintParts.push('毒药已用完');
-  const hint = hintParts.join('；');
-  const result = await showNightPanel('witch', {
-    canSave:canSave, victimName:victim?victim.name:'',
-    poisonTargets:poisonTargets,
-    info: hint
-  });
+  const state=getWitchActionState(witch);
+  const victim=state.victim;
+  const info=state.canSave?`今晚 <b style="color:var(--red)">${safeText(victim.name)}</b> 受到狼人袭击。`:'';
+  const result=await showNightPanel('witch',{...state,info});
   if(game.generation!==gen)return;
-  if(result && result.action==='save'){
+  if(result?.action==='save'&&state.canSave&&getWitchActionState(witch).canSave){
     game.witchSave=true; game.witchUsedSaveLastNight=true; game.witchHasSave=false;
     game.witchSaveTarget=victim.id;
     addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}使用了解药救下了${victim.name}！`,'witch');
-  } else if(result && typeof result==='object' && result.action==='poison'){
+  } else if(result?.action==='poison'&&game.witchHasPoison&&game.day>=2&&state.poisonTargets.some(p=>p.id===result.target)&&game.players[result.target]?.alive){
     game.witchPoison=result.target; game.witchHasPoison=false;
     game.witchUsedPoisonLastNight=true; game.witchPoisonTarget=result.target;
     addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`,'witch');
@@ -3943,13 +3949,12 @@ async function ai_witchAction(){
   const witch=getAlive().find(p=>p.role==="witch");
   if(!witch)return;
   const intel=getAttr(witch,"智谋");
-  if(game.witchHasSave&&game.wolfTarget!=null){
+  const state=getWitchActionState(witch);
+  if(state.canSave){
     const victim=game.players[game.wolfTarget];
     // 被刀的人魅力越高，女巫越想救：30% + 魅力×10%
     const victimCharm = getAttr(victim, '魅力');
     let saveProb = 0.3 + victimCharm * 0.1;
-    // 自救：100%概率
-    if(victim.id===witch.id) saveProb=1.0;
     // 高智谋优先救已跳特殊身份的玩家
     if(intel>=4){
       const victimClaim = game.playerClaims[victim.id];
@@ -3963,7 +3968,7 @@ async function ai_witchAction(){
       return;
     }
   }
-  if(game.witchHasPoison&&game.day>=2){
+  if(state.poisonTargets.length>0){
     if(game.generation!==gen)return;
     // 毒药概率：40% + 智谋×10%
     let poisonProb=0.4+intel*0.1;
@@ -3974,7 +3979,7 @@ async function ai_witchAction(){
       
       // 1) 自卫：从公开发言中查找声称女巫是狼人/查杀女巫的人
       const attacker = game.speeches.find(s =>
-        s && s.classified && s.speakerId && s.speakerId !== witchId &&
+        s && s.classified && s.speakerId!=null && s.speakerId !== witchId &&
         s.classified.some(c => c.type === 'claim' && c.role === 'seer') &&
         game.speeches.some(s2 => s2 && s2.speakerId === s.speakerId && s2.classified &&
           s2.classified.some(c => c.type === 'attack' && c.subtype === 'suspect' &&
@@ -3982,11 +3987,11 @@ async function ai_witchAction(){
       );
       if (attacker) {
         const aid = attacker.speakerId;
-        if (aid && game.players[aid] && game.players[aid].alive) poisonTarget = aid;
+        if (aid!=null && game.players[aid] && game.players[aid].alive) poisonTarget = aid;
       }
       
       // 2) 没有人查杀女巫时，从公开发言推断（不使用狼人身份）
-      if (!poisonTarget && game.day >= 3) {
+      if (poisonTarget==null && game.day >= 3) {
         // 统计每个存活玩家被公开怀疑的次数
         const suspectCounts = {};
         for(const p of getAlive()){
@@ -4014,11 +4019,11 @@ async function ai_witchAction(){
         }
         // 只有被≥3人怀疑的目标才值得用毒（信息充分才出手）
         if(maxSuspect >= 3 && intel >= 3){
-          poisonTarget = pick(topSuspects.map(id => game.players[id]).filter(p => p && p.alive))?.id || null;
+          poisonTarget = pick(topSuspects.map(id => game.players[id]).filter(p => p && p.alive))?.id ?? null;
         }
       }
       
-      if(poisonTarget){
+      if(poisonTarget!=null&&state.poisonTargets.some(p=>p.id===poisonTarget)){
         game.witchPoison = poisonTarget;
         game.witchHasPoison=false; game.witchUsedPoisonLastNight=true; game.witchPoisonTarget=poisonTarget;
         addLog(`${speakerHTML(witch,"【女巫】"+witch.name)}悄悄使用了毒药……`,'witch');
@@ -4037,13 +4042,15 @@ function resolveNight(){
     if(!saved) deaths.push({id:game.wolfTarget,cause:"wolf"});
   }
   // Witch poison
-  if(game.witchPoison!==null&&!deaths.find(d=>d.id===game.witchPoison)){
-    deaths.push({id:game.witchPoison,cause:"poison"});
+  if(game.witchPoison!==null){
+    const poisoned=deaths.find(d=>d.id===game.witchPoison);
+    if(poisoned)poisoned.cause="poison";else deaths.push({id:game.witchPoison,cause:"poison"});
   }
   game.lastGuardTarget=game.guardTarget;
 
   game.isProcessing=false;
-  setTimeout(()=>dayPhase(deaths),1200);
+  const generation=game.generation;
+  setTimeout(()=>{if(game.generation===generation&&!game.ended)dayPhase(deaths);},1200);
 }
 
 async function dayPhase(deaths){
@@ -4957,10 +4964,10 @@ function buildLastWordsFragments(player) {
   } else if (role === 'witch') {
     fragments.push({ type: 'claim', role: 'witch' });
     // 报所有已知的药使用情况
-    if (game.witchUsedSaveLastNight && game.witchSaveTarget) {
+    if (game.witchUsedSaveLastNight && game.witchSaveTarget!=null) {
       fragments.push({ type: 'info', role: 'witch', infoAction: 'save', infoTargetId: game.witchSaveTarget });
     }
-    if (game.witchUsedPoisonLastNight && game.witchPoisonTarget) {
+    if (game.witchUsedPoisonLastNight && game.witchPoisonTarget!=null) {
       fragments.push({ type: 'info', role: 'witch', infoAction: 'poison', infoTargetId: game.witchPoisonTarget });
     }
     // 如果两瓶药都用完了，加一句警告
@@ -4988,7 +4995,7 @@ function buildLastWordsFragments(player) {
   } else if (role === 'guard') {
     fragments.push({ type: 'claim', role: 'guard' });
     // 守卫可以暗示昨晚守了谁（但不直接说）
-    if (game.lastGuardTarget) {
+    if (game.lastGuardTarget!=null) {
       // 50%概率暗示
       if (Math.random() < 0.5) {
         fragments.push({ type: 'info', role: 'guard', infoAction: 'guard', infoTargetId: game.lastGuardTarget });
@@ -6174,7 +6181,7 @@ function showInfoActions(role){
   } else if(role === 'witch'){
     // 女巫：显示所有存活玩家（含自己），以及昨晚毒的人（可能已死）
     let targets = getAlive().filter(p=>p.id!==game.playerId);
-    if(game.witchPoisonTarget){
+    if(game.witchPoisonTarget!=null){
       const poisonTarget = game.players[game.witchPoisonTarget];
       if(poisonTarget && !poisonTarget.alive && !targets.find(p=>p.id===game.witchPoisonTarget)){
         targets = [...targets, poisonTarget];
@@ -6944,10 +6951,10 @@ function buildWitchFragments(witch, suspectPool, ctx, spokenSet) {
 
   // ① 已跳过身份 → 不划水，分享已知信息
   if (game.claimedPlayers.has(witch.id)) {
-    if (game.witchUsedSaveLastNight && game.witchSaveTarget) {
+    if (game.witchUsedSaveLastNight && game.witchSaveTarget!=null) {
       fragments.push({ type: 'info', role: 'witch', infoAction: 'save', infoTargetId: game.witchSaveTarget });
     }
-    if (game.witchUsedPoisonLastNight && game.witchPoisonTarget) {
+    if (game.witchUsedPoisonLastNight && game.witchPoisonTarget!=null) {
       fragments.push({ type: 'info', role: 'witch', infoAction: 'poison', infoTargetId: game.witchPoisonTarget });
     }
     if (suspectPool.length > 0 && Math.random() < 0.6) {
@@ -6960,10 +6967,10 @@ function buildWitchFragments(witch, suspectPool, ctx, spokenSet) {
   // ② 应该跳身份
   if (shouldReveal) {
     fragments.push({ type: 'claim', role: 'witch' });
-    if (game.witchUsedSaveLastNight && game.witchSaveTarget) {
+    if (game.witchUsedSaveLastNight && game.witchSaveTarget!=null) {
       fragments.push({ type: 'info', role: 'witch', infoAction: 'save', infoTargetId: game.witchSaveTarget });
     }
-    if (game.witchUsedPoisonLastNight && game.witchPoisonTarget) {
+    if (game.witchUsedPoisonLastNight && game.witchPoisonTarget!=null) {
       fragments.push({ type: 'info', role: 'witch', infoAction: 'poison', infoTargetId: game.witchPoisonTarget });
     }
     if (suspectPool.length > 0 && Math.random() < 0.5) {
@@ -7831,39 +7838,19 @@ function showNightPanel(type, data){
       }</div>`;
     }
     else if(type === 'witch'){
-      titleEl.textContent = '🧪 女巫行动';
-      hintEl.textContent = '可以选择使用解药、使用毒药，或按兵不动';
-      infoEl.innerHTML = data.info || '';
-      let html = '';
-      // 解药区域（独立）
-      if(data.canSave){
-        html += `<div class="night-action-row" style="margin-bottom:10px">
-          <div style="color:var(--gray);font-size:12px;margin-bottom:4px">解药（救今夜被杀的人）</div>
-          <div class="night-action-btn" data-action="save" onclick="selectNightTarget('save')">💊 使用解药救${data.victimName||'受害者'}</div>
-        </div>`;
-      } else {
-        html += `<div style="color:var(--gray);font-size:12px;margin-bottom:8px">解药已用完</div>`;
-      }
-      // 毒药区域（独立，不受解药状态影响）
-      if(data.poisonTargets && data.poisonTargets.length > 0){
-        html += `<div class="night-action-row">
-          <div style="color:var(--gray);font-size:12px;margin-bottom:4px">毒药（第2晚起可用）</div>
-          <div class="night-player-grid">${
-            data.poisonTargets.map(p =>
-              `<div class="night-player-card" data-id="${p.id}" data-action="poison" onclick="selectNightTarget('poison',${p.id})">
-                <img src="${getImgSrc(p)}" onerror="this.style.display='none'">
-                <div>${p.name}</div>
-              </div>`
-            ).join('')
-          }</div>
-        </div>`;
-      } else {
-        html += `<div style="color:var(--gray);font-size:12px;">毒药已用完</div>`;
-      }
-      html += `<div class="night-action-row" style="margin-top:10px">
-        <div class="night-action-btn" data-action="skip" onclick="selectNightTarget('skip')">⏭ 按兵不动</div>
-      </div>`;
-      optEl.innerHTML = html;
+      titleEl.textContent='🧪 女巫行动';
+      hintEl.textContent='首夜禁毒 · 本局不可自救 · 每晚最多使用一种药';
+      infoEl.innerHTML=data.info||'';
+      const hasSave=data.hasSave??game.witchHasSave,hasPoison=data.hasPoison??game.witchHasPoison;
+      const saveReason=data.saveReason||(!hasSave?'解药已用完':data.canSave?'今夜可使用解药救人':'今夜暂时不可救人，解药仍保留');
+      const poisonReason=data.poisonReason||(!hasPoison?'毒药已用完':game.day<2?'首夜禁毒，毒药仍保留，第2夜起可用':'暂无可用毒目标，毒药仍保留');
+      let html=`<section class="potion-state ${hasSave?'':'exhausted'}" data-potion="save"><h4>💊 解药 <span>剩余 ${hasSave?1:0} 瓶</span></h4><p>${safeText(saveReason)}</p>`;
+      if(data.canSave&&hasSave)html+=`<button type="button" class="night-action-btn" data-action="save" onclick="selectNightTarget('save')">使用解药救 ${safeText(data.victimName||'受袭者')}</button>`;
+      html+='</section>';
+      html+=`<section class="potion-state ${hasPoison?'':'exhausted'}" data-potion="poison"><h4>🧪 毒药 <span>剩余 ${hasPoison?1:0} 瓶</span></h4><p>${safeText(poisonReason)}</p>`;
+      if(hasPoison&&data.poisonTargets?.length)html+=`<div class="night-player-grid">${data.poisonTargets.map(p=>`<button type="button" class="night-player-card" data-id="${p.id}" data-action="poison" onclick="selectNightTarget('poison',${p.id})"><img src="${getImgSrc(p)}" alt=""><div>${safeText(p.name)}</div></button>`).join('')}</div>`;
+      html+=`</section><div class="night-action-row"><button type="button" class="night-action-btn" data-action="skip" onclick="selectNightTarget('skip')">⏭ 按兵不动，保留剩余药品</button></div>`;
+      optEl.innerHTML=html;
     }
 
     document.getElementById('nightPanel').classList.remove('hide');
@@ -7872,7 +7859,6 @@ function showNightPanel(type, data){
 
 function selectNightTarget(id, subId){
   const optEl = document.getElementById('nightOptions');
-  optEl.querySelectorAll('.night-player-card,.night-action-btn').forEach(o => o.classList.remove('selected'));
 
   let targetOpt = null;
   if(id === 'save' || id === 'skip'){
@@ -7882,7 +7868,9 @@ function selectNightTarget(id, subId){
   } else {
     targetOpt = optEl.querySelector(`.night-player-card[data-id="${id}"]`);
   }
-  if(targetOpt) targetOpt.classList.add('selected');
+  if(!targetOpt||targetOpt.matches(':disabled,[aria-disabled="true"]'))return;
+  optEl.querySelectorAll('.night-player-card,.night-action-btn').forEach(o => o.classList.remove('selected'));
+  targetOpt.classList.add('selected');
 
   if(id === 'save'){
     _nightResult = { action: 'save' };
