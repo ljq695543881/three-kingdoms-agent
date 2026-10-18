@@ -21,7 +21,7 @@ for(const viewport of [{width:320,height:568},{width:390,height:844},{width:1440
   if(scene==='detail')showTagPanel(0);if(scene==='achievements')openAchievement();if(scene==='end')endGame('good');
  },scene);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${scene}: horizontal overflow`);
- assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()),'#101718');
+ assert.equal(await page.evaluate(()=>getComputedStyle(document.body).getPropertyValue('--bg').trim()),'#e6e4d8');
  if(selector){const box=await page.locator(selector).first().boundingBox();assert(box&&box.x>=-1&&box.y>=-1&&box.x+box.width<=viewport.width+1&&box.y+box.height<=viewport.height+1,`${scene}: panel outside viewport ${JSON.stringify(box)}`);}
  if(process.env.PREVIEW_DIR&&((viewport.width===390&&['speech','witch','character','history','achievements','end'].includes(scene))||(viewport.width===1440&&scene==='board')))await page.screenshot({path:process.env.PREVIEW_DIR+`/ink-${scene}-${viewport.width}.png`});
  }

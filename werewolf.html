@@ -1010,9 +1010,54 @@ button,input,select{font-family:inherit}button:focus-visible,[tabindex]:focus-vi
 .night-overlay.is-night{background:#060f0c66}.faction-wei .avatar{background:#2c3b39}.faction-shu .avatar{background:#303d2d}.faction-wu .avatar{background:#3b323b}.faction-qun .avatar{background:#3c3729}
 button:disabled{opacity:.42;filter:saturate(.6);transform:none!important}.char-card input[type=text]:focus-visible{outline:2px solid #e4c993;outline-offset:3px}
 .action-bar .btn-danger{background:#643d33;color:#f0c3ad;border-color:#b8785f}
+/* 明亮卷册：默认提高阅读区亮度，夜色主题可在设置中恢复。 */
+body[data-appearance="light"]{--bg:#e6e4d8;--bg2:#f7f3e7;--card:#e9e6d7;--white:#253b30;--gray:#526652;--gold:#776032;--red:#a04435;--blue:#35636a;--green:#46643c;--purple:#715279;--wolf:#a04435;--seer:#35636a;--witch:#715279;--hunter:#805d2b;--guard:#46643c;--villager:#52624e;--border:#8b7a514d;--ink-line:#8b7a514d;--ink-paper:linear-gradient(135deg,#faf6e9,#f0efdf);background:#e6e4d8;color:var(--white);color-scheme:light;scrollbar-color:#9b977a #e5e3d5}
+body[data-appearance="night"]{color-scheme:dark}
+body[data-appearance="light"] #titleScreen{--bg:#101718;--bg2:#192221;--white:#e8e1d0;--gray:#a5ae9f;--gold:#ccb17b;--border:#b5a57933;color-scheme:dark}
+body[data-appearance="light"] :is(.header,.phase-bar,.mobile-toolbar){background:#dce1d1;border-color:#9b95664d}
+body[data-appearance="light"] :is(.header h1,.table-kicker,.card>h3,.sh-header h2){color:#61532f}
+body[data-appearance="light"] :is(.header p,.p-card .faction,.info-bar span,.pms-hint,.speech-hint,.vote-hint,.night-hint,.dp-hint,.destiny-hint,.career-note,.ap-label,.ar-label,.ap-text,.ach-desc,.favor-panel .fp-hint){color:#526652}
+body[data-appearance="light"] .card{background:#f7f3e7;border-color:#a59b744d;box-shadow:0 6px 22px #3f48200a}
+body[data-appearance="light"] .p-card{background:#eeebdd;border-color:#a9a17c66}
+body[data-appearance="light"] :is(.p-card .name,.log-entry,.speaker,.sh-speaker-name,.sh-text,.speech-preview,.night-info,.potion-state p,.potion-state h4 span,.career-section p,.career-section small,.career-role small,.career-title small,.ach-name){color:#2c4233}
+body[data-appearance="light"] .info-bar{background:#e3e7d7}
+body[data-appearance="light"] :is(.info-bar .num,.log-entry .system-text,.speech-reaction h4,.match-recap h3,.match-recap summary,.match-recap .recap-insight,.career-section h3,.career-chapter-count,.ap-value,.ar-value,.sh-day-label){color:#6c5428}
+body[data-appearance="light"] .log-entry{font-size:15px;line-height:2;border-color:#92936b33}
+body[data-appearance="light"] .log-entry :is(.night-text,small){color:#526652}
+body[data-appearance="light"] .log-entry .death-text{color:#a04435}
+body[data-appearance="light"] .log-entry .vote-text{color:#35636a}
+body[data-appearance="light"] :is(.speech-reaction,.match-recap,.speech-fulltext p,.sh-vote-section,.potion-state,.career-goal,.career-role,.career-title,.ach-badge,.achievement-rank-item,.career-chapter-count,.achievement-info,.growth-pts,.speech-preview,.night-info,.attr-row,.growth-attr-row){background:#eae8d8;border-color:#9b91644d}
+body[data-appearance="light"] :is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card){background:#f7f3e7;border-color:#9b8b5c99;box-shadow:0 20px 70px #26341e33}
+body[data-appearance="light"] :is(.modal,.pms-card,.char-card,.speech-card,.vote-card,.night-card,.destiny-card,.destiny-panel-card,.growth-card,.settings-card,.confirm-card,.endscreen-card,.achievement-card) h2{color:#68542c}
+body[data-appearance="light"] .modal p{color:#344b37}
+body[data-appearance="light"] .panel-actions{background:#f7f3e7}
+body[data-appearance="light"] :is(.panel-actions button,.pms-btn:not(.primary),.settings-btn,.claim-role-btn,.info-act-btn,.speed-btn,.fs-btn,.speech-type-btn,.vote-opt-btn,.vote-player-card,.night-player-card,.night-action-btn,.destiny-player-card,.destiny-target-card,.destiny-act-btn,.sh-close,.sh-sort-btn){background:#efeddf;border-color:#9b94626b;color:#304934}
+body[data-appearance="light"] :is(.speech-type-btn,.vote-opt-btn,.vote-player-card,.night-player-card,.night-action-btn,.destiny-player-card,.destiny-target-card,.destiny-act-btn,.claim-role-btn,.info-act-btn).selected,body[data-appearance="light"] :is(.career-title.equipped,.career-role.explored,.ach-badge.earned){background:#dfd5b7;border-color:#927338;color:#493c20}
+body[data-appearance="light"] :is(.speech-type-btn .st-icon,.career-open,.career-track,.career-goal button,.achievement-close,.pms-back,.speech-fulltext summary){color:#71572b;border-color:#9b895a}
+body[data-appearance="light"] :is(.char-card input[type=text],.speech-target-row select){background:#fffaf0;color:#253b30;border-color:#9c936f}
+body[data-appearance="light"] .char-card input[type=text]::placeholder{color:#66725b}
+body[data-appearance="light"] .speech-history-panel{background:#f4f0e2;border-color:#9c8959}
+body[data-appearance="light"] .favor-panel{background:#f4f0e2;color:#253b30}
+body[data-appearance="light"] :is(.favor-panel h4,.favor-row .fp-name,.favor-grid-hdr span){color:#40533d}
+body[data-appearance="light"] :is(.btn-pause,.btn-settings,.btn-favor,.speech-history-btn){background:#f2efdf;color:#514a2d;border-color:#9b93646b}
+body[data-appearance="light"] :is(#resumeAction,#jumpLogs){background:#e2d6b5;color:#493a1d;border-color:#96773e}
+body[data-appearance="light"] :is(.role-dossier,.role-roster,.end-roster,.end-reward){background:#e7e5d5!important;color:#344b37}
+body[data-appearance="light"] .tag-option-btn{background:#eeebdd!important;color:#304934!important}
+body[data-appearance="light"] .tag-option-btn.tag-selected{background:#dfd5b7!important;color:#493c20!important}
+body[data-appearance="light"] .night-overlay.is-night{background:#30442006}
+body[data-appearance="light"] :is(.modal-overlay,#playerModeSelect,#charCreate,#speechPanel,#votePanel,#nightPanel,#destinySelect,#destinyPanel,#destinyDeathPanel,#growthPanel,#settingsOverlay,#confirmOverlay,#hunterShootPanel,#achievementPanel,#endScreen){background-color:#26332252}
+body[data-appearance="light"] :is(.toast,.achievement-toast,.rank-up-toast){background:#f4edda;color:#304934}
+body[data-appearance="light"] .rank-up-toast :is(.rut-title,.rut-rank){color:#6c5428}
+body[data-appearance="light"] :is(.attr-btn-plus,.attr-btn-minus,.growth-attr-row .ga-btn){color:#70592d;border-color:#9b895a}
+body[data-appearance="light"] :is(.p-card.selected,.p-card:hover){background:#e1ddc5}
+body[data-appearance="light"] :is(.sh-header,.sh-day-label,.sh-item){border-color:#9b94623d}
+.appearance-options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.appearance-option{min-height:44px;padding:10px 16px;border:1px solid var(--ink-line);border-radius:2px;background:transparent;color:var(--white);cursor:pointer}.appearance-option[aria-pressed="true"]{background:var(--ink-gold);color:#19221b;border-color:#ad915d}.appearance-note{margin-top:8px;color:var(--gray);font-size:11px;line-height:1.8}
+
+body[data-appearance="light"] .growth-pts span{color:#6c5428}body[data-appearance="light"] .p-card .avatar{background:#d5dac5;color:#304934}
+body[data-appearance="light"] .settings-section h4{color:#6c5428}body[data-appearance="light"] :is(.settings-btn.danger,.char-name-hint.invalid){color:#9c4436}body[data-appearance="light"] .confirm-no{color:#304934}body[data-appearance="light"] .p-card.dead{opacity:.7}body[data-appearance="light"] :is(button,input,select,[tabindex]):focus-visible,body[data-appearance="light"] .char-card input[type=text]:focus-visible{outline-color:#70582b}
 </style>
 </head>
-<body>
+<body data-appearance="light">
 <!-- ===== 发言历史按钮（已移入工具栏） -->
 
 <!-- ===== 发言历史面板 ===== -->
@@ -1263,6 +1308,7 @@ button:disabled{opacity:.42;filter:saturate(.6);transform:none!important}.char-c
 <div id="settingsOverlay" class="hide">
   <div class="settings-card">
     <h2>游戏设置</h2>
+    <div class="settings-section"><h4>界面亮度</h4><div class="appearance-options"><button type="button" class="appearance-option" data-appearance-option="light" aria-pressed="true" onclick="setAppearance('light')">明亮卷册</button><button type="button" class="appearance-option" data-appearance-option="night" aria-pressed="false" onclick="setAppearance('night')">月下夜色</button></div><p class="appearance-note">默认使用明亮卷册，选择会保存在当前浏览器。</p></div>
     <div class="settings-section">
       <h4>游戏速度</h4>
       <div class="speed-btns">
@@ -2704,6 +2750,16 @@ function applySpeechFavorEffect(speaker, speech, classified, listeners, isNight)
 
 let game={players:[],phase:"start",day:0,selectedPlayer:null,wolfTarget:null,seerTarget:null,seerChecks:[],witchSave:false,witchPoison:null,guardTarget:null,lastGuardTarget:null,witchHasSave:true,witchHasPoison:true,witchUsedSaveLastNight:false,witchUsedPoisonLastNight:false,witchPoisonTarget:null,scriptMasterId:null,logs:[],speeches:[],isProcessing:false,hunterCanShoot:false,isPaused:false,pauseResolvers:[],wolfScript:null,wolfScriptCompliance:{},wolfRoles:{},wolfRolesAnnounced:false,wolfFakeChecks:{},seerReportedChecks:[],claimedPlayers:new Set(),playerClaims:{},playerTags:{},destiny:null,speed:1};
 
+function setAppearance(mode,persist=true){
+  mode=mode==='night'?'night':'light';
+  document.body.dataset.appearance=mode;
+  document.querySelectorAll('[data-appearance-option]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.appearanceOption===mode)));
+  if(persist)try{localStorage.setItem('threeKingdomsAppearance',mode);}catch(e){}
+}
+function loadAppearance(){
+  let mode;try{mode=localStorage.getItem('threeKingdomsAppearance');}catch(e){}
+  setAppearance(mode,false);
+}
 function openSettings(){
   document.getElementById('settingsOverlay').classList.remove('hide');setPauseReason('settings',true);
 }
@@ -8038,7 +8094,8 @@ function showEndScreen(){
 }
 
 
-// 页面加载时显示标题画面，由用户选择模式
+// 页面加载时恢复显示偏好并进入首页。
+loadAppearance();
 showTitle();
 
 // ===== 玩家标签选择面板 =====
@@ -8401,7 +8458,7 @@ function renderSpeechHistory(){
       const speaker = game.players[s.speakerId];
       if(!speaker) continue;
       
-      const nameColor = isGodView() ? getRoleColor(speaker.role) : '#ecf0f1';
+      const nameColor = isGodView() ? getRoleColor(speaker.role) : 'var(--white)';
       const summary = getSpeechSummary(s.classified || [], s.speechType || '');
       
       html += '<div class="sh-item"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + speechHistoryDetail(s) + '</div>';
@@ -8429,7 +8486,7 @@ function renderSpeechHistory(){
         for(const s of tieBreakSpeeches){
           const speaker = game.players[s.speakerId];
           if(!speaker) continue;
-          const nameColor = isGodView() ? getRoleColor(speaker.role) : '#ecf0f1';
+          const nameColor = isGodView() ? getRoleColor(speaker.role) : 'var(--white)';
           const summary = getSpeechSummary(s.classified || [], s.speechType || '');
           html += '<div class="sh-item" style="padding:3px 6px"><span class="sh-speaker-name" style="color:' + nameColor + '">' + speaker.name + '</span>' + (isGodView() ? '<span class="sh-speaker-role">（' + speaker.faction + '·' + ROLE_CFG[speaker.role].name + '）</span>' : '') + (summary ? '<span class="sh-text">：' + summary + '</span>' : '') + speechHistoryDetail(s) + '</div>';
         }
