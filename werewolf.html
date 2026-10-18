@@ -2525,6 +2525,9 @@ function speechTypeLabel(classified) {
         const roleName = ROLE_NAME_MAP[c.role] || c.role;
         labels.push(`<span class="tag-claim">（跳身份·${roleName}）</span>`);
         break;
+      case 'defense':
+        labels.push('<span class="tag-claim">（申辩自保）</span>');
+        break;
       case 'conservative':
         // 不立即返回，等循环结束后判断：有其他标签时省略划水
         break;
@@ -5214,15 +5217,62 @@ function getPersonalVoteBias(voter, targetId){
         bias += c.subtype === 'suspect' ? 10 : c.subtype === 'shield' || c.subtype === 'protect' ? -10 : 0;
     }
   }
+  if((game.voteRecords||[]).some(v=>v.type==='tie' && v.day===game.day)){
+    const prior=getFirstRoundVotes().find(v=>v.voterId===voter.id);
+    if(prior?.targetId===targetId)bias+=8;
+  }
   return bias;
 }
 function getAIVoteReason(voter, targetId){
+  if((game.voteRecords||[]).some(v=>v.type==='tie' && v.day===game.day)){
+    const prior=getFirstRoundVotes().find(v=>v.voterId===voter.id);
+    if(prior)return prior.targetId===targetId?'听取申辩后，维持首轮投票。':'结合平票申辩，调整首轮投票。';
+  }
   if(getOwnPublicSeerResult(voter.id, targetId) === 'wolf') return '依据自己公开的查杀。';
   const attacks = (game.speeches || []).filter(s => s.speakerId === voter.id && s.day === game.day)
     .flatMap(s => s.classified || []).filter(c => c.type === 'attack' && c.subtype === 'suspect');
   if(attacks.some(c => c.targets?.some(t => t.id === targetId))) return '延续本轮公开的怀疑。';
   if(attacks.length || getOwnPublicSeerResult(voter.id, targetId) === 'good') return '综合本轮发言，调整投票判断。';
   return '综合公开发言与个人判断。';
+}
+
+function getFirstRoundVotes(){
+  return (game.voteRecords || []).filter(v => v.day === game.day && !v.type && !v.tieBreak);
+}
+function buildDefenseFragments(player, tiedIds){
+  const fragments=[{type:'defense'}];
+  const claimedRole=game.playerClaims[player.id];
+  if(!claimedRole) fragments.push({type:'claim',role:player.role==='wolf'?'villager':player.role});
+  let candidates=getAlive().filter(p=>p.id!==player.id && tiedIds.includes(p.id));
+  candidates=getAIVoteCandidates(player,candidates);
+  const ownVote=getFirstRoundVotes().find(v=>v.voterId===player.id);
+  const latestAttack=(game.speeches||[]).filter(v=>v.day===game.day && v.speakerId===player.id)
+    .flatMap(v=>v.classified||[]).filter(c=>c.type==='attack' && c.subtype==='suspect').at(-1);
+  const target=candidates.find(p=>p.id===ownVote?.targetId)
+    || candidates.find(p=>latestAttack?.targets?.some(t=>t.id===p.id)) || candidates[0];
+  if(player.role==='seer'){
+    // 申辩优先复述与平票对象有关的真实查验；绝不为求自保反咬自己的金水。
+    const check=(game.seerChecks||[]).find(c=>c.isWolf && game.players[c.targetId]?.alive && tiedIds.includes(c.targetId))
+      || (game.seerChecks||[]).find(c=>tiedIds.includes(c.targetId) && c.targetId!==player.id)
+      || (game.seerChecks||[]).at(-1);
+    if(check && game.players[check.targetId] && fragments.length<3){
+      fragments.push({type:'info',role:'seer',infoTargetId:check.targetId,infoResult:check.isWolf?'wolf':'good'});
+      if(!game.seerReportedChecks)game.seerReportedChecks=[];
+      if(!game.seerReportedChecks.includes(check.targetId))game.seerReportedChecks.push(check.targetId);
+    }
+  }
+  if(target && fragments.length<3)fragments.push({type:'attack',targetId:target.id});
+  return fragments;
+}
+function generateDefenseText(player){
+  const votes=getFirstRoundVotes();
+  const voters=votes.filter(v=>v.targetId===player.id).map(v=>game.players[v.voterId]).filter(Boolean);
+  const ownVote=votes.find(v=>v.voterId===player.id);
+  const role=game.playerClaims[player.id];
+  let text=voters.length ? `首轮有${voters.length}票投给我，来自${voters.map(p=>safeText(p.name)).join('、')}。` : '我不同意现在就把我放逐。';
+  if(role)text+=`我此前已表明${safeText(ROLE_CFG[role]?.name||role)}身份。`;
+  if(ownVote && game.players[ownVote.targetId])text+=`我首轮投的是${safeText(game.players[ownVote.targetId].name)}。`;
+  return text+'请对照各方的发言和票型，再决定这一票。';
 }
 
 async function votePhase(){
@@ -5562,7 +5612,6 @@ async function votePhase(){
       const tp = game.players[tid];
       if(!tp || !tp.alive) continue;
       game.currentSpeakerId=tp.id;
-      const suspectPool = getAlive().filter(x => x.id !== tid);
 
       let speech = '', classified = null;
       if(game.mode === 'player' && tid === game.playerId && !game.playerDied){
@@ -5581,19 +5630,13 @@ async function votePhase(){
           return item;
         });
       } else {
-        // AI 用正常白天模板生成申辩
-        let fragments;
-        if(tp.role === 'seer') fragments = buildSeerFragments(tp, suspectPool, [], game.spokenToday);
-        else if(tp.role === 'witch') fragments = buildWitchFragments(tp, suspectPool, [], game.spokenToday);
-        else if(tp.role === 'guard') fragments = buildGuardFragments(tp, suspectPool, [], game.spokenToday);
-        else if(tp.role === 'hunter') fragments = buildHunterFragments(tp, suspectPool, [], game.spokenToday);
-        else if(tp.role === 'wolf') fragments = buildWolfFragments(tp, getAlive(), getAliveWolves(), null, true, [], game.spokenToday);
-        else if(tp.role === 'villager') fragments = buildVillagerFragments(tp, suspectPool, [], game.spokenToday);
-        else fragments = buildGoodFragments(tp, suspectPool, [], game.spokenToday);
+        const fragments=buildDefenseFragments(tp,tiedIds);
         speech = generatePlayerSpeechText(fragments, tp);
         classified = fragmentsToClassified(fragments);
       }
 
+      const claim=classified.find(c=>c.type==='claim' && c.role);
+      if(claim){game.claimedPlayers.add(tp.id);game.playerClaims[tp.id]=claim.role;}
       const typeLabel = speechTypeLabel(classified);
       addLog(`${speakerHTML(tp)}${speech}${typeLabel}`);
       const mainType = classified[0] ? classified[0].type : 'conservative';
@@ -6601,6 +6644,7 @@ function getActionDescription(fragments, player) {
 
 function generatePlayerSpeechText(fragments, player){
   const text = fragments.map(frag => {
+    if(frag.type==='defense')return generateDefenseText(player||game.players[game.currentSpeakerId]);
     // --- 划水 ---
     if(frag.type === 'conservative'){
       const templates = [
@@ -6816,6 +6860,7 @@ function generatePlayerSpeechText(fragments, player){
 function fragmentsToClassified(fragments) {
   if (!fragments || fragments.length === 0) return [{ type: 'conservative', subtype: null, targets: [] }];
   return fragments.map(frag => {
+    if (frag.type === 'defense') return {type:'defense',targets:[]};
     if (frag.type === 'conservative') {
       return { type: 'conservative', subtype: null, targets: [] };
     }
@@ -8311,7 +8356,9 @@ function getSpeechSummary(classified, speechType){
   }
   const parts = [];
   for(const c of classified){
-    if(c.type === 'claim' && c.role){
+    if(c.type === 'defense'){
+      parts.push('申辩自保');
+    } else if(c.type === 'claim' && c.role){
       if(c.role === 'villager'){
         parts.push('亮明平民');
       } else {
@@ -8386,10 +8433,17 @@ function renderVoteSection(voteList, label){
   return html;
 }
 
+function historyDeathSection(day){
+  if(!isGodView())return '';
+  const deaths=game.players.filter(p=>!p.alive && p.deathDay===Number(day) && p.deathCause!=='vote');
+  if(!deaths.length)return '';
+  return '<div class="sh-vote-section"><div class="sh-vote-label">☠ 夜间与技能出局</div>'+deaths.map(p=>
+    '<div class="sh-vote-item">'+safeText(p.name)+'：'+safeText(deathInfoText(p))+'</div>').join('')+'</div>';
+}
 function speechHistoryDetail(s){return `<details class="speech-fulltext"><summary>查看原话</summary><p>${safeText(plainText(s.text||''))}</p></details>`;}
 function renderSpeechHistory(){
   const content = document.getElementById('speechHistoryContent');
-  if(!game || (!game.speeches?.length && !game.voteRecords?.length)){
+  if(!game || (!game.speeches?.length && !game.voteRecords?.length && !(isGodView() && game.players.some(p=>!p.alive)))){
     content.innerHTML = '<div class="sh-empty">暂无记录</div>';
     return;
   }
@@ -8411,7 +8465,7 @@ function renderSpeechHistory(){
   }
   
   // 合并所有出现过的天数
-  const allDays = new Set([...Object.keys(groupedSpeeches), ...Object.keys(groupedVotes)]);
+  const allDays = new Set([...Object.keys(groupedSpeeches), ...Object.keys(groupedVotes), ...(isGodView()?game.players.filter(p=>!p.alive && Number.isFinite(p.deathDay)).map(p=>String(p.deathDay)):[])]);
   const days = Array.from(allDays).sort((a,b) => _historySortAsc ? a - b : b - a);
   
   if(days.length === 0){
@@ -8426,6 +8480,7 @@ function renderSpeechHistory(){
     
     html += '<div class="sh-day-group"><div class="sh-day-label">第' + day + '天</div>';
     
+    html += historyDeathSection(day);
     // 分离常规发言和平票申辩发言
     const regularSpeeches = speeches.filter(s => !s.tieBreak);
     const tieBreakSpeeches = speeches.filter(s => s.tieBreak);
