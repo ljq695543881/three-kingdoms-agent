@@ -2847,6 +2847,8 @@ function delay(ms){
 }
 
 function init(optPlayer){
+  if(optPlayer)optPlayer=normalizePlayerCharacter(optPlayer);
+  _pendingGrowthAction=null;
   const staleWaiters=game.pauseResolvers.splice(0);
   hunterShootResolver=null;_destinyDeathResolve=null;
   clearSuspendedAction();closeSpeechHistory();
@@ -5820,10 +5822,13 @@ function continueGame(){
     return;
   }
   try {
-    const charData = JSON.parse(savedChar);
+    const parsed=JSON.parse(savedChar);
+    if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||typeof parsed.name!=='string'||!parsed.name.trim())throw new Error('角色存档格式无效，请选择新游戏重新创建角色。');
+    const charData=normalizePlayerCharacter(parsed);
     document.getElementById('playerModeSelect').classList.add('hide');
     clearSavePlayerGame();
     init(charData);
+    localStorage.setItem('playerCharacter',JSON.stringify(charData));
   } catch(e){
     alert('读档失败：' + e.message);
     console.error(e);
@@ -5932,6 +5937,18 @@ function updateAttrLeft(){
 }
 function normalizePlayerName(value){
   return String(value||'').replace(/[^\p{L}\p{N}_· -]/gu,'').trim().slice(0,6)||'无名豪杰';
+}
+function normalizePlayerCharacter(raw){
+  const attrs=raw.attr&&typeof raw.attr==='object'?raw.attr:(raw.attrs&&typeof raw.attrs==='object'?raw.attrs:{});
+  const attr={};
+  for(const key of GROWTH_ATTRS){
+    const value=attrs[key]==null||attrs[key]===''?NaN:Number(attrs[key]);
+    attr[key]=Number.isFinite(value)?Math.max(1,Math.min(GROWTH_CAP,Math.floor(value))):3;
+  }
+  const points=Number(raw.growthPts);
+  return {name:normalizePlayerName(raw.name),faction:['魏','蜀','吴','群'].includes(raw.faction)?raw.faction:'群',attr,
+    growthPts:Number.isFinite(points)?Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(points))):0,
+    avatar:typeof raw.avatar==='string'&&/^avatars\/(?:player|wei|shu|wu|qun)\/[\p{L}\p{N}_· -]+\.png$/u.test(raw.avatar)?raw.avatar:''};
 }
 function validPlayerName(value){return /^[\p{L}\p{N}_· -]{1,6}$/u.test(value)&&value.trim().length>0;}
 function checkCharReady(){
@@ -7341,6 +7358,7 @@ const GROWTH_ATTRS = ['武力','智谋','统帅','政治','魅力','意志'];
 
 // 计算本局获得的属性点
 function calcGrowthPoints(winner){
+  if(!['good','wolf'].includes(winner))return 0;
   if(game.mode !== 'player' || game.playerId == null) return 0;
   const me = game.players[game.playerId];
   if(!me) return 0;
@@ -7352,6 +7370,7 @@ function calcGrowthPoints(winner){
 
 // 判断是否需要弹出成长面板
 function shouldShowGrowth(winner){
+  if(!['good','wolf'].includes(winner))return false;
   if(game.mode !== 'player' || game.playerId == null) return false;
   const me = game.players[game.playerId];
   if(!me) return false;
@@ -7705,8 +7724,7 @@ function backToTitle(){
       const totalPts = earned + carried;
       // 把未分配的点数存入 localStorage.playerCharacter
       try {
-        const savedChar = JSON.parse(localStorage.getItem('playerCharacter') || '{}');
-        savedChar.growthPts = totalPts;
+        const savedChar=normalizePlayerCharacter({...me,growthPts:totalPts});
         localStorage.setItem('playerCharacter', JSON.stringify(savedChar));
       } catch(e){}
     }
@@ -7752,6 +7770,7 @@ function retryGame(){
   console.log('[retryGame] ENTRY, playerClaims before clear=', JSON.stringify(game?game.playerClaims:'?'));
   // 成长面板拦截：如果本局结束有属性点可分配，先弹出成长面板
   if(shouldShowGrowth(_lastGameWinner)){
+    closeModal();
     _pendingGrowthAction = 'retry';
     const earned = calcGrowthPoints(_lastGameWinner);
     showGrowthPanel(earned, _lastGameWinner);

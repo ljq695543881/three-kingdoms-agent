@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.CHROME_EXECUTABLE?{executablePath:process.env.CHROME_EXECUTABLE}:{})});
  try{
- for(const size of ['quick','classic'])for(let seed=1;seed<=Number(process.env.SMOKE_SEEDS||8);seed++){
+ for(const size of ['quick','classic'])for(let seed=Number(process.env.SMOKE_SEED_START||1);seed<Number(process.env.SMOKE_SEED_START||1)+Number(process.env.SMOKE_SEEDS||8);seed++){
   const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('file://'+process.cwd()+'/werewolf.html');
   await page.evaluate(({size,seed})=>{
