@@ -2816,7 +2816,7 @@ function syncPause(){
   const button=document.getElementById('pauseBtn');
   button.textContent=reasons.size?'阅读中':game.isPaused?'▶ 继续':'⏸ 暂停';
   button.classList.toggle('paused',game.isPaused);button.disabled=reasons.size>0;
-  button.title=reasons.size?'关闭历史、设置或回应面板后恢复；手动暂停仍会保留':'';
+  button.title=reasons.size?'关闭阅读面板后恢复；手动暂停仍会保留':'';
   if(wasPaused&&!game.isPaused){const waiting=game.pauseResolvers.splice(0);waiting.forEach(r=>r());}
 }
 function setPauseReason(reason,active){
@@ -2832,13 +2832,15 @@ function togglePause(){
 function delay(ms){
   return new Promise(resolve=>{
     const gen=game.generation||0;
+    let remaining=Math.max(0,Math.round(ms/game.speed)),last=performance.now();
     const check=()=>{
       if((game.generation||0)!==gen){resolve();return;}
       if(game.isPaused){
-        game.pauseResolvers.push(()=>setTimeout(check,50));
-      } else {
-        setTimeout(resolve,Math.round(ms/game.speed));
+        game.pauseResolvers.push(()=>{last=performance.now();check();});return;
       }
+      const now=performance.now();remaining-=now-last;last=now;
+      if(remaining<=0){resolve();return;}
+      setTimeout(check,Math.min(remaining,50));
     };
     check();
   });
@@ -3833,7 +3835,7 @@ function killMasterDecide(killMaster, proposals, targets){
 
   // 对军师好感度高时，额外概率采纳军师目标
   const masterId = game.scriptMasterId;
-  if(masterId){
+  if(masterId!=null){
     const masterProposal = proposals.find(p => p.wolfId === masterId);
     if(masterProposal){
       const favorToMaster = getFavor(killMaster, masterId);
@@ -4052,7 +4054,12 @@ function resolveNight(){
 
   game.isProcessing=false;
   const generation=game.generation;
-  setTimeout(()=>{if(game.generation===generation&&!game.ended)dayPhase(deaths);},1200);
+  const enterDay=()=>{
+    if(game.generation!==generation||game.ended)return;
+    if(game.isPaused){game.pauseResolvers.push(enterDay);return;}
+    dayPhase(deaths);
+  };
+  setTimeout(enterDay,1200);
 }
 
 async function dayPhase(deaths){
@@ -4251,7 +4258,7 @@ async function generateSpeeches(){
       const mainType = fragments[0].type === 'info' ? 'claim' : fragments[0].type;
       applyPlayerSpeechEffect(p, speech, classified, alive);
       // 记录发言上下文
-      const tmpFrag = fragments.find(f=>f.targetId);
+      const tmpFrag = fragments.find(f=>f.targetId!=null);
       const mentionedTarget = tmpFrag ? game.players[tmpFrag.targetId] : null;
       speechContext.push({
         speakerId: p.id, speakerName: p.name,
@@ -4590,7 +4597,7 @@ function generateHunterSpeech(hunter, suspectPool, ctx, spokenSet){
     // 高智谋猎人：分析发言，找出可疑目标
     const analyzed = ctx.slice(-3);
     for(const s of analyzed){
-      if(s && s.speakerId && s.text){
+      if(s && s.speakerId!=null && s.text){
         const speaker = game.players[s.speakerId];
         if(speaker && speaker.alive && speaker.id !== hunter.id){
           return `我观察了一下${speaker.name}的发言，感觉有点问题。大家多注意一下，别被忽悠了。`;
@@ -4649,7 +4656,7 @@ function generateVillagerSpeech(villager, suspectPool, ctx, spokenSet){
     // 平民智谋高，可以尝试分析发言
     const analyzed = ctx.slice(-3);
     for(const s of analyzed){
-      if(s && s.text && s.speakerId){
+      if(s && s.text && s.speakerId!=null){
         const speaker = game.players[s.speakerId];
         if(speaker && speaker.alive && speaker.id !== villager.id){
           return `我听了半天，觉得${speaker.name}的发言有点意思……虽然我是平民没信息，但感觉可以关注一下。`;
@@ -4709,7 +4716,7 @@ function generateGoodSpeech(player, suspectPool, ctx, spokenSet){
     // ===== 规则③ 智谋：分析可疑发言（不使用隐藏信息）=====
     if(getAttr(player,'智谋') >= 4){
       // 找到已发言的玩家，随机评论一个
-      const spokenSpeeches = ctx.filter(s => s && s.speakerId && spokenSet.has(s.speakerId) && s.speakerName);
+      const spokenSpeeches = ctx.filter(s => s && s.speakerId!=null && spokenSet.has(s.speakerId) && s.speakerName);
       if(spokenSpeeches.length>0 && Math.random()<intel/5){
         const s = pick(spokenSpeeches);
         speech = `我仔细听了一下，${s.speakerName}的发言逻辑有点问题。感觉太完美了反而可疑。各位注意${s.speakerName}。`;
@@ -5250,7 +5257,7 @@ async function votePhase(){
         // 好感度低的非狼人更容易被狼投：范围 2~12
         score += Math.max(2, Math.round((50 - wolfFavor) * 0.2));
         // 服从剧本的狼人：剧本目标大幅加分
-        if(game.wolfScriptCompliance[p.id] && game.wolfScript && game.wolfScript.target){
+        if(game.wolfScriptCompliance[p.id] && game.wolfScript && game.wolfScript.target!=null){
           if(x.id === game.wolfScript.target) score += 30;
         }
         // 不服从剧本的狼人：按自己好感度来，额外+5推动投非狼人
@@ -5378,6 +5385,7 @@ async function votePhase(){
     for(const tid of tiedIds){
       const tp = game.players[tid];
       if(!tp || !tp.alive) continue;
+      game.currentSpeakerId=tp.id;
       const suspectPool = getAlive().filter(x => x.id !== tid);
 
       let speech = '', classified = null;
@@ -5532,7 +5540,7 @@ async function votePhase(){
         // 狼人投票差异化
         if(p.role === 'wolf' && x.role !== 'wolf'){
           score += Math.max(2, Math.round((50 - getFavor(p, xId)) * 0.2));
-          if(game.wolfScriptCompliance[p.id] && game.wolfScript && game.wolfScript.target){
+          if(game.wolfScriptCompliance[p.id] && game.wolfScript && game.wolfScript.target!=null){
             if(xId === game.wolfScript.target) score += 30;
           }
         } else if(p.role === 'wolf' && x.role === 'wolf'){
@@ -5750,7 +5758,7 @@ function endGame(winner){
 }
 
 function onPlayerClick(id){
-  if(game.isProcessing)return;
+  if(game.isProcessing||game.ended)return;
   const p=game.players[id];
   if(!p.alive)return;
   // 所有模式：点击角色卡片弹出详情窗（含六维属性 + 打标签）
@@ -6076,6 +6084,9 @@ function renderFragments(){
   updateSpeechPreview();
   // 更新确认按钮状态
   document.getElementById('speechConfirmBtn').disabled = _speechFragments.length === 0;
+  const claim=game.playerClaims[game.playerId]||_speechFragments.find(f=>f.type==='claim')?.role;
+  document.getElementById('st-claim').style.display=claim?'none':'';
+  document.getElementById('st-info').style.display=['seer','witch','guard'].includes(claim)?'':'none';
 }
 
 function removeSpeechFragment(index){
@@ -6226,7 +6237,7 @@ function showSpeechTargetSelection(type){
   sel.innerHTML = '<option value="">-- 选择目标 --</option>' +
     alive.map(p=>`<option value="${p.id}">${p.name}（${p.faction}）</option>`).join('');
   sel.value = '';
-  document.getElementById('speechConfirmBtn').disabled = true;
+  document.getElementById('speechConfirmBtn').disabled = _speechFragments.length===0;
   // 根据是否已跳身份设置"跳身份"按钮的可见性
   const _myClaim = game.playerClaims[game.playerId]||_speechFragments.find(f=>f.type==='claim')?.role;
   if(_myClaim){
@@ -6239,7 +6250,7 @@ function showSpeechTargetSelection(type){
 function onSpeechTargetChange(){
   const sel = document.getElementById('speechTargetSel');
   if(!sel.value) {
-    document.getElementById('speechConfirmBtn').disabled = true;
+    document.getElementById('speechConfirmBtn').disabled = _speechFragments.length===0;
     return;
   }
   const targetId = parseInt(sel.value);
@@ -6427,7 +6438,7 @@ function generatePlayerSpeechText(fragments, player){
       let prevClaimer = null;
       if (frag.role !== 'villager' && game.speeches) {
         for (const s of game.speeches) {
-          if (!s || !s.classified || !s.speakerId) continue;
+          if (!s || !s.classified || s.speakerId==null) continue;
           if (s.speakerId === game.currentSpeakerId) continue; // 排除自己
           for (const c of s.classified) {
             if (c.type === 'claim' && c.role === frag.role) {
@@ -6689,8 +6700,8 @@ function buildChantJumpFragments(wolf, alive, ctx, spokenSet) {
       if (questioners.length > 0 && Math.random() < 0.8) {
         const q = pick(questioners);
         if (q) {
-          const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
-          if (qId) fragments.push({ type: 'attack', targetId: qId });
+          const qId = q.speakerId ?? getAlive().find(p => p.name === q.speakerName)?.id;
+          if (qId!=null) fragments.push({ type: 'attack', targetId: qId });
         }
       } else if (Math.random() < 0.5 && goodAlive.length > 0 && fragments.length < 3) {
         fragments.push({ type: 'attack', targetId: pick(goodAlive).id });
@@ -6754,8 +6765,8 @@ function buildChargeFragments(wolf, alive, wolves, ctx, spokenSet) {
     if (questioners.length > 0) {
       const q = pick(questioners);
       if (q) {
-        const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
-        if (qId) fragments.push({ type: 'attack', targetId: qId });
+        const qId = q.speakerId ?? getAlive().find(p => p.name === q.speakerName)?.id;
+        if (qId!=null) fragments.push({ type: 'attack', targetId: qId });
       }
     }
   } else if (chantJumpWolf && Math.random() < 0.6) {
@@ -6803,8 +6814,8 @@ function buildHookFragments(wolf, alive, ctx, spokenSet) {
       const questioners = ctx.filter(s => s.text && s.text.includes(realSeer.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼")));
       if (questioners.length > 0 && Math.random() < 0.7) {
         const q = pick(questioners);
-        const qId = q.speakerId || getAlive().find(p => p.name === q.speakerName)?.id;
-        if (qId) fragments.push({ type: 'attack', targetId: qId });
+        const qId = q.speakerId ?? getAlive().find(p => p.name === q.speakerName)?.id;
+        if (qId!=null) fragments.push({ type: 'attack', targetId: qId });
       }
     } else {
       // 真预言家还没跳：暗示支持
@@ -7122,9 +7133,9 @@ function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
       fragments.push({ type: 'claim', role: 'villager' });
     }
     // 质疑者也可疑
-    const accuser = ctx.find(s => s.speakerId && s.speakerId !== villager.id && s.text &&
+    const accuser = ctx.find(s => s.speakerId!=null && s.speakerId !== villager.id && s.text &&
       (s.text.includes(villager.name) && (s.text.includes("可疑") || s.text.includes("投") || s.text.includes("狼"))));
-    if (accuser && accuser.speakerId) {
+    if (accuser && accuser.speakerId!=null) {
       fragments.push({ type: 'attack', targetId: accuser.speakerId });
     } else {
       fragments.push({ type: 'conservative' });
@@ -7154,7 +7165,7 @@ function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
       // 高智商：可能质疑跳身份的人
       if (Math.random() < 0.5) {
         const claimer = claimers[claimers.length - 1];
-        if (claimer.speakerId) {
+        if (claimer.speakerId!=null) {
           fragments.push({ type: 'attack', targetId: claimer.speakerId });
           return fragments;
         }
@@ -7166,7 +7177,7 @@ function buildVillagerFragments(villager, suspectPool, ctx, spokenSet) {
   if (intel >= 4 && ctx.length > 0) {
     const analyzed = ctx.slice(-3);
     for (const s of analyzed) {
-      if (s.speakerId && s.text) {
+      if (s.speakerId!=null && s.text) {
         const speaker = game.players[s.speakerId];
         if (speaker && speaker.alive && speaker.id !== villager.id) {
           fragments.push({ type: 'attack', targetId: speaker.id });
@@ -7940,9 +7951,11 @@ showTitle();
 // ===== 玩家标签选择面板 =====
 let _tagTargetId = null;
 function showTagPanel(playerId){
+  if(game.ended)return;
   const p = game.players[playerId];
   if(!p) return;
   _tagTargetId = playerId;
+  setPauseReason('tag',true);
 
   // 六维属性
   const at = p.attr || p.attrs || {};
@@ -7981,7 +7994,7 @@ function showTagPanel(playerId){
 function closeTagPanel(event){
   if(event && event.target !== event.currentTarget) return;
   document.getElementById('modalArea').innerHTML = '';
-  _tagTargetId = null;
+  _tagTargetId = null;setPauseReason('tag',false);
 }
 function selectPlayerTag(tag){
   if(_tagTargetId === null) return;
@@ -7993,7 +8006,7 @@ function selectPlayerTag(tag){
   }
   renderPlayers();
   document.getElementById('modalArea').innerHTML = '';
-  _tagTargetId = null;
+  _tagTargetId = null;setPauseReason('tag',false);
 }
 
 // ===== 成就系统 =====
@@ -8373,6 +8386,7 @@ document.addEventListener('keydown',event=>{
     else if(document.getElementById('speechHistoryPanel').classList.contains('show'))closeSpeechHistory();
     else if(shown('settingsOverlay'))closeSettings();
     else if(document.getElementById('favorPanel').classList.contains('show'))closeFavorPanel();
+    else if(document.querySelector('#modalArea .tag-modal'))closeTagPanel();
     else {const id=visibleActionPanel();if(id)collapseAction(id,false);else return;}
     event.preventDefault();return;
   }

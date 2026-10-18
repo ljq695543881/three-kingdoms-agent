@@ -24,7 +24,7 @@ const ties=await page.evaluate(async()=>{
   game.mode='player';init({name:'平票测试',faction:'群',attr:{}});closeModal();game.playerId=1;game.day=1;setNight(false);delay=async()=>{};
   game.players.forEach((p,i)=>{p.alive=i<4;p.role=i===3?'wolf':'villager';});Math.random=()=>0;
   getFavor=(p,id)=>{const revote=game.voteRecords.some(r=>r.type==='tie');const desired=revote&&outcome!=='tie'?(p.id===0?1:0):(p.id%2===0?1:0);return id===desired?-1000:1000;};
-  showSpeechPanel=async()=>({text:'请重新判断。',fragments:[{type:'conservative'}]});
+  showSpeechPanel=async()=>{if(game.currentSpeakerId!==game.playerId)throw new Error('Wrong defense speaker context');return {text:'请重新判断。',fragments:[{type:'conservative'}]};};
   const originalVote=showVotePanel;let playerRevoteCandidates=[];showVotePanel=(ids)=>{const pending=originalVote(ids);if(ids)playerRevoteCandidates=[...document.querySelectorAll('#voteOptions [data-id]')].map(e=>Number(e.dataset.id));selectVoteTarget(0);confirmPlayerVote();return pending;};
   let nextNight=false;nightPhase=()=>{nextNight=true;};
   if(outcome==='destinyEnd'){game.mode='destiny';game.destiny=0;game.careerPlayerId=0;showDestinyDeathPanel=async()=> 'end';}
